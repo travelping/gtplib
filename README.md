@@ -1,5 +1,6 @@
 gtplib
 ======
+[![Build Status](https://travis-ci.org/travelping/gtplib.svg?branch=master)](https://travis-ci.org/travelping/gtplib)
 
 Erlang library for encoding and decoding GTPv1 and GTPv2 frames.
 Erlang netlink wrapper for talking the Linux kernel GTP-U module
