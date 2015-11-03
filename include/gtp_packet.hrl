@@ -4,18 +4,13 @@
 
 %% Copyright 2015, Travelping GmbH <info@travelping.com>
 
--record(gtp_v1, {
+-record(gtp, {
+	  version,
 	  type,
 	  tei,
 	  seq_no,
 	  n_pdu,
 	  ext_hdr,
-	  ie}).
-
--record(gtp_v2, {
-	  type,
-	  tei,
-	  seq_no,
 	  ie}).
 
 -include("gtp_packet_v1_gen.hrl").

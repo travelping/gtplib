@@ -20,7 +20,8 @@
 decode(<<1:3, 1:1, _:1, 0:1, 0:1, 0:1, Type:8, Length:16, TEI:32/integer, Data0/binary>>) ->
     <<Data:Length/bytes, _Next/binary>> = Data0,
     IEs = decode_v1(Data, []),
-    {gtp_v1, message_type_v1(Type), TEI, undefined, undefined, 0, IEs};
+    #gtp{version = v1, type = message_type_v1(Type), tei = TEI,
+	 ext_hdr = 0, ie = IEs};
 decode(<<1:3, 1:1, _:1, E:1, S:1, PN:1, Type:8, Length:16, TEI:32/integer,
 	 SeqNo0:16, NPDU0:8, ExtHdrType:8, Data0/binary>>) ->
     DataLen = Length - 4,
@@ -38,7 +39,8 @@ decode(<<1:3, 1:1, _:1, E:1, S:1, PN:1, Type:8, Length:16, TEI:32/integer,
 			 _ -> {Data1, []}
 		     end,
     IEs = decode_v1(Data, []),
-    {gtp_v1, message_type_v1(Type), TEI, SeqNo, NPDU, ExtHdr, IEs};
+    #gtp{version = v1, type = message_type_v1(Type), tei = TEI, seq_no = SeqNo,
+	 n_pdu = NPDU, ext_hdr = ExtHdr, ie = IEs};
 
 
 decode(Data = <<2:3, 0:1, _T:1, _Spare0:3, _/binary>>) ->
@@ -58,15 +60,16 @@ decode_v2_msg(<<2:3, _:1, 1:1, _Spare0:3, Type:8, Length:16,
     DataLen = Length - 8,
     <<Data1:DataLen/bytes, _Next/binary>> = Data0,
     IEs = decode_v2(Data1, []),
-    {gtp_v2, message_type_v2(Type), TEI, SeqNo, IEs};
+    #gtp{version = v2, type = message_type_v2(Type), tei = TEI, seq_no = SeqNo, ie = IEs};
 decode_v2_msg(<<2:3, _:1, 0:1, _Spare0:3, Type:8, Length:16,
 		SeqNo:24, _Spare1:8, Data0/binary>>) ->
     DataLen = Length - 4,
     <<Data1:DataLen/bytes, _Next/binary>> = Data0,
     IEs = decode_v2(Data1, []),
-    {gtp_v2, message_type_v2(Type), undefined, SeqNo, IEs}.
+    #gtp{version = v2, type = message_type_v2(Type), tei = undefined, seq_no = SeqNo, ie = IEs}.
 
-encode({gtp_v1, Type, TEI, SeqNo, NPDU, ExtHdr, IEs}) ->
+encode(#gtp{version = v1, type = Type, tei = TEI, seq_no = SeqNo,
+	    n_pdu = NPDU, ext_hdr = ExtHdr, ie = IEs}) ->
     Flags = encode_gtp_v1_hdr_flags(SeqNo, NPDU, ExtHdr),
     HdrOpt = encode_gtp_v1_opt_hdr(SeqNo, NPDU, ExtHdr),
     Data0 = lists:keysort(1, [encode_v1_element(IE) || IE <- IEs]),
@@ -74,7 +77,7 @@ encode({gtp_v1, Type, TEI, SeqNo, NPDU, ExtHdr, IEs}) ->
     Data = << <<V/binary>> || {_Id, V} <- Data0 >>,
     <<Flags/binary, (message_type_v1(Type)):8, (size(HdrOpt) + size(Data)):16, TEI:32, HdrOpt/binary, Data/binary>>;
 
-encode({gtp_v2, Type, TEI, SeqNo, IEs}) ->
+encode(#gtp{version = v2, type = Type, tei = TEI, seq_no = SeqNo, ie = IEs}) ->
     encode_v2_msg(message_type_v2(Type), 0, TEI, SeqNo, encode_v2(IEs)).
 
 %%%===================================================================
