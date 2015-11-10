@@ -1,9 +1,3 @@
-%% This Source Code Form is subject to the terms of the Mozilla Public
-%% License, v. 2.0. If a copy of the MPL was not distributed with this
-%% file, You can obtain one at http://mozilla.org/MPL/2.0/.
-
-%% Copyright 2015, Travelping GmbH <info@travelping.com>
-
 %% This file is auto-generated. DO NOT EDIT
 
 -record(v2_international_mobile_subscriber_identity, {
@@ -21,7 +15,8 @@
 }).
 
 -record(v2_recovery, {
-        instance = 0
+        instance = 0,
+        restart_counter = 0
 }).
 
 -record(v2_stn_sr, {

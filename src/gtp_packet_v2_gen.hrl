@@ -426,8 +426,9 @@ decode_v2_element(2, Instance, <<M_v2_cause:8/integer,
               cs = M_cs,
               data = M_data};
 
-decode_v2_element(3, Instance, <<>>) ->
-    #v2_recovery{instance = Instance};
+decode_v2_element(3, Instance, <<M_restart_counter:8/integer>>) ->
+    #v2_recovery{instance = Instance,
+                 restart_counter = M_restart_counter};
 
 decode_v2_element(51, Instance, <<>>) ->
     #v2_stn_sr{instance = Instance};
@@ -835,8 +836,9 @@ encode_v2_element(#v2_cause{
                                      M_data/binary>>);
 
 encode_v2_element(#v2_recovery{
-                       instance = Instance}) ->
-    encode_v2_element(3, Instance, <<>>);
+                       instance = Instance,
+                       restart_counter = M_restart_counter}) ->
+    encode_v2_element(3, Instance, <<M_restart_counter:8>>);
 
 encode_v2_element(#v2_stn_sr{
                        instance = Instance}) ->
