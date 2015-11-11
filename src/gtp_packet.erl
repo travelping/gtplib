@@ -19,7 +19,7 @@
 
 decode(<<1:3, 1:1, _:1, 0:1, 0:1, 0:1, Type:8, Length:16, TEI:32/integer, Data0/binary>>) ->
     <<Data:Length/bytes, _Next/binary>> = Data0,
-    IEs = decode_v1(Data, []),
+    IEs = decode_v1(Data),
     #gtp{version = v1, type = message_type_v1(Type), tei = TEI,
 	 ext_hdr = 0, ie = IEs};
 decode(<<1:3, 1:1, _:1, E:1, S:1, PN:1, Type:8, Length:16, TEI:32/integer,
@@ -38,7 +38,7 @@ decode(<<1:3, 1:1, _:1, E:1, S:1, PN:1, Type:8, Length:16, TEI:32/integer,
 			 1 -> decode_exthdr(ExtHdrType, Data1, []);
 			 _ -> {Data1, []}
 		     end,
-    IEs = decode_v1(Data, []),
+    IEs = decode_v1(Data),
     #gtp{version = v1, type = message_type_v1(Type), tei = TEI, seq_no = SeqNo,
 	 n_pdu = NPDU, ext_hdr = ExtHdr, ie = IEs};
 
@@ -162,6 +162,15 @@ decode_protocol_opts(Protocol, <<Id:16, Length:8, Data:Length/bytes, Next/binary
 decode_protocol_opts(_Protocol, <<Id:16, Length:8, Data:Length/bytes, Next/binary>>, Opts) ->
     decode_protocol_opts(-1, Next, [{Id, Data} | Opts]).
 
+decode_v1(Data) ->
+    decode_v1(Data, -1, 0, []).
+
+v1_instance(CurrId, PrevId, PrevInst)
+  when CurrId == PrevId ->
+    PrevInst + 1;
+v1_instance(_CurrId, _PrevId, _PrevInst) ->
+    0.
+
 decode_v2_indication_flags(<<>>, _, Acc) ->
     Acc;
 decode_v2_indication_flags(<<0:1, Next/bitstring>>, [_ | Flags], Acc) ->
@@ -207,11 +216,11 @@ decode_v2(Data, IEs) ->
 decode_v2_grouped(Bin) ->
     decode_v2(Bin, []).
 
-encode_v1_element(Id, Bin) when Id < 128 ->
-    {Id, <<Id:8, Bin/binary>>};
-encode_v1_element(Id, Bin) ->
+encode_v1_element(Id, Instance, Bin) when Id < 128 ->
+    {{Id, Instance}, <<Id:8, Bin/binary>>};
+encode_v1_element(Id, Instance, Bin) ->
     Size = byte_size(Bin),
-    {Id, <<Id:8, Size:16, Bin/binary>>}.
+    {{Id, Instance}, <<Id:8, Size:16, Bin/binary>>}.
 
 
 encode_v2_element(Id, Instance, Bin) ->

@@ -2,6 +2,8 @@
 %% -*- erlang -*-
 %%! -smp enable
 
+-mode(compile).
+
 ies() ->
     [{1, "Cause", 1,
       [{"Value", 8, {enum, [{0, "Request IMSI"},
@@ -648,26 +650,38 @@ write_enums(IEs) ->
 
 write_record({_Id, Name, _Length, Fields}) ->
     Indent = "        ",
-    RecordDef = string:join(collect(fun(X) -> gen_record_def(X) end, Fields), [",\n", Indent]),
+    RecordDef = string:join(collect(fun gen_record_def/1, [{"Instance", 0, integer} | Fields], []), [",\n", Indent]),
     io_lib:format("-record(~s, {~n~s~s~n}).~n", [s2a(Name), Indent, RecordDef]).
 
-write_decoder(FunName, {Id, Name, _Length, Fields}) ->
-    FunHead = io_lib:format("~s(~w, ", [FunName, Id]),
+write_decoder(FunName, {Id, Name, _Length, Fields})
+  when is_list(Fields) ->
+    FunHead = io_lib:format("~s(~w, Instance, ", [FunName, Id]),
     MatchIdent = indent(FunHead, 2),
     Match = string:join(collect(fun(X) -> gen_decoder_header_match(X) end, Fields), [",\n", MatchIdent]),
     Body = build_late_assign(Fields),
     RecIdent = indent(Name, 6),
-    RecAssign = string:join(collect(fun(X) -> gen_decoder_record_assign(X) end, Fields), [",\n", RecIdent]),
-    io_lib:format("~s<<~s>>) ->~n~s    #~s{~s}", [FunHead, Match, Body, s2a(Name), RecAssign]).
+    RecAssign = string:join(["instance = Instance" |
+			     collect(fun gen_decoder_record_assign/1, Fields)], [",\n", RecIdent]),
+    io_lib:format("~s<<~s>>) ->~n~s    #~s{~s}", [FunHead, Match, Body, s2a(Name), RecAssign]);
+write_decoder(FunName, {Id, _Name, Helper})
+  when is_atom(Helper) ->
+    io_lib:format("~s(~w, Instance, Data) ->~n    decode_~s(Instance, Data)",
+		  [FunName, Id, Helper]).
 
-write_encoder(FunName, {Id, Name, _Length, Fields}) ->
+write_encoder(FunName, {Id, Name, _Length, Fields})
+  when is_list(Fields) ->
     RecIdent = indent("encode_v1_element(#", 4),
-    RecAssign = string:join(collect(fun(X) -> gen_encoder_record_assign(X) end, Fields), [",\n", RecIdent]),
+    RecAssign = string:join(["instance = Instance" |
+			     collect(fun gen_encoder_record_assign/1, Fields)], [",\n", RecIdent]),
     FunHead = io_lib:format("encode_v1_element(#~s{~n~s~s}) ->~n", [s2a(Name), RecIdent, RecAssign]),
-    DecHead = io_lib:format("    ~s(~w, ", [FunName, Id]),
+    DecHead = io_lib:format("    ~s(~w, Instance, ", [FunName, Id]),
     BinIndent = indent(DecHead, 2),
     BinAssign = string:join(collect(fun(X) -> gen_encoder_bin(X) end, Fields), [",\n", BinIndent]),
-    io_lib:format("~s~s<<~s>>)", [FunHead, DecHead, BinAssign]).
+    io_lib:format("~s~s<<~s>>)", [FunHead, DecHead, BinAssign]);
+write_encoder(FunName, {Id, Name, Helper})
+  when is_atom(Helper) ->
+    io_lib:format("encode_v1_element(#~s{instance = Instance} = IE) ->~n    ~s(~w, Instance, encode_~s(IE))",
+		  [s2a(Name), FunName, Id, Helper]).
 
 main(_) ->
     MsgDescription = string:join([io_lib:format("msg_description(~s) -> <<\"~s\">>", [s2a(X), X]) || {_, X} <- msgs()]
@@ -681,23 +695,26 @@ main(_) ->
     HrlRecs = io_lib:format("%% This file is auto-generated. DO NOT EDIT~n~n~s~n", [Records]),
     Enums = write_enums(ies()),
 
-    CatchAnyDecoder = "decode_v1_element(Tag, Value) ->\n        {Tag, Value}",
+    CatchAnyDecoder = "decode_v1_element(Tag, Instance, Value) ->\n        {Tag, Instance, Value}",
 
     Funs = string:join([write_decoder("decode_v1_element", X) || X <- ies()] ++ [CatchAnyDecoder], ";\n\n"),
 
-    MainDecodeSwitch = ["decode_v1(<<>>, IEs) ->\n    lists:reverse(IEs);\n",
-	[io_lib:format("decode_v1(<<~w, Data:~w/bytes, Next/binary>>, IEs) ->~n"
-		       "    IE = decode_v1_element(~w, Data),~n"
-		       "    decode_v1(Next, [IE|IEs]);~n", [Id, Length, Id]) || {Id, _, Length, _} <- ies(), Id < 128],
-	"decode_v1(<<Id, Length:16/integer, Rest/binary>>, IEs) when Id > 127 ->\n"
+    MainDecodeSwitch = ["decode_v1(<<>>, _PrevId, _PrevInst, IEs) ->\n    lists:reverse(IEs);\n",
+	[io_lib:format("decode_v1(<<~w, Data:~w/bytes, Next/binary>>, PrevInst, PrevId, IEs) ->~n"
+		       "    Instance = v1_instance(~w, PrevId, PrevInst),~n"
+		       "    IE = decode_v1_element(~w, Instance, Data),~n"
+		       "    decode_v1(Next, ~w, Instance, [IE|IEs]);~n", [Id, Length, Id, Id, Id]) || {Id, _, Length, _} <- ies(), Id < 128],
+	"decode_v1(<<Id, Length:16/integer, Rest/binary>>, PrevId, PrevInst, IEs) when Id > 127 ->\n"
 	"    <<Data:Length/binary, Next/binary>> = Rest,\n"
-	"    IE = decode_v1_element(Id, Data),\n"
-	"    decode_v1(Next, [IE|IEs]);\n"
-	"decode_v1(<<Id, Rest/binary>>, IEs) ->\n"
-	"    IE = {Id, Rest},\n"
-	"    decode_v1(<<>>, [IE|IEs]).\n"],
+	"    Instance = v1_instance(Id, PrevId, PrevInst),\n"
+	"    IE = decode_v1_element(Id, Instance, Data),\n"
+	"    decode_v1(Next, Id, Instance, [IE|IEs]);\n"
+	"decode_v1(<<Id, Rest/binary>>, PrevId, PrevInst, IEs) ->\n"
+	"    Instance = v1_instance(Id, PrevId, PrevInst),\n"
+	"    IE = {Id, Instance, Rest},\n"
+	"    decode_v1(<<>>, Id, Instance, [IE|IEs]).\n"],
 
-    CatchAnyEncoder = "encode_v1_element({Tag, Value}) when is_integer(Tag), is_binary(Value) ->\n    encode_v1_element(Tag, Value)",
+    CatchAnyEncoder = "encode_v1_element({Tag, Instance, Value}) when is_integer(Tag), is_integer(Instance), is_binary(Value) ->\n    encode_v1_element(Tag, Instance, Value)",
     EncFuns = string:join([write_encoder("encode_v1_element", X) || X <- ies()]
 			  ++ [CatchAnyEncoder] , ";\n\n"),
 
