@@ -35,3 +35,9 @@
 	  ipv6,
 	  data
 	 }).
+
+-record(v2_serving_network, {
+	  instance = 0,
+	  mcc,
+	  mnc
+	 }).

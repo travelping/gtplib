@@ -477,7 +477,8 @@ decode_v2_element(79, Instance, <<_:5,
                                type = enum_v2_type(M_type),
                                address = M_address};
 
-decode_v2_element(80, Instance, <<_:2,
+decode_v2_element(80, Instance, <<_:1,
+                                  M_pci:1/integer,
                                   M_pl:4/integer,
                                   _:1,
                                   M_pvi:1/integer,
@@ -488,6 +489,7 @@ decode_v2_element(80, Instance, <<_:2,
                                   M_guaranteed_bit_rate_for_downlink:32/integer,
                                   M_data/binary>>) ->
     #v2_bearer_level_quality_of_service{instance = Instance,
+                                        pci = M_pci,
                                         pl = M_pl,
                                         pvi = M_pvi,
                                         label = M_label,
@@ -506,9 +508,8 @@ decode_v2_element(82, Instance, <<M_rat_type:8/integer,
                  rat_type = enum_v2_rat_type(M_rat_type),
                  optional = M_optional};
 
-decode_v2_element(83, Instance, <<M_mccmnc/binary>>) ->
-    #v2_serving_network{instance = Instance,
-                        mccmnc = decode_tbcd(M_mccmnc)};
+decode_v2_element(83, Instance, Data) ->
+    decode_v2_mccmcn(Instance, Data);
 
 decode_v2_element(84, Instance, <<>>) ->
     #v2_eps_bearer_level_traffic_flow_template{instance = Instance};
@@ -899,6 +900,7 @@ encode_v2_element(#v2_pdn_address_allocation{
 
 encode_v2_element(#v2_bearer_level_quality_of_service{
                        instance = Instance,
+                       pci = M_pci,
                        pl = M_pl,
                        pvi = M_pvi,
                        label = M_label,
@@ -907,7 +909,8 @@ encode_v2_element(#v2_bearer_level_quality_of_service{
                        guaranteed_bit_rate_for_uplink = M_guaranteed_bit_rate_for_uplink,
                        guaranteed_bit_rate_for_downlink = M_guaranteed_bit_rate_for_downlink,
                        data = M_data}) ->
-    encode_v2_element(80, Instance, <<0:2,
+    encode_v2_element(80, Instance, <<0:1,
+                                      M_pci:1,
                                       M_pl:4,
                                       0:1,
                                       M_pvi:1,
@@ -929,10 +932,8 @@ encode_v2_element(#v2_rat_type{
     encode_v2_element(82, Instance, <<(enum_v2_rat_type(M_rat_type)):8/integer,
                                       M_optional/binary>>);
 
-encode_v2_element(#v2_serving_network{
-                       instance = Instance,
-                       mccmnc = M_mccmnc}) ->
-    encode_v2_element(83, Instance, <<(encode_tbcd(M_mccmnc))/binary>>);
+encode_v2_element(#v2_serving_network{instance = Instance} = IE) ->
+    encode_v2_element(83, Instance, encode_v2_mccmcn(IE));
 
 encode_v2_element(#v2_eps_bearer_level_traffic_flow_template{
                        instance = Instance}) ->

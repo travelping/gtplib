@@ -73,6 +73,7 @@
 
 -record(v2_bearer_level_quality_of_service, {
         instance = 0,
+        pci = 0,
         pl = 0,
         pvi = 0,
         label = 0,
@@ -93,10 +94,6 @@
         optional = <<>>
 }).
 
--record(v2_serving_network, {
-        instance = 0,
-        mccmnc
-}).
 
 -record(v2_eps_bearer_level_traffic_flow_template, {
         instance = 0

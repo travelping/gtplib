@@ -58,6 +58,23 @@ v1_create_pdp_context_response() ->
 	       "01800006f1210a1c010284001480802110020000108106080808088306000000"
 	       "00850004ac1410a8850004ac1410a9870004000b921f").
 
+v2_create_session_request() ->
+    hexstr2bin("482000f300000000001019000100080032021308000002f44c00060034767654"
+	       "30094b000800538582602940091056000d001862f210119962f210018ecb0053"
+	       "00030062f2105200010006570009008601ab0f46c1fe8fd547001b0007646566"
+	       "61756c74066d6e63303033066d63633233320467707273800001000063000100"
+	       "014f00050001000000007f000100004800080000000010000000104e001d0080"
+	       "80211001000010810600000000830600000000000d00000a000010005d002c00"
+	       "4900010005570009028401ab0f46c1fe8fd5500016006d090000000000000000"
+	       "0000000000000000000000000300010001720002008001").
+
+v2_create_session_response() ->
+    hexstr2bin("4821009301ab0f4600101900020002001000570009018701bc22dbd5a25bc34f"
+	       "000500010a6e13337f000100004e001b0080802110030000108106d5a245aa83"
+	       "06d5a24502000d04d5a245aa5d003a0049000100050200020010005700090285"
+	       "01b822dbd5a25bc3500016006d09000000000000000000000000000000000000"
+	       "00005e00040042bb0e3103000100024a0004000a7e9824").
+
 %%--------------------------------------------------------------------
 %% @spec suite() -> Info
 %% Info = [tuple()]
@@ -86,8 +103,18 @@ test_v1_create_pdp_context_response(_Config) ->
     do_test(v1_create_pdp_context_response()),
     ok.
 
+test_v2_create_session_request(_Config) ->
+    do_test(v2_create_session_request()),
+    ok.
+
+test_v2_create_session_response(_Config) ->
+    do_test(v2_create_session_response()),
+    ok.
+
 all() ->
 	[test_v1_echo_request,
 	 test_v1_echo_response,
 	 test_v1_create_pdp_context_request,
-	 test_v1_create_pdp_context_response].
+	 test_v1_create_pdp_context_response,
+	 test_v2_create_session_request,
+	 test_v2_create_session_response].

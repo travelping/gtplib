@@ -73,7 +73,6 @@ encode(#gtp{version = v1, type = Type, tei = TEI, seq_no = SeqNo,
     Flags = encode_gtp_v1_hdr_flags(SeqNo, NPDU, ExtHdr),
     HdrOpt = encode_gtp_v1_opt_hdr(SeqNo, NPDU, ExtHdr),
     Data0 = lists:keysort(1, [encode_v1_element(IE) || IE <- IEs]),
-    io:format("Data0: ~p~n", [Data0]),
     Data = << <<V/binary>> || {_Id, V} <- Data0 >>,
     <<Flags/binary, (message_type_v1(Type)):8, (size(HdrOpt) + size(Data)):16, TEI:32, HdrOpt/binary, Data/binary>>;
 
@@ -205,6 +204,13 @@ decode_v2_fully_qualified_tunnel_endpoint_identifier(Instance,
     {IE2, Rest2} = maybe_bin(FlagV6, 16, Rest1, #v2_fully_qualified_tunnel_endpoint_identifier.ipv6,  IE1),
     IE2#v2_fully_qualified_tunnel_endpoint_identifier{data = Rest2}.
 
+decode_v2_mccmcn(Instance, <<MCCHi:8, MCC3:4, MNC3:4, MNCHi:8>>) ->
+    #v2_serving_network{
+       instance = Instance,
+       mcc = decode_tbcd(<<MCCHi:8, 15:4, MCC3:4>>),
+       mnc = decode_tbcd(<<MNCHi:8, 15:4, MNC3:4>>)
+      }.
+
 decode_v2(<<>>, IEs) ->
     lists:reverse(IEs);
 decode_v2(<<Type:8, Length:16/integer, _Spare:4, Instance:4, Data:Length/bytes, Next/binary>>, IEs) ->
@@ -229,7 +235,7 @@ encode_v2_element(Id, Instance, Bin) ->
 
 encode_v2(IEs)
   when is_list(IEs) ->
-    Data0 = lists:keysort(1, [encode_v2_element(IE) || IE <- IEs]),
+    Data0 = [encode_v2_element(IE) || IE <- IEs],
     << <<V/binary>> || {_Id, V} <- Data0 >>.
 
 encode_v2_grouped(IEs) ->
@@ -337,6 +343,11 @@ encode_v2_fully_qualified_tunnel_endpoint_identifier(
     IE1 = maybe_bin(IPv4,  IE0),
     IE2 = maybe_bin(IPv6,  IE1),
     maybe_bin(Data, IE2).
+
+encode_v2_mccmcn(#v2_serving_network{mcc = MCC, mnc = MNC}) ->
+    [MCC1, MCC2, MCC3 | _] = [ string_to_tbcd(X) || <<X:8>> <= MCC] ++ [15,15,15],
+    [MNC1, MNC2, MNC3 | _] = [ string_to_tbcd(X) || <<X:8>> <= MNC] ++ [15,15,15],
+    <<MCC2:4, MCC1:4, MCC3:4, MNC3:4, MNC2:4, MNC1:4>>.
 
 -include("gtp_packet_v1_gen.hrl").
 -include("gtp_packet_v2_gen.hrl").
