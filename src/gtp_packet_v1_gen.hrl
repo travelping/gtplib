@@ -581,7 +581,7 @@ decode_v1_element(130, Instance, <<>>) ->
 
 decode_v1_element(131, Instance, <<M_apn/binary>>) ->
     #access_point_name{instance = Instance,
-                       apn = M_apn};
+                       apn = decode_apn(M_apn)};
 
 decode_v1_element(132, Instance, <<M_config/binary>>) ->
     #protocol_configuration_options{instance = Instance,
@@ -1235,7 +1235,7 @@ encode_v1_element(#pdp_context{
 encode_v1_element(#access_point_name{
                        instance = Instance,
                        apn = M_apn}) ->
-    encode_v1_element(131, Instance, <<M_apn/binary>>);
+    encode_v1_element(131, Instance, <<(encode_apn(M_apn)):0/bits>>);
 
 encode_v1_element(#protocol_configuration_options{
                        instance = Instance,

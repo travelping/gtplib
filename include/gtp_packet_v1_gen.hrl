@@ -203,7 +203,7 @@
 
 -record(access_point_name, {
         instance = 0,
-        apn = <<>>
+        apn
 }).
 
 -record(protocol_configuration_options, {

@@ -143,6 +143,9 @@ decode_tbcd(<<15:4, Lo:4, _/binary>>, BCD) ->
 decode_tbcd(<<Hi:4, Lo:4, Next/binary>>, BCD) ->
     decode_tbcd(Next, <<BCD/binary, (tbcd_to_string(Lo)), (tbcd_to_string(Hi))>>).
 
+decode_apn(APN) ->
+    [ Part || <<Len:8, Part:Len/bytes>> <= APN ].
+
 decode_isdn_address_string(<<Extension:1, Nature:3, Plan:4, Number/binary>>) ->
     {isdn_address, Extension, Nature, Plan, decode_tbcd(Number)}.
 
@@ -290,6 +293,9 @@ encode_tbcd(<<D:8>>, BCD) ->
     <<BCD/binary, 2#1111:4, (string_to_tbcd(D)):4>>;
 encode_tbcd(<<H:8, L:8, Next/binary>>, BCD) ->
     encode_tbcd(Next, <<BCD/binary, (string_to_tbcd(L)):4, (string_to_tbcd(H)):4>>).
+
+encode_apn(APN) ->
+    << <<(size(Part)):8, Part/binary>> || Part <- APN >>.
 
 encode_isdn_address_string({isdn_address, Extension, Nature, Plan, Number}) ->
     R = <<Extension:1, Nature:3, Plan:4, (encode_tbcd(Number))/binary>>,

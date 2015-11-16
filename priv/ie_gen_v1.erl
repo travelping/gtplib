@@ -195,7 +195,7 @@ ies() ->
      {130, "PDP Context", '_',
       []},
      {131, "Access Point Name", '_',
-      [{"APN", 0, binary}]},
+      [{"APN", 0, {type, apn}}]},
      {132, "Protocol Configuration Options", '_',
       %% TODO,  The content and the coding of the Protocol Configuration are
       %% defined in octet 3-z of the Protocol Configuration Options in

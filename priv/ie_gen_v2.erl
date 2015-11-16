@@ -89,7 +89,7 @@ ies() ->
       [{"Restart counter", 8, integer}]},
      {51, "v2 STN-SR", []},
      {71, "v2 Access Point Name",
-      [{"APN", 0, binary}]},
+      [{"APN", 0, {type, apn}}]},
      {72, "v2 Aggregate Maximum Bit Rate",
       [{"Uplink", 32, integer},
        {"Downlink", 32, integer}]},

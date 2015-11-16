@@ -25,7 +25,7 @@
 
 -record(v2_access_point_name, {
         instance = 0,
-        apn = <<>>
+        apn
 }).
 
 -record(v2_aggregate_maximum_bit_rate, {

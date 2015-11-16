@@ -435,7 +435,7 @@ decode_v2_element(51, Instance, <<>>) ->
 
 decode_v2_element(71, Instance, <<M_apn/binary>>) ->
     #v2_access_point_name{instance = Instance,
-                          apn = M_apn};
+                          apn = decode_apn(M_apn)};
 
 decode_v2_element(72, Instance, <<M_uplink:32/integer,
                                   M_downlink:32/integer>>) ->
@@ -848,7 +848,7 @@ encode_v2_element(#v2_stn_sr{
 encode_v2_element(#v2_access_point_name{
                        instance = Instance,
                        apn = M_apn}) ->
-    encode_v2_element(71, Instance, <<M_apn/binary>>);
+    encode_v2_element(71, Instance, <<(encode_apn(M_apn))/binary>>);
 
 encode_v2_element(#v2_aggregate_maximum_bit_rate{
                        instance = Instance,
