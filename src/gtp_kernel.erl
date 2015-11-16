@@ -9,7 +9,7 @@
 -behavior(gen_server).
 
 %% API
--export([dev_create/4, create_pdp_context/6, delete_pdp_context/6]).
+-export([dev_create/4, create_pdp_context/6, update_pdp_context/6, delete_pdp_context/6]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -34,6 +34,9 @@ dev_create(Device, FD0, FD1u, Opts) ->
 
 create_pdp_context(Server, Version, SGSN, MS, LocalTEI, RemoteTEI) ->
     gen_server:call(Server, {create_pdp_context, Version, SGSN, MS, LocalTEI, RemoteTEI}).
+
+update_pdp_context(Server, Version, SGSN, MS, LocalTEI, RemoteTEI) ->
+    gen_server:call(Server, {update_pdp_context, Version, SGSN, MS, LocalTEI, RemoteTEI}).
 
 delete_pdp_context(Server, Version, SGSN, MS, LocalTEI, RemoteTEI) ->
     gen_server:call(Server, {delete_pdp_context, Version, SGSN, MS, LocalTEI, RemoteTEI}).
@@ -103,6 +106,29 @@ handle_call({create_pdp_context, Version, SGSN, MS, LocalTID, RemoteTID},
     ok = nl_simple_request(GtpNl, GtpGenlFam, Req),
 
     {reply, ok, State};
+
+handle_call({update_pdp_context, Version, SGSN, MS, LocalTID, RemoteTID},
+	    _From, #state{ns = NsFd, gtp_nl = GtpNl, gtp_genl_family = GtpGenlFam,
+			  gtp_ifidx = GtpIfIdx} = State) ->
+    lager:debug("update_pdp_context: ~w, ~w, ~w, ~w, ~w", [Version, SGSN, MS, LocalTID, RemoteTID]),
+
+    GtpReqAttrs = [{version,      Version},
+		   {net_ns_fd,    NsFd},
+		   {link,         GtpIfIdx},
+		   {sgsn_address, SGSN},
+		   {ms_address,   MS},
+		   {i_tid,        LocalTID},                  %% TODO: GTPv0 TID and FLOW
+		   {o_tid,        RemoteTID}],
+    GtpReq = {new, 0, 0, GtpReqAttrs},
+    Req = #netlink{type  = gtp,
+		   flags = [?NLM_F_REPLACE, ack, request],
+		   seq   = erlang:unique_integer([positive]),
+		   pid   = 0,
+		   msg   = GtpReq},
+    lager:debug("update_pdp_context: ~p", [Req]),
+    Reply = nl_simple_request(GtpNl, GtpGenlFam, Req),
+
+    {reply, Reply, State};
 
 handle_call({delete_pdp_context, Version, SGSN, MS, LocalTID, _RemoteTID},
 	    _From, #state{ns = NsFd, gtp_nl = GtpNl, gtp_genl_family = GtpGenlFam,
