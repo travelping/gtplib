@@ -4,6 +4,14 @@
 
 %% Copyright 2015, Travelping GmbH <info@travelping.com>
 
+-define('3GPP_RAT-TYPE_RESERVED',	0).
+-define('3GPP_RAT-TYPE_UTRAN',		1).
+-define('3GPP_RAT-TYPE_GERAN',		2).
+-define('3GPP_RAT-TYPE_WLAN',		3).
+-define('3GPP_RAT-TYPE_GAN',		4).
+-define('3GPP_RAT-TYPE_HSPA EVOLUTION',	5).
+-define('3GPP_RAT-TYPE_EUTRAN',		6).
+
 -record(gtp, {
 	  version,
 	  type,

@@ -205,13 +205,6 @@ message_type_v1(254) -> end_marker;
 message_type_v1(255) -> g_pdu;
 message_type_v1({Vendor, Type}) when is_integer(Vendor), is_integer(Type) -> {Vendor, Type}.
 
-enum_selection_mode_value(ms_or_network_provided_apn__subscribed_verified) -> 0;
-enum_selection_mode_value(ms_provided_apn__subscription_not_verified) -> 1;
-enum_selection_mode_value(network_provided_apn__subscription_not_verified) -> 2;
-enum_selection_mode_value(0) -> ms_or_network_provided_apn__subscribed_verified;
-enum_selection_mode_value(1) -> ms_provided_apn__subscription_not_verified;
-enum_selection_mode_value(2) -> network_provided_apn__subscription_not_verified.
-
 enum_required(no) -> 0;
 enum_required(yes) -> 1;
 enum_required(0) -> no;
@@ -377,9 +370,9 @@ decode_v1_element(14, Instance, <<M_restart_counter:8/integer>>) ->
               restart_counter = M_restart_counter};
 
 decode_v1_element(15, Instance, <<_:6,
-                                  M_selection_mode_value:2/integer>>) ->
+                                  M_mode:2/integer>>) ->
     #selection_mode{instance = Instance,
-                    selection_mode_value = enum_selection_mode_value(M_selection_mode_value)};
+                    mode = M_mode};
 
 decode_v1_element(16, Instance, <<M_tei:32/integer>>) ->
     #tunnel_endpoint_identifier_data_i{instance = Instance,
@@ -637,8 +630,23 @@ decode_v1_element(146, Instance, <<>>) ->
 decode_v1_element(147, Instance, <<>>) ->
     #sgsn_number{instance = Instance};
 
-decode_v1_element(148, Instance, <<>>) ->
-    #common_flags{instance = Instance};
+decode_v1_element(148, Instance, <<M_dual_address_bearer_flag:1/integer,
+                                   M_upgrade_qos_supported:1/integer,
+                                   M_nrsn:1/integer,
+                                   M_no_qos_negotiation:1/integer,
+                                   M_mbms_counting_information:1/integer,
+                                   M_ran_procedures_ready:1/integer,
+                                   M_mbms_service_type:1/integer,
+                                   M_prohibit_payload_compression:1/integer>>) ->
+    #common_flags{instance = Instance,
+                  dual_address_bearer_flag = M_dual_address_bearer_flag,
+                  upgrade_qos_supported = M_upgrade_qos_supported,
+                  nrsn = M_nrsn,
+                  no_qos_negotiation = M_no_qos_negotiation,
+                  mbms_counting_information = M_mbms_counting_information,
+                  ran_procedures_ready = M_ran_procedures_ready,
+                  mbms_service_type = M_mbms_service_type,
+                  prohibit_payload_compression = M_prohibit_payload_compression};
 
 decode_v1_element(149, Instance, <<>>) ->
     #apn_restriction{instance = Instance};
@@ -646,8 +654,9 @@ decode_v1_element(149, Instance, <<>>) ->
 decode_v1_element(150, Instance, <<>>) ->
     #radio_priority_lcs{instance = Instance};
 
-decode_v1_element(151, Instance, <<>>) ->
-    #rat_type{instance = Instance};
+decode_v1_element(151, Instance, <<M_rat_type:8/integer>>) ->
+    #rat_type{instance = Instance,
+              rat_type = M_rat_type};
 
 decode_v1_element(152, Instance, <<>>) ->
     #user_location_information{instance = Instance};
@@ -1033,9 +1042,9 @@ encode_v1_element(#recovery{
 
 encode_v1_element(#selection_mode{
                        instance = Instance,
-                       selection_mode_value = M_selection_mode_value}) ->
+                       mode = M_mode}) ->
     encode_v1_element(15, Instance, <<0:6,
-                                      (enum_selection_mode_value(M_selection_mode_value)):2/integer>>);
+                                      M_mode:2>>);
 
 encode_v1_element(#tunnel_endpoint_identifier_data_i{
                        instance = Instance,
@@ -1308,8 +1317,23 @@ encode_v1_element(#sgsn_number{
     encode_v1_element(147, Instance, <<>>);
 
 encode_v1_element(#common_flags{
-                       instance = Instance}) ->
-    encode_v1_element(148, Instance, <<>>);
+                       instance = Instance,
+                       dual_address_bearer_flag = M_dual_address_bearer_flag,
+                       upgrade_qos_supported = M_upgrade_qos_supported,
+                       nrsn = M_nrsn,
+                       no_qos_negotiation = M_no_qos_negotiation,
+                       mbms_counting_information = M_mbms_counting_information,
+                       ran_procedures_ready = M_ran_procedures_ready,
+                       mbms_service_type = M_mbms_service_type,
+                       prohibit_payload_compression = M_prohibit_payload_compression}) ->
+    encode_v1_element(148, Instance, <<M_dual_address_bearer_flag:1,
+                                       M_upgrade_qos_supported:1,
+                                       M_nrsn:1,
+                                       M_no_qos_negotiation:1,
+                                       M_mbms_counting_information:1,
+                                       M_ran_procedures_ready:1,
+                                       M_mbms_service_type:1,
+                                       M_prohibit_payload_compression:1>>);
 
 encode_v1_element(#apn_restriction{
                        instance = Instance}) ->
@@ -1320,8 +1344,9 @@ encode_v1_element(#radio_priority_lcs{
     encode_v1_element(150, Instance, <<>>);
 
 encode_v1_element(#rat_type{
-                       instance = Instance}) ->
-    encode_v1_element(151, Instance, <<>>);
+                       instance = Instance,
+                       rat_type = M_rat_type}) ->
+    encode_v1_element(151, Instance, <<M_rat_type:8>>);
 
 encode_v1_element(#user_location_information{
                        instance = Instance}) ->

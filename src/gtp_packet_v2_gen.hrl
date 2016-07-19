@@ -242,23 +242,6 @@ enum_v2_pdn_type(1) -> ipv4;
 enum_v2_pdn_type(2) -> ipv6;
 enum_v2_pdn_type(3) -> ipv4v6.
 
-enum_v2_rat_type(reserved) -> 0;
-enum_v2_rat_type(utran) -> 1;
-enum_v2_rat_type(geran) -> 2;
-enum_v2_rat_type(wlan) -> 3;
-enum_v2_rat_type(gan) -> 4;
-enum_v2_rat_type(hspa_evolution) -> 5;
-enum_v2_rat_type(eutran) -> 6;
-enum_v2_rat_type(virtual) -> 7;
-enum_v2_rat_type(0) -> reserved;
-enum_v2_rat_type(1) -> utran;
-enum_v2_rat_type(2) -> geran;
-enum_v2_rat_type(3) -> wlan;
-enum_v2_rat_type(4) -> gan;
-enum_v2_rat_type(5) -> hspa_evolution;
-enum_v2_rat_type(6) -> eutran;
-enum_v2_rat_type(7) -> virtual.
-
 enum_v2_type(ipv4) -> 1;
 enum_v2_type(ipv6) -> 2;
 enum_v2_type(ipv4v6) -> 3;
@@ -505,7 +488,7 @@ decode_v2_element(81, Instance, <<>>) ->
 decode_v2_element(82, Instance, <<M_rat_type:8/integer,
                                   M_optional/binary>>) ->
     #v2_rat_type{instance = Instance,
-                 rat_type = enum_v2_rat_type(M_rat_type),
+                 rat_type = M_rat_type,
                  optional = M_optional};
 
 decode_v2_element(83, Instance, Data) ->
@@ -929,7 +912,7 @@ encode_v2_element(#v2_rat_type{
                        instance = Instance,
                        rat_type = M_rat_type,
                        optional = M_optional}) ->
-    encode_v2_element(82, Instance, <<(enum_v2_rat_type(M_rat_type)):8/integer,
+    encode_v2_element(82, Instance, <<M_rat_type:8,
                                       M_optional/binary>>);
 
 encode_v2_element(#v2_serving_network{instance = Instance} = IE) ->

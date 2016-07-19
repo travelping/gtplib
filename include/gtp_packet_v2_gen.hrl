@@ -90,7 +90,7 @@
 
 -record(v2_rat_type, {
         instance = 0,
-        rat_type = [114,101,115,101,114,118,101,100],
+        rat_type = 0,
         optional = <<>>
 }).
 

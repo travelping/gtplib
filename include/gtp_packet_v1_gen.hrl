@@ -59,7 +59,7 @@
 
 -record(selection_mode, {
         instance = 0,
-        selection_mode_value = [77,83,32,111,114,32,110,101,116,119,111,114,107,32,112,114,111,118,105,100,101,100,32,65,80,78,44,32,115,117,98,115,99,114,105,98,101,100,32,118,101,114,105,102,105,101,100]
+        mode = 0
 }).
 
 -record(tunnel_endpoint_identifier_data_i, {
@@ -276,7 +276,15 @@
 }).
 
 -record(common_flags, {
-        instance = 0
+        instance = 0,
+        dual_address_bearer_flag = 0,
+        upgrade_qos_supported = 0,
+        nrsn = 0,
+        no_qos_negotiation = 0,
+        mbms_counting_information = 0,
+        ran_procedures_ready = 0,
+        mbms_service_type = 0,
+        prohibit_payload_compression = 0
 }).
 
 -record(apn_restriction, {
@@ -288,7 +296,8 @@
 }).
 
 -record(rat_type, {
-        instance = 0
+        instance = 0,
+        rat_type = 0
 }).
 
 -record(user_location_information, {
