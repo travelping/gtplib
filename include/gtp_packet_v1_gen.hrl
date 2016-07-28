@@ -294,9 +294,6 @@
         rat_type = 0
 }).
 
--record(user_location_information, {
-        instance = 0
-}).
 
 -record(ms_time_zone, {
         instance = 0

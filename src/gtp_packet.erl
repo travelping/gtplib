@@ -151,6 +151,21 @@ decode_v1_rai(Instance, <<MCCHi:8, MNC3:4, MCC3:4, MNCHi:8, LAC:16, RAC:8>>) ->
        lac = LAC,
        rac = RAC}.
 
+decode_v1_uli(Instance, <<Type:8, MCCHi:8, MNC3:4, MCC3:4, MNCHi:8, LAC:16, Info:16>>) ->
+    ULI = #user_location_information{
+	     instance = Instance,
+	     type = Type,
+	     mcc = decode_tbcd(<<MCCHi:8, 15:4, MCC3:4>>),
+	     mnc = decode_tbcd(<<MNCHi:8, 15:4, MNC3:4>>),
+	     lac = LAC
+	    },
+    case Type of
+	0 -> ULI#user_location_information{ci = Info};
+	1 -> ULI#user_location_information{sac = Info};
+	2 -> ULI#user_location_information{rac = Info bsr 8};
+	_ -> ULI
+    end.
+
 decode_apn(APN) ->
     [ Part || <<Len:8, Part:Len/bytes>> <= APN ].
 
@@ -310,6 +325,25 @@ encode_v1_rai(#routeing_area_identity{
     [MCC1, MCC2, MCC3 | _] = [ string_to_tbcd(X) || <<X:8>> <= MCC] ++ [15,15,15],
     [MNC1, MNC2, MNC3 | _] = [ string_to_tbcd(X) || <<X:8>> <= MNC] ++ [15,15,15],
     <<MCC2:4, MCC1:4, MNC3:4, MCC3:4, MNC2:4, MNC1:4, LAC:16, RAC:8>>.
+
+
+encode_v1_uli(#user_location_information{
+		 type = Type,
+		 mcc = MCC,
+		 mnc = MNC,
+		 lac = LAC,
+		 ci = CI,
+		 sac = SAC,
+		 rac = RAC}) ->
+    [MCC1, MCC2, MCC3 | _] = [ string_to_tbcd(X) || <<X:8>> <= MCC] ++ [15,15,15],
+    [MNC1, MNC2, MNC3 | _] = [ string_to_tbcd(X) || <<X:8>> <= MNC] ++ [15,15,15],
+    Info = case Type of
+	       0 -> CI;
+	       1 -> SAC;
+	       2 -> (RAC bsl 8) bor 255;
+	       _ -> 16#ffff
+	   end,
+    <<Type:8, MCC2:4, MCC1:4, MNC3:4, MCC3:4, MNC2:4, MNC1:4, LAC:16, Info:16>>.
 
 encode_apn(APN) ->
     << <<(size(Part)):8, Part/binary>> || Part <- APN >>.

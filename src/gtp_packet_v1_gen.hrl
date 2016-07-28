@@ -658,8 +658,8 @@ decode_v1_element(151, Instance, <<M_rat_type:8/integer>>) ->
     #rat_type{instance = Instance,
               rat_type = M_rat_type};
 
-decode_v1_element(152, Instance, <<>>) ->
-    #user_location_information{instance = Instance};
+decode_v1_element(152, Instance, Data) ->
+    decode_v1_uli(Instance, Data);
 
 decode_v1_element(153, Instance, <<>>) ->
     #ms_time_zone{instance = Instance};
@@ -1342,9 +1342,8 @@ encode_v1_element(#rat_type{
                        rat_type = M_rat_type}) ->
     encode_v1_element(151, Instance, <<M_rat_type:8>>);
 
-encode_v1_element(#user_location_information{
-                       instance = Instance}) ->
-    encode_v1_element(152, Instance, <<>>);
+encode_v1_element(#user_location_information{instance = Instance} = IE) ->
+    encode_v1_element(152, Instance, encode_v1_uli(IE));
 
 encode_v1_element(#ms_time_zone{
                        instance = Instance}) ->

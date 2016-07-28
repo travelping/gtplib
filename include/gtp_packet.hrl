@@ -32,6 +32,17 @@
 	  rac = 0
 	 }).
 
+-record(user_location_information, {
+	  instance = 0,
+	  type,
+	  mcc,
+	  mnc,
+	  lac = 0,
+	  ci = 0,
+	  sac = 0,
+	  rac = 0
+	 }).
+
 -record(v2_user_location_information, {
 	  instance = 0,
 	  cgi,
