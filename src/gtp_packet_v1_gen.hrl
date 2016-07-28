@@ -661,8 +661,12 @@ decode_v1_element(151, Instance, <<M_rat_type:8/integer>>) ->
 decode_v1_element(152, Instance, Data) ->
     decode_v1_uli(Instance, Data);
 
-decode_v1_element(153, Instance, <<>>) ->
-    #ms_time_zone{instance = Instance};
+decode_v1_element(153, Instance, <<M_timezone:8/integer,
+                                   _:6,
+                                   M_dst:2/integer>>) ->
+    #ms_time_zone{instance = Instance,
+                  timezone = M_timezone,
+                  dst = M_dst};
 
 decode_v1_element(154, Instance, <<>>) ->
     #imei{instance = Instance};
@@ -1346,8 +1350,12 @@ encode_v1_element(#user_location_information{instance = Instance} = IE) ->
     encode_v1_element(152, Instance, encode_v1_uli(IE));
 
 encode_v1_element(#ms_time_zone{
-                       instance = Instance}) ->
-    encode_v1_element(153, Instance, <<>>);
+                       instance = Instance,
+                       timezone = M_timezone,
+                       dst = M_dst}) ->
+    encode_v1_element(153, Instance, <<M_timezone:8,
+                                       0:6,
+                                       M_dst:2>>);
 
 encode_v1_element(#imei{
                        instance = Instance}) ->
