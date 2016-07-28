@@ -93,6 +93,7 @@ suite() ->
 
 do_test(Msg) ->
     P = gtp_packet:decode(Msg),
+    ct:pal("Decoded Msg: ~p", [P]),
     ?equal(Msg, gtp_packet:encode(P)).
 
 test_v1_echo_request(_Config) ->
