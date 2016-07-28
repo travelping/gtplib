@@ -10,13 +10,6 @@
         imsi
 }).
 
--record(routeing_area_identity, {
-        instance = 0,
-        mcc,
-        mcn,
-        lac = 0,
-        rac = 0
-}).
 
 -record(temporary_logical_link_identity, {
         instance = 0,

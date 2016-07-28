@@ -143,6 +143,14 @@ decode_tbcd(<<15:4, Lo:4, _/binary>>, BCD) ->
 decode_tbcd(<<Hi:4, Lo:4, Next/binary>>, BCD) ->
     decode_tbcd(Next, <<BCD/binary, (tbcd_to_string(Lo)), (tbcd_to_string(Hi))>>).
 
+decode_v1_rai(Instance, <<MCCHi:8, MNC3:4, MCC3:4, MNCHi:8, LAC:16, RAC:8>>) ->
+    #routeing_area_identity{
+       instance = Instance,
+       mcc = decode_tbcd(<<MCCHi:8, 15:4, MCC3:4>>),
+       mnc = decode_tbcd(<<MNCHi:8, 15:4, MNC3:4>>),
+       lac = LAC,
+       rac = RAC}.
+
 decode_apn(APN) ->
     [ Part || <<Len:8, Part:Len/bytes>> <= APN ].
 
@@ -293,6 +301,15 @@ encode_tbcd(<<D:8>>, BCD) ->
     <<BCD/binary, 2#1111:4, (string_to_tbcd(D)):4>>;
 encode_tbcd(<<H:8, L:8, Next/binary>>, BCD) ->
     encode_tbcd(Next, <<BCD/binary, (string_to_tbcd(L)):4, (string_to_tbcd(H)):4>>).
+
+encode_v1_rai(#routeing_area_identity{
+		 mcc = MCC,
+		 mnc = MNC,
+		 lac = LAC,
+		 rac = RAC}) ->
+    [MCC1, MCC2, MCC3 | _] = [ string_to_tbcd(X) || <<X:8>> <= MCC] ++ [15,15,15],
+    [MNC1, MNC2, MNC3 | _] = [ string_to_tbcd(X) || <<X:8>> <= MNC] ++ [15,15,15],
+    <<MCC2:4, MCC1:4, MNC3:4, MCC3:4, MNC2:4, MNC1:4, LAC:16, RAC:8>>.
 
 encode_apn(APN) ->
     << <<(size(Part)):8, Part/binary>> || Part <- APN >>.

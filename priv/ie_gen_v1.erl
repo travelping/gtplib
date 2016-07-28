@@ -62,11 +62,7 @@ ies() ->
       ]},
      {2, "International Mobile Subscriber Identity", 8,
       [{"IMSI", 64, {type, tbcd}}]},
-     {3, "Routeing Area Identity", 6,
-      [{"MCC", 24, {type, tbcd}},
-       {"MCN", 24, {type, tbcd}},
-       {"LAC", 16, integer},
-       {"RAC", 8, integer}]},
+     {3, "Routeing Area Identity", 6, v1_rai},
      {4, "Temporary Logical Link Identity", 4,
       [{"TLLI", 4, bytes}]},
      {5, "Packet TMSI", 4,
@@ -650,18 +646,24 @@ collect_enum({Name, _, {enum, Enum}}, Acc) ->
 collect_enum(_, Acc) ->
     Acc.
 
-collect_enums({_, _, _, Fields}, AccIn) ->
-    lists:foldr(fun(X, Acc) -> collect_enum(X, Acc) end, AccIn, Fields).
+collect_enums({_, _, _, Fields}, AccIn)
+  when is_list(Fields) ->
+    lists:foldr(fun(X, Acc) -> collect_enum(X, Acc) end, AccIn, Fields);
+collect_enums(_, AccIn) ->
+    AccIn.
 
 write_enums(IEs) ->
     E = lists:foldr(fun(X, Acc) -> collect_enums(X, Acc) end, [], IEs),
     {_, Str} = lists:unzip(E),
     string:join(Str, "\n").
 
-write_record({_Id, Name, _Length, Fields}) ->
+write_record({_Id, Name, _Length, Fields})
+  when is_list(Fields) ->
     Indent = "        ",
     RecordDef = string:join(collect(fun gen_record_def/1, [{"Instance", 0, integer} | Fields], []), [",\n", Indent]),
-    io_lib:format("-record(~s, {~n~s~s~n}).~n", [s2a(Name), Indent, RecordDef]).
+    io_lib:format("-record(~s, {~n~s~s~n}).~n", [s2a(Name), Indent, RecordDef]);
+write_record(_) ->
+    [].
 
 write_decoder(FunName, {Id, Name, _Length, Fields})
   when is_list(Fields) ->
@@ -675,6 +677,10 @@ write_decoder(FunName, {Id, Name, _Length, Fields})
     io_lib:format("~s<<~s>>) ->~n~s    #~s{~s}", [FunHead, Match, Body, s2a(Name), RecAssign]);
 write_decoder(FunName, {Id, _Name, Helper})
   when is_atom(Helper) ->
+    io_lib:format("~s(~w, Instance, Data) ->~n    decode_~s(Instance, Data)",
+		  [FunName, Id, Helper]);
+write_decoder(FunName, {Id, _Name, Length, Helper})
+  when is_integer(Length), is_atom(Helper) ->
     io_lib:format("~s(~w, Instance, Data) ->~n    decode_~s(Instance, Data)",
 		  [FunName, Id, Helper]).
 
@@ -690,6 +696,10 @@ write_encoder(FunName, {Id, Name, _Length, Fields})
     io_lib:format("~s~s<<~s>>)", [FunHead, DecHead, BinAssign]);
 write_encoder(FunName, {Id, Name, Helper})
   when is_atom(Helper) ->
+    io_lib:format("encode_v1_element(#~s{instance = Instance} = IE) ->~n    ~s(~w, Instance, encode_~s(IE))",
+		  [s2a(Name), FunName, Id, Helper]);
+write_encoder(FunName, {Id, Name, Length, Helper})
+  when is_integer(Length), is_atom(Helper) ->
     io_lib:format("encode_v1_element(#~s{instance = Instance} = IE) ->~n    ~s(~w, Instance, encode_~s(IE))",
 		  [s2a(Name), FunName, Id, Helper]).
 

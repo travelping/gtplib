@@ -330,15 +330,8 @@ decode_v1_element(2, Instance, <<M_imsi:64/bits>>) ->
     #international_mobile_subscriber_identity{instance = Instance,
                                               imsi = decode_tbcd(M_imsi)};
 
-decode_v1_element(3, Instance, <<M_mcc:24/bits,
-                                 M_mcn:24/bits,
-                                 M_lac:16/integer,
-                                 M_rac:8/integer>>) ->
-    #routeing_area_identity{instance = Instance,
-                            mcc = decode_tbcd(M_mcc),
-                            mcn = decode_tbcd(M_mcn),
-                            lac = M_lac,
-                            rac = M_rac};
+decode_v1_element(3, Instance, Data) ->
+    decode_v1_rai(Instance, Data);
 
 decode_v1_element(4, Instance, <<M_tlli:4/bytes>>) ->
     #temporary_logical_link_identity{instance = Instance,
@@ -994,16 +987,8 @@ encode_v1_element(#international_mobile_subscriber_identity{
                        imsi = M_imsi}) ->
     encode_v1_element(2, Instance, <<(encode_tbcd(M_imsi)):64/bits>>);
 
-encode_v1_element(#routeing_area_identity{
-                       instance = Instance,
-                       mcc = M_mcc,
-                       mcn = M_mcn,
-                       lac = M_lac,
-                       rac = M_rac}) ->
-    encode_v1_element(3, Instance, <<(encode_tbcd(M_mcc)):24/bits,
-                                     (encode_tbcd(M_mcn)):24/bits,
-                                     M_lac:16,
-                                     M_rac:8>>);
+encode_v1_element(#routeing_area_identity{instance = Instance} = IE) ->
+    encode_v1_element(3, Instance, encode_v1_rai(IE));
 
 encode_v1_element(#temporary_logical_link_identity{
                        instance = Instance,

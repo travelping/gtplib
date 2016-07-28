@@ -24,6 +24,14 @@
 -include("gtp_packet_v1_gen.hrl").
 -include("gtp_packet_v2_gen.hrl").
 
+-record(routeing_area_identity, {
+	  instance = 0,
+	  mcc,
+	  mnc,
+	  lac = 0,
+	  rac = 0
+	 }).
+
 -record(v2_user_location_information, {
 	  instance = 0,
 	  cgi,
