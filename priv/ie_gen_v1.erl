@@ -72,7 +72,7 @@ ies() ->
      {5, "Packet TMSI", 4,
       [{"P-TMSI", 4, bytes}]},
      {8, "Reordering Required", 1,
-      [{'_', 7},
+      [{'1', 7},
        {"required", 1, {enum, [no, yes]}}]},
      {9, "Authentication Triplet", 28,
       [{"RAND", 16, bytes},
@@ -83,11 +83,12 @@ ies() ->
      {12, "P-TMSI Signature", 3,
       []},
      {13, "MS Validated", 1,
-      []},
+      [{'1', 7},
+       {"validated", 1, {enum, [no, yes]}}]},
      {14, "Recovery", 1,
       [{"Restart counter", 8, integer}]},
      {15, "Selection Mode", 1,
-      [{'_', 6},
+      [{'1', 6},
        {"Mode", 2, integer}]},
      {16, "Tunnel Endpoint Identifier Data I", 4,
       [{"TEI", 32, integer}]},
@@ -98,7 +99,7 @@ ies() ->
        {"NSAPI", 4, integer},
        {"TEI", 32, integer}]},
      {19, "Teardown Ind", 1,
-      [{'_', 7},
+      [{'1', 7},
        {"Value", 1, integer}]},
      {20, "NSAPI", 1,
       [{'_', 4},
@@ -125,12 +126,12 @@ ies() ->
      {127, "Charging ID", 4,
       [{id, 4, bytes}]},
      {128, "End User Address", '_',
-      [{16#0f, 4},
+      [{'1', 4},
        {"PDP Type Organization", 4, integer},
        {"PDP Type Number", 8, integer},
        {"PDP Address", 0, binary}]},
      {129, "MM Context GSM", '_',
-      [{'_', 4},
+      [{'1', 4},
        {"CKSN", 4, integer},
        {1, 2},
        {"No of Vectors", 3, integer},
@@ -144,11 +145,11 @@ ies() ->
        {"Container", 1, {array, "Container Length"}}
       ]},
      {129, "MM Context UMTS", '_',
-      [{'_', 4},
+      [{'1', 4},
        {"KSI", 4, integer},
        {2, 2},
        {"No of Vectors", 3, integer},
-       {'_', 3},
+       {'1', 3},
        {"CK", 16, bytes},
        {"IK", 16, bytes},
        {"Quintuplet Length", 16, integer},
@@ -160,7 +161,7 @@ ies() ->
        {"Container", 1, {array, "Container Length"}}
       ]},
      {129, "MM Context GSM and UMTS", '_',
-      [{'_', 4},
+      [{'1', 4},
        {"CKSN", 4, integer},
        {3, 2},
        {"No of Vectors", 3, integer},
@@ -175,7 +176,7 @@ ies() ->
        {"Container", 1, {array, "Container Length"}}
       ]},
      {129, "MM Context UMTS and Used Cipher", '_',
-      [{'_', 4},
+      [{'1', 4},
        {"KSI", 4, integer},
        {0, 2},
        {"No of Vectors", 3, integer},
@@ -474,6 +475,8 @@ gen_record_def(Tuple) ->
 
 gen_decoder_header_match({'_', Size}) ->
     [io_lib:format("_:~w", [Size])];
+gen_decoder_header_match({'1', Size}) ->
+    [io_lib:format("~w:~w", [(1 bsl Size) - 1, Size])];
 gen_decoder_header_match({Value, Size}) when is_integer(Value); is_atom(Value) ->
     [io_lib:format("~w:~w", [Value, Size])];
 gen_decoder_header_match({Name, {flags, Flags}}) ->
@@ -523,6 +526,8 @@ gen_encoder_record_assign(Tuple) ->
 
 gen_encoder_bin({'_', Size}) ->
     [io_lib:format("0:~w", [Size])];
+gen_encoder_bin({'1', Size}) ->
+    [io_lib:format("~w:~w", [(1 bsl Size) - 1, Size])];
 gen_encoder_bin({Value, Size}) when is_integer(Value); is_atom(Value) ->
     [io_lib:format("~w:~w", [Value, Size])];
 gen_encoder_bin({Name, {flags, Flags}}) ->

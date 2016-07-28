@@ -49,7 +49,8 @@
 }).
 
 -record(ms_validated, {
-        instance = 0
+        instance = 0,
+        validated = no
 }).
 
 -record(recovery, {
