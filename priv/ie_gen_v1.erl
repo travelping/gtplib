@@ -534,6 +534,8 @@ gen_encoder_bin({Name, Fun}) ->
     [io_lib:format("(encode_~s(M_~s))/binary", [Fun, s2a(Name)])];
 gen_encoder_bin({Name, Len, {array, _Multi}}) ->
     [io_lib:format("(length(M_~s)):~w/integer, (<< <<X/binary>> || X <- M_~s>>)/binary", [s2a(Name), Len, s2a(Name)])];
+gen_encoder_bin({Name, 0, {type, TypeName}}) ->
+    [io_lib:format("(encode_~s(M_~s))/binary", [TypeName, s2a(Name)])];
 gen_encoder_bin({Name, Size, {type, TypeName}}) ->
     [io_lib:format("(encode_~s(M_~s)):~w/bits", [TypeName, s2a(Name), Size])];
 gen_encoder_bin({Name, Len, length_binary}) ->
