@@ -207,7 +207,7 @@ decode_v2_fully_qualified_tunnel_endpoint_identifier(Instance,
     {IE2, Rest2} = maybe_bin(FlagV6, 16, Rest1, #v2_fully_qualified_tunnel_endpoint_identifier.ipv6,  IE1),
     IE2#v2_fully_qualified_tunnel_endpoint_identifier{data = Rest2}.
 
-decode_v2_mccmcn(Instance, <<MCCHi:8, MCC3:4, MNC3:4, MNCHi:8>>) ->
+decode_v2_mccmnc(Instance, <<MCCHi:8, MNC3:4, MCC3:4, MNCHi:8>>) ->
     #v2_serving_network{
        instance = Instance,
        mcc = decode_tbcd(<<MCCHi:8, 15:4, MCC3:4>>),
@@ -350,10 +350,10 @@ encode_v2_fully_qualified_tunnel_endpoint_identifier(
     IE2 = maybe_bin(IPv6,  IE1),
     maybe_bin(Data, IE2).
 
-encode_v2_mccmcn(#v2_serving_network{mcc = MCC, mnc = MNC}) ->
+encode_v2_mccmnc(#v2_serving_network{mcc = MCC, mnc = MNC}) ->
     [MCC1, MCC2, MCC3 | _] = [ string_to_tbcd(X) || <<X:8>> <= MCC] ++ [15,15,15],
     [MNC1, MNC2, MNC3 | _] = [ string_to_tbcd(X) || <<X:8>> <= MNC] ++ [15,15,15],
-    <<MCC2:4, MCC1:4, MCC3:4, MNC3:4, MNC2:4, MNC1:4>>.
+    <<MCC2:4, MCC1:4, MNC3:4, MCC3:4, MNC2:4, MNC1:4>>.
 
 -include("gtp_packet_v1_gen.hrl").
 -include("gtp_packet_v2_gen.hrl").

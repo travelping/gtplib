@@ -492,7 +492,7 @@ decode_v2_element(82, Instance, <<M_rat_type:8/integer,
                  optional = M_optional};
 
 decode_v2_element(83, Instance, Data) ->
-    decode_v2_mccmcn(Instance, Data);
+    decode_v2_mccmnc(Instance, Data);
 
 decode_v2_element(84, Instance, <<>>) ->
     #v2_eps_bearer_level_traffic_flow_template{instance = Instance};
@@ -916,7 +916,7 @@ encode_v2_element(#v2_rat_type{
                                       M_optional/binary>>);
 
 encode_v2_element(#v2_serving_network{instance = Instance} = IE) ->
-    encode_v2_element(83, Instance, encode_v2_mccmcn(IE));
+    encode_v2_element(83, Instance, encode_v2_mccmnc(IE));
 
 encode_v2_element(#v2_eps_bearer_level_traffic_flow_template{
                        instance = Instance}) ->

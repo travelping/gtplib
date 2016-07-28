@@ -129,7 +129,7 @@ ies() ->
      {82, "v2 RAT Type",
       [{"RAT Type", 8, integer},
        {"Optional", 0, binary}]},
-     {83, "v2 Serving Network", v2_mccmcn},
+     {83, "v2 Serving Network", v2_mccmnc},
      {84, "v2 EPS Bearer Level Traffic Flow Template", []},
      {85, "v2 Traffic Aggregation Description", []},
      {86, "v2 User Location Information", v2_user_location_information},
