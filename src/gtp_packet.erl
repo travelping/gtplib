@@ -349,8 +349,6 @@ encode_apn(APN) ->
     << <<(size(Part)):8, Part/binary>> || Part <- APN >>.
 
 encode_isdn_address_string({isdn_address, Extension, Nature, Plan, Number}) ->
-    R = <<Extension:1, Nature:3, Plan:4, (encode_tbcd(Number))/binary>>,
-    io:format("ISDN: ~p~n", [R]),
     <<Extension:1, Nature:3, Plan:4, (encode_tbcd(Number))/binary>>.
 
 encode_protocol_ppp_opt(Frame) ->
