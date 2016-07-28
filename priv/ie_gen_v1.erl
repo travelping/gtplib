@@ -249,7 +249,7 @@ ies() ->
        {'_', 6},
        {"DST", 2, integer}]},
      {154, "IMEI", '_',
-      []},
+      [{"IMEI", 64, {type, tbcd}}]},
      {155, "CAMEL Charging Information Container", '_',
       []},
      {156, "MBMS UE Context", '_',

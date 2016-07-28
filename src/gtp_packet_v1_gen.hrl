@@ -668,8 +668,9 @@ decode_v1_element(153, Instance, <<M_timezone:8/integer,
                   timezone = M_timezone,
                   dst = M_dst};
 
-decode_v1_element(154, Instance, <<>>) ->
-    #imei{instance = Instance};
+decode_v1_element(154, Instance, <<M_imei:64/bits>>) ->
+    #imei{instance = Instance,
+          imei = decode_tbcd(M_imei)};
 
 decode_v1_element(155, Instance, <<>>) ->
     #camel_charging_information_container{instance = Instance};
@@ -1358,8 +1359,9 @@ encode_v1_element(#ms_time_zone{
                                        M_dst:2>>);
 
 encode_v1_element(#imei{
-                       instance = Instance}) ->
-    encode_v1_element(154, Instance, <<>>);
+                       instance = Instance,
+                       imei = M_imei}) ->
+    encode_v1_element(154, Instance, <<(encode_tbcd(M_imei)):64/bits>>);
 
 encode_v1_element(#camel_charging_information_container{
                        instance = Instance}) ->

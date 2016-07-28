@@ -302,7 +302,8 @@
 }).
 
 -record(imei, {
-        instance = 0
+        instance = 0,
+        imei
 }).
 
 -record(camel_charging_information_container, {
