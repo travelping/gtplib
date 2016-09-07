@@ -20,8 +20,7 @@
 decode(<<1:3, 1:1, _:1, 0:1, 0:1, 0:1, Type:8, Length:16, TEI:32/integer, Data0/binary>>) ->
     <<Data:Length/bytes, _Next/binary>> = Data0,
     IEs = decode_v1(Data),
-    #gtp{version = v1, type = message_type_v1(Type), tei = TEI,
-	 ext_hdr = 0, ie = IEs};
+    #gtp{version = v1, type = message_type_v1(Type), tei = TEI, ie = IEs};
 decode(<<1:3, 1:1, _:1, E:1, S:1, PN:1, Type:8, Length:16, TEI:32/integer,
 	 SeqNo0:16, NPDU0:8, ExtHdrType:8, Data0/binary>>) ->
     DataLen = Length - 4,
@@ -291,8 +290,6 @@ encode_gtp_v1_opt_hdr(SeqNo, NPDU, ExtHdr)
 encode_gtp_v1_opt_hdr(_SeqNo, _NPDU, _ExtHdr) ->
     <<>>.
 
-encode_ext_hdr(undefined, Bin) ->
-    Bin;
 encode_ext_hdr([], Bin) ->
     Bin;
 encode_ext_hdr([{Type, V}|T], Bin) ->

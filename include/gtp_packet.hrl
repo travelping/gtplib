@@ -13,13 +13,14 @@
 -define('3GPP_RAT-TYPE_EUTRAN',		6).
 
 -record(gtp, {
-	  version,
+	  version	:: 'undefined' | 'v1' | 'v2',
 	  type,
-	  tei,
-	  seq_no,
-	  n_pdu,
-	  ext_hdr,
-	  ie}).
+	  tei		:: 0..16#ffffffff,
+	  seq_no	:: 0..16#ffff,
+	  n_pdu		:: 0..16#ff,
+	  ext_hdr = []	:: [term()],
+	  ie		:: [term()]
+	 }).
 
 -include("gtp_packet_v1_gen.hrl").
 -include("gtp_packet_v2_gen.hrl").
