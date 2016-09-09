@@ -220,46 +220,31 @@ get_family(Family) ->
 		   seq   = Seq,
 		   pid   = 0,
 		   msg = Get},
-    Repl = do_request(S, ?NETLINK_GENERIC, Req, fun nl/2, []),
+    ok = nl_simple_request(S, ?NETLINK_GENERIC, Req),
     gen_socket:close(S),
     lager:debug("Request: ~p", [Req]),
-    lager:debug("Request: ~p", [Repl]),
 
-    case Repl of
-	[#netlink{type = ctrl, seq = Seq, msg = {newfamily, _, _, Attrs}}|_] ->
+    receive
+	#netlink{type = ctrl, seq = Seq, msg = {newfamily, _, _, Attrs}} ->
 	    {_, FamilyId} = lists:keyfind(family_id, 1, Attrs),
-	    {ok, FamilyId};
-	Other ->
-	    lager:error("unknown genl family: ~p", [Other]),
+	    {ok, FamilyId}
+    after
+	5000 ->
+	    lager:error("timeout genl family"),
 	    {error, unknown}
     end.
 
-wait_for_interface(Socket, Device, []) ->
-    wait_for_interface(Socket, Device);
-wait_for_interface(Socket, Device,
-		   [#rtnetlink{type = newlink,
-			       msg = {_, _, Index, _, _, Attrs}}|T]) ->
-    case lists:keyfind(ifname, 1, Attrs) of
-	{_, Device} ->
-	    {ok, Index};
-	_Other ->
-	    wait_for_interface(Socket, Device, T)
-    end;
-wait_for_interface(Socket, Device, [_|T]) ->
-    wait_for_interface(Socket, Device, T).
-
 wait_for_interface(Socket, Device) ->
-    ok = gen_socket:input_event(Socket, true),
     receive
-	{Socket, input_ready} ->
-	    case gen_socket:recvfrom(Socket, 128 * 1024) of
-		{ok, _Sender, Data} ->
-		    wait_for_interface(Socket, Device, netlink:nl_rt_dec(Data));
-		Other ->
-		    lager:error("~p~n", [Other]),
-		    Other
+	#rtnetlink{type = newlink, msg = {_, _, Index, _, _, Attrs}} ->
+	    case lists:keyfind(ifname, 1, Attrs) of
+		{_, Device} ->
+		    {ok, Index};
+		_Other ->
+		    wait_for_interface(Socket, Device)
 	    end
-    after 5000 ->
+    after
+	5000 ->
 	    {error, timeout}
     end.
 
@@ -274,29 +259,43 @@ add_route(Socket, IfIdx, {{_,_,_,_} = IP, Len}) ->
 		     msg   = Msg},
     nl_simple_request(Socket, ?NETLINK_ROUTE, Req).
 
-nl_simple_request(Socket, Protocol, #rtnetlink{seq = Seq} = Req)  ->
-    case do_request(Socket, Protocol, Req, fun nl/2, []) of
-	[#rtnetlink{type = error, seq = Seq, msg = {Code, _}}|_] when Code == 0 ->
-	    ok;
-	[#rtnetlink{type = error, seq = Seq, msg = {Code, _}}|_] ->
-	    {error, Code};
-	[Other|_] ->
-	    Other
+nl_simple_response(_Seq, []) ->
+    continue;
+nl_simple_response(Seq, [R = #rtnetlink{type = error, seq = Seq, msg = {Code, _}} | Next ]) ->
+    nl_simple_response(-1, Next),
+    lager:info("R: ~p", [R]),
+    if Code == 0 -> ok;
+       true      -> {error, Code}
     end;
-nl_simple_request(Socket, Protocol, #netlink{seq = Seq} = Req)  ->
-    case do_request(Socket, Protocol, Req, fun nl/2, []) of
-	[#netlink{type = error, seq = Seq, msg = {Code, _}}|_] when Code == 0 ->
-	    ok;
-	[#netlink{type = error, seq = Seq, msg = {Code, _}}|_] ->
-	    {error, Code};
-	[Other|_] ->
+nl_simple_response(Seq, [R = #netlink{type = error, seq = Seq, msg = {Code, _}} | Next]) ->
+    nl_simple_response(-1, Next),
+    lager:info("R: ~p", [R]),
+    if Code == 0 -> ok;
+       true      -> {error, Code}
+    end;
+nl_simple_response(Seq, [Other | Next]) ->
+    self() ! Other,
+    nl_simple_response(Seq, Next).
+
+wait_for_response(Socket, Protocol, Seq, Cb) ->
+    Response = process_answer(Socket, Protocol, Cb, []),
+    case nl_simple_response(Seq, Response) of
+	continue ->
+	    wait_for_response(Socket, Protocol, Seq, Cb);
+	Other ->
 	    Other
     end.
 
-do_request(Socket, Protocol, Req, Cb, CbState) ->
+nl_simple_request(Socket, Protocol, #rtnetlink{seq = Seq} = Req)  ->
+    do_request(Socket, Protocol, Req),
+    wait_for_response(Socket, Protocol, Seq, fun nl/2);
+nl_simple_request(Socket, Protocol, #netlink{seq = Seq} = Req)  ->
+    do_request(Socket, Protocol, Req),
+    wait_for_response(Socket, Protocol, Seq, fun nl/2).
+
+do_request(Socket, Protocol, Req) ->
     BinReq = netlink:nl_enc(Protocol, Req),
-    gen_socket:send(Socket, BinReq),
-    process_answer(Socket, Protocol, Cb, CbState).
+    gen_socket:send(Socket, BinReq).
 
 process_answer(Socket, Protocol, Cb, CbState0) ->
     case gen_socket:recv(Socket, 16 * 1024 * 1024) of
