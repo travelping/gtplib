@@ -12,6 +12,28 @@
 -define('3GPP_RAT-TYPE_HSPA EVOLUTION',	5).
 -define('3GPP_RAT-TYPE_EUTRAN',		6).
 
+-define('PCO-P-CSCF-IPv6-Address',			16#01).
+-define('PCO-IM-CN-Subsystem-Signaling-Flag',		16#02).
+-define('PCO-DNS-Server-IPv6-Address',			16#03).
+-define('PCO-Policy-Control-Rejection-Code',		16#04).
+-define('PCO-Bearer-Control-Mode',			16#05).
+-define('PCO-DSMIPv6-Home-Agent-Address',		16#07).
+-define('PCO-DSMIPv6-Home-Network-Prefix',		16#08).
+-define('PCO-DSMIPv6-IPv4-Home-Agent-Address',		16#09).
+-define('PCO-IP-Address-Allocation-Via-NAS-Signalling',	16#0A).
+-define('PCO-IPv4-Address-Allocation-Via-DHCPv4',	16#0B).
+-define('PCO-P-CSCF-IPv4-Address',			16#0C).
+-define('PCO-DNS-Server-IPv4-Address',			16#0D).
+-define('PCO-MSISDN',					16#0E).
+-define('PCO-IFOM-Support',				16#0F).
+-define('PCO-IPv4-Link-MTU',				16#10).
+-define('PCO-Local-Address-In-TFT-Indicator',		16#11).
+-define('PCO-P-CSCF-Re-Selection-Support',		16#12).
+-define('PCO-NBIFOM-Indicator',				16#13).
+-define('PCO-NBIFOM-Mode',				16#14).
+-define('PCO-Non-IP-Link-MTU',				16#15).
+-define('PCO-APN-Rate-Control',				16#16).
+
 -record(gtp, {
 	  version	:: 'undefined' | 'v1' | 'v2',
 	  type,
