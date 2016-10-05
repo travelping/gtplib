@@ -1,7 +1,7 @@
 %% -*- erlang -*-
 {application, gtplib, [
-    {vsn,"0.1.0"},
+    {vsn, git},
     {description, "Erlang library for GTP-c v1 and v2"},
-    {applications, [kernel, stdlib, lager]},
+    {applications, [kernel, stdlib, lager, gen_socket, gen_netlink]},
     {registered, []}
 ]}.
