@@ -168,6 +168,8 @@ decode_v1_uli(Instance, <<Type:8, MCCHi:8, MNC3:4, MCC3:4, MNCHi:8, LAC:16, Info
 decode_apn(APN) ->
     [ Part || <<Len:8, Part:Len/bytes>> <= APN ].
 
+decode_isdn_address_string(<<>>) ->
+    {isdn_address, 1, 1, 1, <<"000000000000000">>};
 decode_isdn_address_string(<<Extension:1, Nature:3, Plan:4, Number/binary>>) ->
     {isdn_address, Extension, Nature, Plan, decode_tbcd(Number)}.
 
