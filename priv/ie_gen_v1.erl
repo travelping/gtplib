@@ -138,7 +138,8 @@ ies() ->
        {"MS Network Capability Length", 8, integer},
        {"MS Network Capability", 1, {array, "MS Network Capability Length"}},
        {"Container Length", 16, integer},
-       {"Container", 1, {array, "Container Length"}}
+       {"Container", 1, {array, "Container Length"}},
+       {'_', 0}
       ]},
      {129, "MM Context UMTS", '_',
       [{'1', 4},
@@ -154,7 +155,8 @@ ies() ->
        {"MS Network Capability Length", 8, integer},
        {"MS Network Capability", 1, {array, "MS Network Capability Length"}},
        {"Container Length", 16, integer},
-       {"Container", 1, {array, "Container Length"}}
+       {"Container", 1, {array, "Container Length"}},
+       {'_', 0}
       ]},
      {129, "MM Context GSM and UMTS", '_',
       [{'1', 4},
@@ -169,7 +171,8 @@ ies() ->
        {"MS Network Capability Length", 8, integer},
        {"MS Network Capability", 1, {array, "MS Network Capability Length"}},
        {"Container Length", 16, integer},
-       {"Container", 1, {array, "Container Length"}}
+       {"Container", 1, {array, "Container Length"}},
+       {'_', 0}
       ]},
      {129, "MM Context UMTS and Used Cipher", '_',
       [{'1', 4},
@@ -185,7 +188,8 @@ ies() ->
        {"MS Network Capability Length", 8, integer},
        {"MS Network Capability", 1, {array, "MS Network Capability Length"}},
        {"Container Length", 16, integer},
-       {"Container", 1, {array, "Container Length"}}
+       {"Container", 1, {array, "Container Length"}},
+       {'_', 0}
       ]},
      {130, "PDP Context", '_',
       []},
@@ -236,20 +240,24 @@ ies() ->
        {"MBMS Counting Information", 1, integer},
        {"RAN Procedures Ready", 1, integer},
        {"MBMS Service Type", 1, integer},
-       {"Prohibit Payload Compression", 1, integer}]},
+       {"Prohibit Payload Compression", 1, integer},
+       {'_', 0}]},
      {149, "APN Restriction", '_',
       []},
      {150, "Radio Priority LCS", '_',
       []},
      {151, "RAT Type", '_',
-      [{"RAT Type", 8, integer}]},
+      [{"RAT Type", 8, integer},
+       {'_', 0}]},
      {152, "User Location Information", v1_uli},
      {153, "MS Time Zone", '_',
       [{"TimeZone", 8, integer},
        {'_', 6},
-       {"DST", 2, integer}]},
+       {"DST", 2, integer},
+       {'_', 0}]},
      {154, "IMEI", '_',
-      [{"IMEI", 64, {type, tbcd}}]},
+      [{"IMEI", 64, {type, tbcd}},
+       {'_', 0}]},
      {155, "CAMEL Charging Information Container", '_',
       []},
      {156, "MBMS UE Context", '_',
@@ -470,6 +478,8 @@ gen_record_def(Tuple) ->
     Name = element(1, Tuple),
     [s2a(Name)].
 
+gen_decoder_header_match({'_', 0}) ->
+    ["_/binary"];
 gen_decoder_header_match({'_', Size}) ->
     [io_lib:format("_:~w", [Size])];
 gen_decoder_header_match({'1', Size}) ->
@@ -521,6 +531,8 @@ gen_encoder_record_assign(Tuple) ->
     Name = element(1, Tuple),
     [io_lib:format("~s = M_~s", [s2a(Name), s2a(Name)])].
 
+gen_encoder_bin({'_', 0}) ->
+    [];
 gen_encoder_bin({'_', Size}) ->
     [io_lib:format("0:~w", [Size])];
 gen_encoder_bin({'1', Size}) ->

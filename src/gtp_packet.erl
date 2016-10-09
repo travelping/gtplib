@@ -150,7 +150,7 @@ decode_v1_rai(Instance, <<MCCHi:8, MNC3:4, MCC3:4, MNCHi:8, LAC:16, RAC:8>>) ->
        lac = LAC,
        rac = RAC}.
 
-decode_v1_uli(Instance, <<Type:8, MCCHi:8, MNC3:4, MCC3:4, MNCHi:8, LAC:16, Info:16>>) ->
+decode_v1_uli(Instance, <<Type:8, MCCHi:8, MNC3:4, MCC3:4, MNCHi:8, LAC:16, Info:16, _/binary>>) ->
     ULI = #user_location_information{
 	     instance = Instance,
 	     type = Type,
@@ -199,6 +199,8 @@ v1_instance(_CurrId, _PrevId, _PrevInst) ->
 
 decode_v2_indication_flags(<<>>, _, Acc) ->
     Acc;
+decode_v2_indication_flags(_, [], Acc) ->
+    Acc;
 decode_v2_indication_flags(<<0:1, Next/bitstring>>, [_ | Flags], Acc) ->
     decode_v2_indication_flags(Next, Flags, Acc);
 decode_v2_indication_flags(<<1:1, Next/bitstring>>, [F | Flags], Acc) ->
@@ -217,8 +219,8 @@ decode_v2_user_location_information(Instance,
     {IE3, Rest3} = maybe_bin(FlagRAI,  7, Rest2, #v2_user_location_information.rai,  IE2),
     {IE4, Rest4} = maybe_bin(FlagTAI,  5, Rest3, #v2_user_location_information.tai,  IE3),
     {IE5, Rest5} = maybe_bin(FlagECGI, 7, Rest4, #v2_user_location_information.ecgi, IE4),
-    {IE6, Rest6} = maybe_bin(FlagLAI,  5, Rest5, #v2_user_location_information.lai,  IE5),
-    IE6#v2_user_location_information{data = Rest6}.
+    {IE6, _} = maybe_bin(FlagLAI,  5, Rest5, #v2_user_location_information.lai,  IE5),
+    IE6.
 
 decode_v2_fully_qualified_tunnel_endpoint_identifier(Instance,
 						     <<FlagV4:1, FlagV6:1, InterfaceType:6,
@@ -228,10 +230,10 @@ decode_v2_fully_qualified_tunnel_endpoint_identifier(Instance,
 	     interface_type = InterfaceType,
 	     key = Key},
     {IE1, Rest1} = maybe_bin(FlagV4,  4, Rest0, #v2_fully_qualified_tunnel_endpoint_identifier.ipv4,  IE0),
-    {IE2, Rest2} = maybe_bin(FlagV6, 16, Rest1, #v2_fully_qualified_tunnel_endpoint_identifier.ipv6,  IE1),
-    IE2#v2_fully_qualified_tunnel_endpoint_identifier{data = Rest2}.
+    {IE2, _} = maybe_bin(FlagV6, 16, Rest1, #v2_fully_qualified_tunnel_endpoint_identifier.ipv6,  IE1),
+    IE2.
 
-decode_v2_mccmnc(Instance, <<MCCHi:8, MNC3:4, MCC3:4, MNCHi:8>>) ->
+decode_v2_mccmnc(Instance, <<MCCHi:8, MNC3:4, MCC3:4, MNCHi:8, _/binary>>) ->
     #v2_serving_network{
        instance = Instance,
        mcc = decode_tbcd(<<MCCHi:8, 15:4, MCC3:4>>),
@@ -372,7 +374,7 @@ encode_v2_indication_flags(Flags) ->
 
 encode_v2_user_location_information(
   #v2_user_location_information{cgi = CGI, sai = SAI, rai = RAI,
-				tai = TAI, ecgi = ECGI, lai = LAI, data = Data}) ->
+				tai = TAI, ecgi = ECGI, lai = LAI}) ->
 
     IE0 = <<0:2,
 	    (is_bin(LAI)):1, (is_bin(ECGI)):1,
@@ -383,20 +385,17 @@ encode_v2_user_location_information(
     IE3 = maybe_bin(RAI,  IE2),
     IE4 = maybe_bin(TAI,  IE3),
     IE5 = maybe_bin(ECGI, IE4),
-    IE6 = maybe_bin(LAI,  IE5),
-    maybe_bin(Data, IE6).
+    maybe_bin(LAI,  IE5).
 
 encode_v2_fully_qualified_tunnel_endpoint_identifier(
   #v2_fully_qualified_tunnel_endpoint_identifier{
      interface_type = InterfaceType,
      key = Key,
      ipv4 = IPv4,
-     ipv6 = IPv6,
-     data = Data}) ->
+     ipv6 = IPv6}) ->
     IE0 = <<(is_bin(IPv4)):1, (is_bin(IPv6)):1, InterfaceType:6, Key:32>>,
     IE1 = maybe_bin(IPv4,  IE0),
-    IE2 = maybe_bin(IPv6,  IE1),
-    maybe_bin(Data, IE2).
+    maybe_bin(IPv6,  IE1).
 
 encode_v2_mccmnc(#v2_serving_network{mcc = MCC, mnc = MNC}) ->
     [MCC1, MCC2, MCC3 | _] = [ string_to_tbcd(X) || <<X:8>> <= MCC] ++ [15,15,15],

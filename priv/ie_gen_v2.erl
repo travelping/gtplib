@@ -84,19 +84,21 @@ ies() ->
        {"PCE", 1, integer},
        {"BCE", 1, integer},
        {"CS", 1, integer},
-       {"Data", 0, binary}]},
+       {'_', 0}]},
      {3, "v2 Recovery",
-      [{"Restart counter", 8, integer}]},
+      [{"Restart counter", 8, integer},
+       {'_', 0}]},
      {51, "v2 STN-SR", []},
      {71, "v2 Access Point Name",
       [{"APN", 0, {type, apn}}]},
      {72, "v2 Aggregate Maximum Bit Rate",
       [{"Uplink", 32, integer},
-       {"Downlink", 32, integer}]},
+       {"Downlink", 32, integer},
+       {'_', 0}]},
      {73, "v2 EPS Bearer ID",
       [{'_', 4},
        {"EPS Bearer ID", 4, integer},
-       {"Data", 0, binary}]},
+       {'_', 0}]},
      {74, "v2 IP Address",
       [{"IP", 0, binary}]},
      {75, "v2 Mobile Equipment Identity",
@@ -124,11 +126,11 @@ ies() ->
        {"Maximum bit rate for downlink", 32, integer},
        {"Guaranteed bit rate for uplink", 32, integer},
        {"Guaranteed bit rate for downlink", 32, integer},
-       {"Data", 0, binary}]},
+       {'_', 0}]},
      {81, "v2 Flow Quality of Service", []},
      {82, "v2 RAT Type",
       [{"RAT Type", 8, integer},
-       {"Optional", 0, binary}]},
+       {'_', 0}]},
      {83, "v2 Serving Network", v2_mccmnc},
      {84, "v2 EPS Bearer Level Traffic Flow Template", []},
      {85, "v2 Traffic Aggregation Description", []},
@@ -150,7 +152,7 @@ ies() ->
        {"PDN Type", 4, {enum, [{1, "IPv4"},
 			       {2, "IPv6"},
 			       {3, "IPv4v6"}]}},
-       {"Data", 0, binary}]},
+       {'_', 0}]},
      {100, "v2 Procedure Transaction ID", []},
      {103, "v2 MM Context 1", []},
      {104, "v2 MM Context 2", []},
@@ -177,11 +179,11 @@ ies() ->
      {126, "v2 UDP Source Port Number", []},
      {127, "v2 APN Restriction",
       [{"Restriction Type Value", 8, integer},
-       {"Data", 0, binary}]},
+       {'_', 0}]},
      {128, "v2 Selection Mode",
       [{'_', 6},
        {"Mode", 2, integer},
-       {"Data", 0, binary}]},
+       {'_', 0}]},
      {129, "v2 Source Identification", []},
      {131, "v2 Change Reporting Action", []},
      {132, "v2 Fully Qualified PDN Connection Set Identifier", []},
@@ -712,6 +714,8 @@ gen_record_def(Tuple) ->
     Name = element(1, Tuple),
     [s2a(Name)].
 
+gen_decoder_header_match({'_', 0}) ->
+    ["_/binary"];
 gen_decoder_header_match({'_', Size}) ->
     [io_lib:format("_:~w", [Size])];
 gen_decoder_header_match({Value, Size}) when is_integer(Value); is_atom(Value) ->
@@ -761,6 +765,8 @@ gen_encoder_record_assign(Tuple) ->
     Name = element(1, Tuple),
     [io_lib:format("~s = M_~s", [s2a(Name), s2a(Name)])].
 
+gen_encoder_bin({'_', 0}) ->
+    [];
 gen_encoder_bin({'_', Size}) ->
     [io_lib:format("0:~w", [Size])];
 gen_encoder_bin({Value, Size}) when is_integer(Value); is_atom(Value) ->

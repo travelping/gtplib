@@ -401,15 +401,15 @@ decode_v2_element(2, Instance, <<M_v2_cause:8/integer,
                                  M_pce:1/integer,
                                  M_bce:1/integer,
                                  M_cs:1/integer,
-                                 M_data/binary>>) ->
+                                 _/binary>>) ->
     #v2_cause{instance = Instance,
               v2_cause = enum_v2_v2_cause(M_v2_cause),
               pce = M_pce,
               bce = M_bce,
-              cs = M_cs,
-              data = M_data};
+              cs = M_cs};
 
-decode_v2_element(3, Instance, <<M_restart_counter:8/integer>>) ->
+decode_v2_element(3, Instance, <<M_restart_counter:8/integer,
+                                 _/binary>>) ->
     #v2_recovery{instance = Instance,
                  restart_counter = M_restart_counter};
 
@@ -421,17 +421,17 @@ decode_v2_element(71, Instance, <<M_apn/binary>>) ->
                           apn = decode_apn(M_apn)};
 
 decode_v2_element(72, Instance, <<M_uplink:32/integer,
-                                  M_downlink:32/integer>>) ->
+                                  M_downlink:32/integer,
+                                  _/binary>>) ->
     #v2_aggregate_maximum_bit_rate{instance = Instance,
                                    uplink = M_uplink,
                                    downlink = M_downlink};
 
 decode_v2_element(73, Instance, <<_:4,
                                   M_eps_bearer_id:4/integer,
-                                  M_data/binary>>) ->
+                                  _/binary>>) ->
     #v2_eps_bearer_id{instance = Instance,
-                      eps_bearer_id = M_eps_bearer_id,
-                      data = M_data};
+                      eps_bearer_id = M_eps_bearer_id};
 
 decode_v2_element(74, Instance, <<M_ip/binary>>) ->
     #v2_ip_address{instance = Instance,
@@ -470,7 +470,7 @@ decode_v2_element(80, Instance, <<_:1,
                                   M_maximum_bit_rate_for_downlink:32/integer,
                                   M_guaranteed_bit_rate_for_uplink:32/integer,
                                   M_guaranteed_bit_rate_for_downlink:32/integer,
-                                  M_data/binary>>) ->
+                                  _/binary>>) ->
     #v2_bearer_level_quality_of_service{instance = Instance,
                                         pci = M_pci,
                                         pl = M_pl,
@@ -479,17 +479,15 @@ decode_v2_element(80, Instance, <<_:1,
                                         maximum_bit_rate_for_uplink = M_maximum_bit_rate_for_uplink,
                                         maximum_bit_rate_for_downlink = M_maximum_bit_rate_for_downlink,
                                         guaranteed_bit_rate_for_uplink = M_guaranteed_bit_rate_for_uplink,
-                                        guaranteed_bit_rate_for_downlink = M_guaranteed_bit_rate_for_downlink,
-                                        data = M_data};
+                                        guaranteed_bit_rate_for_downlink = M_guaranteed_bit_rate_for_downlink};
 
 decode_v2_element(81, Instance, <<>>) ->
     #v2_flow_quality_of_service{instance = Instance};
 
 decode_v2_element(82, Instance, <<M_rat_type:8/integer,
-                                  M_optional/binary>>) ->
+                                  _/binary>>) ->
     #v2_rat_type{instance = Instance,
-                 rat_type = M_rat_type,
-                 optional = M_optional};
+                 rat_type = M_rat_type};
 
 decode_v2_element(83, Instance, Data) ->
     decode_v2_mccmnc(Instance, Data);
@@ -539,10 +537,9 @@ decode_v2_element(97, Instance, <<>>) ->
 
 decode_v2_element(99, Instance, <<_:4,
                                   M_pdn_type:4/integer,
-                                  M_data/binary>>) ->
+                                  _/binary>>) ->
     #v2_pdn_type{instance = Instance,
-                 pdn_type = enum_v2_pdn_type(M_pdn_type),
-                 data = M_data};
+                 pdn_type = enum_v2_pdn_type(M_pdn_type)};
 
 decode_v2_element(100, Instance, <<>>) ->
     #v2_procedure_transaction_id{instance = Instance};
@@ -617,17 +614,15 @@ decode_v2_element(126, Instance, <<>>) ->
     #v2_udp_source_port_number{instance = Instance};
 
 decode_v2_element(127, Instance, <<M_restriction_type_value:8/integer,
-                                   M_data/binary>>) ->
+                                   _/binary>>) ->
     #v2_apn_restriction{instance = Instance,
-                        restriction_type_value = M_restriction_type_value,
-                        data = M_data};
+                        restriction_type_value = M_restriction_type_value};
 
 decode_v2_element(128, Instance, <<_:6,
                                    M_mode:2/integer,
-                                   M_data/binary>>) ->
+                                   _/binary>>) ->
     #v2_selection_mode{instance = Instance,
-                       mode = M_mode,
-                       data = M_data};
+                       mode = M_mode};
 
 decode_v2_element(129, Instance, <<>>) ->
     #v2_source_identification{instance = Instance};
@@ -810,14 +805,12 @@ encode_v2_element(#v2_cause{
                        v2_cause = M_v2_cause,
                        pce = M_pce,
                        bce = M_bce,
-                       cs = M_cs,
-                       data = M_data}) ->
+                       cs = M_cs}) ->
     encode_v2_element(2, Instance, <<(enum_v2_v2_cause(M_v2_cause)):8/integer,
                                      0:5,
                                      M_pce:1,
                                      M_bce:1,
-                                     M_cs:1,
-                                     M_data/binary>>);
+                                     M_cs:1>>);
 
 encode_v2_element(#v2_recovery{
                        instance = Instance,
@@ -842,11 +835,9 @@ encode_v2_element(#v2_aggregate_maximum_bit_rate{
 
 encode_v2_element(#v2_eps_bearer_id{
                        instance = Instance,
-                       eps_bearer_id = M_eps_bearer_id,
-                       data = M_data}) ->
+                       eps_bearer_id = M_eps_bearer_id}) ->
     encode_v2_element(73, Instance, <<0:4,
-                                      M_eps_bearer_id:4,
-                                      M_data/binary>>);
+                                      M_eps_bearer_id:4>>);
 
 encode_v2_element(#v2_ip_address{
                        instance = Instance,
@@ -890,8 +881,7 @@ encode_v2_element(#v2_bearer_level_quality_of_service{
                        maximum_bit_rate_for_uplink = M_maximum_bit_rate_for_uplink,
                        maximum_bit_rate_for_downlink = M_maximum_bit_rate_for_downlink,
                        guaranteed_bit_rate_for_uplink = M_guaranteed_bit_rate_for_uplink,
-                       guaranteed_bit_rate_for_downlink = M_guaranteed_bit_rate_for_downlink,
-                       data = M_data}) ->
+                       guaranteed_bit_rate_for_downlink = M_guaranteed_bit_rate_for_downlink}) ->
     encode_v2_element(80, Instance, <<0:1,
                                       M_pci:1,
                                       M_pl:4,
@@ -901,8 +891,7 @@ encode_v2_element(#v2_bearer_level_quality_of_service{
                                       M_maximum_bit_rate_for_uplink:32,
                                       M_maximum_bit_rate_for_downlink:32,
                                       M_guaranteed_bit_rate_for_uplink:32,
-                                      M_guaranteed_bit_rate_for_downlink:32,
-                                      M_data/binary>>);
+                                      M_guaranteed_bit_rate_for_downlink:32>>);
 
 encode_v2_element(#v2_flow_quality_of_service{
                        instance = Instance}) ->
@@ -910,10 +899,8 @@ encode_v2_element(#v2_flow_quality_of_service{
 
 encode_v2_element(#v2_rat_type{
                        instance = Instance,
-                       rat_type = M_rat_type,
-                       optional = M_optional}) ->
-    encode_v2_element(82, Instance, <<M_rat_type:8,
-                                      M_optional/binary>>);
+                       rat_type = M_rat_type}) ->
+    encode_v2_element(82, Instance, <<M_rat_type:8>>);
 
 encode_v2_element(#v2_serving_network{instance = Instance} = IE) ->
     encode_v2_element(83, Instance, encode_v2_mccmnc(IE));
@@ -975,11 +962,9 @@ encode_v2_element(#v2_bearer_flags{
 
 encode_v2_element(#v2_pdn_type{
                        instance = Instance,
-                       pdn_type = M_pdn_type,
-                       data = M_data}) ->
+                       pdn_type = M_pdn_type}) ->
     encode_v2_element(99, Instance, <<0:4,
-                                      (enum_v2_pdn_type(M_pdn_type)):4/integer,
-                                      M_data/binary>>);
+                                      (enum_v2_pdn_type(M_pdn_type)):4/integer>>);
 
 encode_v2_element(#v2_procedure_transaction_id{
                        instance = Instance}) ->
@@ -1079,18 +1064,14 @@ encode_v2_element(#v2_udp_source_port_number{
 
 encode_v2_element(#v2_apn_restriction{
                        instance = Instance,
-                       restriction_type_value = M_restriction_type_value,
-                       data = M_data}) ->
-    encode_v2_element(127, Instance, <<M_restriction_type_value:8,
-                                       M_data/binary>>);
+                       restriction_type_value = M_restriction_type_value}) ->
+    encode_v2_element(127, Instance, <<M_restriction_type_value:8>>);
 
 encode_v2_element(#v2_selection_mode{
                        instance = Instance,
-                       mode = M_mode,
-                       data = M_data}) ->
+                       mode = M_mode}) ->
     encode_v2_element(128, Instance, <<0:6,
-                                       M_mode:2,
-                                       M_data/binary>>);
+                                       M_mode:2>>);
 
 encode_v2_element(#v2_source_identification{
                        instance = Instance}) ->

@@ -73,8 +73,7 @@
 	  rai,
 	  tai,
 	  ecgi,
-	  lai,
-	  data
+	  lai
 	}).
 
 -record(v2_fully_qualified_tunnel_endpoint_identifier, {
@@ -82,8 +81,7 @@
 	  interface_type,
 	  key,
 	  ipv4,
-	  ipv6,
-	  data
+	  ipv6
 	 }).
 
 -record(v2_serving_network, {

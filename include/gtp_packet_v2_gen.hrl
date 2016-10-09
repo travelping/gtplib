@@ -10,8 +10,7 @@
         v2_cause = [82,101,115,101,114,118,101,100],
         pce = 0,
         bce = 0,
-        cs = 0,
-        data = <<>>
+        cs = 0
 }).
 
 -record(v2_recovery, {
@@ -36,8 +35,7 @@
 
 -record(v2_eps_bearer_id, {
         instance = 0,
-        eps_bearer_id = 0,
-        data = <<>>
+        eps_bearer_id = 0
 }).
 
 -record(v2_ip_address, {
@@ -80,8 +78,7 @@
         maximum_bit_rate_for_uplink = 0,
         maximum_bit_rate_for_downlink = 0,
         guaranteed_bit_rate_for_uplink = 0,
-        guaranteed_bit_rate_for_downlink = 0,
-        data = <<>>
+        guaranteed_bit_rate_for_downlink = 0
 }).
 
 -record(v2_flow_quality_of_service, {
@@ -90,8 +87,7 @@
 
 -record(v2_rat_type, {
         instance = 0,
-        rat_type = 0,
-        optional = <<>>
+        rat_type = 0
 }).
 
 
@@ -148,8 +144,7 @@
 
 -record(v2_pdn_type, {
         instance = 0,
-        pdn_type = [73,80,118,52],
-        data = <<>>
+        pdn_type = [73,80,118,52]
 }).
 
 -record(v2_procedure_transaction_id, {
@@ -250,14 +245,12 @@
 
 -record(v2_apn_restriction, {
         instance = 0,
-        restriction_type_value = 0,
-        data = <<>>
+        restriction_type_value = 0
 }).
 
 -record(v2_selection_mode, {
         instance = 0,
-        mode = 0,
-        data = <<>>
+        mode = 0
 }).
 
 -record(v2_source_identification, {

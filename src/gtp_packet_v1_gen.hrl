@@ -457,7 +457,8 @@ decode_v1_element(129, Instance, <<15:4,
       M_container_length:16/integer,
       M_container_Rest/binary>> = M_ms_network_capability_Rest,
     M_container_size = M_container_length * 1,
-    <<M_container:M_container_size/bytes>> = M_container_Rest,
+    <<M_container:M_container_size/bytes,
+      _/binary>> = M_container_Rest,
     #mm_context_gsm{instance = Instance,
                     cksn = M_cksn,
                     no_of_vectors = M_no_of_vectors,
@@ -489,7 +490,8 @@ decode_v1_element(129, Instance, <<15:4,
       M_container_length:16/integer,
       M_container_Rest/binary>> = M_ms_network_capability_Rest,
     M_container_size = M_container_length * 1,
-    <<M_container:M_container_size/bytes>> = M_container_Rest,
+    <<M_container:M_container_size/bytes,
+      _/binary>> = M_container_Rest,
     #mm_context_umts{instance = Instance,
                      ksi = M_ksi,
                      no_of_vectors = M_no_of_vectors,
@@ -521,7 +523,8 @@ decode_v1_element(129, Instance, <<15:4,
       M_container_length:16/integer,
       M_container_Rest/binary>> = M_ms_network_capability_Rest,
     M_container_size = M_container_length * 1,
-    <<M_container:M_container_size/bytes>> = M_container_Rest,
+    <<M_container:M_container_size/bytes,
+      _/binary>> = M_container_Rest,
     #mm_context_gsm_and_umts{instance = Instance,
                              cksn = M_cksn,
                              no_of_vectors = M_no_of_vectors,
@@ -554,7 +557,8 @@ decode_v1_element(129, Instance, <<15:4,
       M_container_length:16/integer,
       M_container_Rest/binary>> = M_ms_network_capability_Rest,
     M_container_size = M_container_length * 1,
-    <<M_container:M_container_size/bytes>> = M_container_Rest,
+    <<M_container:M_container_size/bytes,
+      _/binary>> = M_container_Rest,
     #mm_context_umts_and_used_cipher{instance = Instance,
                                      ksi = M_ksi,
                                      no_of_vectors = M_no_of_vectors,
@@ -637,7 +641,8 @@ decode_v1_element(148, Instance, <<M_dual_address_bearer_flag:1/integer,
                                    M_mbms_counting_information:1/integer,
                                    M_ran_procedures_ready:1/integer,
                                    M_mbms_service_type:1/integer,
-                                   M_prohibit_payload_compression:1/integer>>) ->
+                                   M_prohibit_payload_compression:1/integer,
+                                   _/binary>>) ->
     #common_flags{instance = Instance,
                   dual_address_bearer_flag = M_dual_address_bearer_flag,
                   upgrade_qos_supported = M_upgrade_qos_supported,
@@ -654,7 +659,8 @@ decode_v1_element(149, Instance, <<>>) ->
 decode_v1_element(150, Instance, <<>>) ->
     #radio_priority_lcs{instance = Instance};
 
-decode_v1_element(151, Instance, <<M_rat_type:8/integer>>) ->
+decode_v1_element(151, Instance, <<M_rat_type:8/integer,
+                                   _/binary>>) ->
     #rat_type{instance = Instance,
               rat_type = M_rat_type};
 
@@ -663,12 +669,14 @@ decode_v1_element(152, Instance, Data) ->
 
 decode_v1_element(153, Instance, <<M_timezone:8/integer,
                                    _:6,
-                                   M_dst:2/integer>>) ->
+                                   M_dst:2/integer,
+                                   _/binary>>) ->
     #ms_time_zone{instance = Instance,
                   timezone = M_timezone,
                   dst = M_dst};
 
-decode_v1_element(154, Instance, <<M_imei:64/bits>>) ->
+decode_v1_element(154, Instance, <<M_imei:64/bits,
+                                   _/binary>>) ->
     #imei{instance = Instance,
           imei = decode_tbcd(M_imei)};
 
