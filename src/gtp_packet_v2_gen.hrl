@@ -238,17 +238,21 @@ message_type_v2({Vendor, Type}) when is_integer(Vendor), is_integer(Type) -> {Ve
 enum_v2_pdn_type(ipv4) -> 1;
 enum_v2_pdn_type(ipv6) -> 2;
 enum_v2_pdn_type(ipv4v6) -> 3;
+enum_v2_pdn_type(non_ip) -> 4;
 enum_v2_pdn_type(1) -> ipv4;
 enum_v2_pdn_type(2) -> ipv6;
 enum_v2_pdn_type(3) -> ipv4v6;
+enum_v2_pdn_type(4) -> non_ip;
 enum_v2_pdn_type(X) when is_integer(X) -> X.
 
 enum_v2_type(ipv4) -> 1;
 enum_v2_type(ipv6) -> 2;
 enum_v2_type(ipv4v6) -> 3;
+enum_v2_type(non_ip) -> 4;
 enum_v2_type(1) -> ipv4;
 enum_v2_type(2) -> ipv6;
 enum_v2_type(3) -> ipv4v6;
+enum_v2_type(4) -> non_ip;
 enum_v2_type(X) when is_integer(X) -> X.
 
 enum_v2_v2_cause(reserved) -> 1;
