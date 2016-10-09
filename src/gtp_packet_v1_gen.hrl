@@ -208,12 +208,14 @@ message_type_v1({Vendor, Type}) when is_integer(Vendor), is_integer(Type) -> {Ve
 enum_validated(no) -> 0;
 enum_validated(yes) -> 1;
 enum_validated(0) -> no;
-enum_validated(1) -> yes.
+enum_validated(1) -> yes;
+enum_validated(X) when is_integer(X) -> X.
 
 enum_required(no) -> 0;
 enum_required(yes) -> 1;
 enum_required(0) -> no;
-enum_required(1) -> yes.
+enum_required(1) -> yes;
+enum_required(X) when is_integer(X) -> X.
 
 enum_value(request_imsi) -> 0;
 enum_value(request_imei) -> 1;
@@ -320,7 +322,8 @@ enum_value(227) -> bearer_control_mode_violation;
 enum_value(228) -> collision_with_network_initiated_request;
 enum_value(229) -> apn_congestion;
 enum_value(230) -> bearer_handling_not_supported;
-enum_value(231) -> target_access_restricted_for_the_subscriber.
+enum_value(231) -> target_access_restricted_for_the_subscriber;
+enum_value(X) when is_integer(X) -> X.
 
 decode_v1_element(1, Instance, <<M_value:8/integer>>) ->
     #cause{instance = Instance,

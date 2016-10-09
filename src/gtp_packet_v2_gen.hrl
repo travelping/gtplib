@@ -240,14 +240,16 @@ enum_v2_pdn_type(ipv6) -> 2;
 enum_v2_pdn_type(ipv4v6) -> 3;
 enum_v2_pdn_type(1) -> ipv4;
 enum_v2_pdn_type(2) -> ipv6;
-enum_v2_pdn_type(3) -> ipv4v6.
+enum_v2_pdn_type(3) -> ipv4v6;
+enum_v2_pdn_type(X) when is_integer(X) -> X.
 
 enum_v2_type(ipv4) -> 1;
 enum_v2_type(ipv6) -> 2;
 enum_v2_type(ipv4v6) -> 3;
 enum_v2_type(1) -> ipv4;
 enum_v2_type(2) -> ipv6;
-enum_v2_type(3) -> ipv4v6.
+enum_v2_type(3) -> ipv4v6;
+enum_v2_type(X) when is_integer(X) -> X.
 
 enum_v2_v2_cause(reserved) -> 1;
 enum_v2_v2_cause(local_detach) -> 2;
@@ -390,7 +392,8 @@ enum_v2_v2_cause(115) -> ue_already_re_attached;
 enum_v2_v2_cause(116) -> multiple_pdn_connections_for_a_given_apn_not_allowed;
 enum_v2_v2_cause(117) -> target_access_restricted_for_the_subscriber;
 enum_v2_v2_cause(119) -> mme_sgsn_refuses_due_to_vplmn_policy;
-enum_v2_v2_cause(120) -> gtp_c_entity_congestion.
+enum_v2_v2_cause(120) -> gtp_c_entity_congestion;
+enum_v2_v2_cause(X) when is_integer(X) -> X.
 
 decode_v2_element(1, Instance, <<M_imsi/binary>>) ->
     #v2_international_mobile_subscriber_identity{instance = Instance,

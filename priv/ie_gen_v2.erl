@@ -888,7 +888,8 @@ collect_late_assign(Fields = [H | T], Acc) ->
 
 collect_enum({Name, _, {enum, Enum}}, Acc) ->
     {FwdFuns, RevFuns} = gen_enum(Name, Enum, 0, {[], []}),
-    S = string:join(FwdFuns ++ RevFuns, ";\n") ++ ".\n",
+    Wildcard = io_lib:format("enum_v2_~s(X) when is_integer(X) -> X", [s2a(Name)]),
+    S = string:join(FwdFuns ++ RevFuns ++ [Wildcard], ";\n") ++ ".\n",
     lists:keystore(Name, 1, Acc, {Name, S});
 collect_enum(_, Acc) ->
     Acc.
