@@ -103,9 +103,9 @@ handle_call({create_pdp_context, Version, SGSN, MS, LocalTID, RemoteTID},
 		   pid   = 0,
 		   msg   = GtpReq},
     lager:debug("create_pdp_context: ~p", [Req]),
-    ok = nl_simple_request(GtpNl, GtpGenlFam, Req),
+    Reply = nl_simple_request(GtpNl, GtpGenlFam, Req),
 
-    {reply, ok, State};
+    {reply, Reply, State};
 
 handle_call({update_pdp_context, Version, SGSN, MS, LocalTID, RemoteTID},
 	    _From, #state{ns = NsFd, gtp_nl = GtpNl, gtp_genl_family = GtpGenlFam,
@@ -148,9 +148,9 @@ handle_call({delete_pdp_context, Version, SGSN, MS, LocalTID, _RemoteTID},
 		   pid   = 0,
 		   msg   = GtpReq},
     lager:debug("delete_pdp_context: ~p", [Req]),
-    ok = nl_simple_request(GtpNl, GtpGenlFam, Req),
+    Reply = nl_simple_request(GtpNl, GtpGenlFam, Req),
 
-    {reply, ok, State};
+    {reply, Reply, State};
 
 handle_call(Request, _From, State) ->
     lager:warning("handle_call: ~p", [lager:pr(Request, ?MODULE)]),
