@@ -473,10 +473,10 @@ decode_v2_element(80, Instance, <<_:1,
                                   _:1,
                                   M_pvi:1/integer,
                                   M_label:8/integer,
-                                  M_maximum_bit_rate_for_uplink:32/integer,
-                                  M_maximum_bit_rate_for_downlink:32/integer,
-                                  M_guaranteed_bit_rate_for_uplink:32/integer,
-                                  M_guaranteed_bit_rate_for_downlink:32/integer,
+                                  M_maximum_bit_rate_for_uplink:40/integer,
+                                  M_maximum_bit_rate_for_downlink:40/integer,
+                                  M_guaranteed_bit_rate_for_uplink:40/integer,
+                                  M_guaranteed_bit_rate_for_downlink:40/integer,
                                   _/binary>>) ->
     #v2_bearer_level_quality_of_service{instance = Instance,
                                         pci = M_pci,
@@ -895,10 +895,10 @@ encode_v2_element(#v2_bearer_level_quality_of_service{
                                       0:1,
                                       M_pvi:1,
                                       M_label:8,
-                                      M_maximum_bit_rate_for_uplink:32,
-                                      M_maximum_bit_rate_for_downlink:32,
-                                      M_guaranteed_bit_rate_for_uplink:32,
-                                      M_guaranteed_bit_rate_for_downlink:32>>);
+                                      M_maximum_bit_rate_for_uplink:40,
+                                      M_maximum_bit_rate_for_downlink:40,
+                                      M_guaranteed_bit_rate_for_uplink:40,
+                                      M_guaranteed_bit_rate_for_downlink:40>>);
 
 encode_v2_element(#v2_flow_quality_of_service{
                        instance = Instance}) ->
