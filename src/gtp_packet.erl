@@ -59,13 +59,13 @@ decode_v2_msg(<<2:3, _:1, 1:1, _Spare0:3, Type:8, Length:16,
 		TEI:32/integer, SeqNo:24, _Spare1:8, Data0/binary>>) ->
     DataLen = Length - 8,
     <<Data1:DataLen/bytes, _Next/binary>> = Data0,
-    IEs = decode_v2(Data1, #{}),
+    IEs = decode_v2(Data1),
     #gtp{version = v2, type = message_type_v2(Type), tei = TEI, seq_no = SeqNo, ie = IEs};
 decode_v2_msg(<<2:3, _:1, 0:1, _Spare0:3, Type:8, Length:16,
 		SeqNo:24, _Spare1:8, Data0/binary>>) ->
     DataLen = Length - 4,
     <<Data1:DataLen/bytes, _Next/binary>> = Data0,
-    IEs = decode_v2(Data1, #{}),
+    IEs = decode_v2(Data1),
     #gtp{version = v2, type = message_type_v2(Type), tei = undefined, seq_no = SeqNo, ie = IEs}.
 
 encode(#gtp{version = v1, type = Type, tei = TEI, seq_no = SeqNo,
@@ -103,6 +103,7 @@ pad_to(Width, Binary) ->
 put_ie(IE, IEs) ->
     Key = {element(1, IE), element(2, IE)},
     UpdateFun = fun(V) when is_list(V) -> [IE | V];
+		   (undefined)         -> IE;
 		   (V)                 -> [IE, V]
 		end,
     maps:update_with(Key, UpdateFun, IE, IEs).
@@ -196,7 +197,7 @@ decode_protocol_opts(_Protocol, <<Id:16, Length:8, Data:Length/bytes, Next/binar
     decode_protocol_opts(-1, Next, [{Id, Data} | Opts]).
 
 decode_v1(Data) ->
-    decode_v1(Data, -1, 0, #{}).
+    decode_v1(Data, -1, 0, #{ {recovery, 0} => undefined }).
 
 v1_instance(CurrId, PrevId, PrevInst)
   when CurrId == PrevId ->
@@ -247,6 +248,9 @@ decode_v2_mccmnc(Instance, <<MCCHi:8, MNC3:4, MCC3:4, MNCHi:8, _/binary>>) ->
        mnc = decode_tbcd(<<MNCHi:8, 15:4, MNC3:4>>)
       }.
 
+decode_v2(Data) ->
+    decode_v2(Data, #{ {v2_recovery, 0} => undefined }).
+
 decode_v2(<<>>, IEs) ->
     IEs;
 decode_v2(<<Type:8, Length:16/integer, _Spare:4, Instance:4, Data:Length/bytes, Next/binary>>, IEs) ->
@@ -260,6 +264,8 @@ decode_v2(Data, IEs) ->
 decode_v2_grouped(Bin) ->
     decode_v2(Bin, #{}).
 
+encode_ie_map(_Fun, _K, undefined, IEs) ->
+    IEs;
 encode_ie_map(Fun, _K, V, IEs) when is_list(V) ->
     lists:foldl(fun(IE, Acc) -> [Fun(IE)|Acc] end, IEs, V);
 encode_ie_map(Fun, _K, V, IEs) ->
