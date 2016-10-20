@@ -735,20 +735,20 @@ main(_) ->
 
     Funs = string:join([write_decoder("decode_v1_element", X) || X <- ies()] ++ [CatchAnyDecoder], ";\n\n"),
 
-    MainDecodeSwitch = ["decode_v1(<<>>, _PrevId, _PrevInst, IEs) ->\n    lists:reverse(IEs);\n",
+    MainDecodeSwitch = ["decode_v1(<<>>, _PrevId, _PrevInst, IEs) ->\n    IEs;\n",
 	[io_lib:format("decode_v1(<<~w, Data:~w/bytes, Next/binary>>, PrevInst, PrevId, IEs) ->~n"
 		       "    Instance = v1_instance(~w, PrevId, PrevInst),~n"
 		       "    IE = decode_v1_element(~w, Instance, Data),~n"
-		       "    decode_v1(Next, ~w, Instance, [IE|IEs]);~n", [Id, Length, Id, Id, Id]) || {Id, _, Length, _} <- ies(), Id < 128],
+		       "    decode_v1(Next, ~w, Instance, put_ie(IE, IEs));~n", [Id, Length, Id, Id, Id]) || {Id, _, Length, _} <- ies(), Id < 128],
 	"decode_v1(<<Id, Length:16/integer, Rest/binary>>, PrevId, PrevInst, IEs) when Id > 127 ->\n"
 	"    <<Data:Length/binary, Next/binary>> = Rest,\n"
 	"    Instance = v1_instance(Id, PrevId, PrevInst),\n"
 	"    IE = decode_v1_element(Id, Instance, Data),\n"
-	"    decode_v1(Next, Id, Instance, [IE|IEs]);\n"
+	"    decode_v1(Next, Id, Instance, put_ie(IE, IEs));\n"
 	"decode_v1(<<Id, Rest/binary>>, PrevId, PrevInst, IEs) ->\n"
 	"    Instance = v1_instance(Id, PrevId, PrevInst),\n"
 	"    IE = {Id, Instance, Rest},\n"
-	"    decode_v1(<<>>, Id, Instance, [IE|IEs]).\n"],
+	"    decode_v1(<<>>, Id, Instance, put_ie(IE, IEs)).\n"],
 
     CatchAnyEncoder = "encode_v1_element({Tag, Instance, Value}) when is_integer(Tag), is_integer(Instance), is_binary(Value) ->\n    encode_v1_element(Tag, Instance, Value)",
     EncFuns = string:join([write_encoder("encode_v1_element", X) || X <- ies()]

@@ -96,6 +96,11 @@ do_test(Msg) ->
     ct:pal("Decoded Msg: ~p", [P]),
     ?equal(Msg, gtp_packet:encode(P)).
 
+do_test_v2(Msg) ->
+    P = gtp_packet:decode(Msg),
+    ct:pal("Decoded Msg: ~p", [P]),
+    ?equal(P, gtp_packet:decode(gtp_packet:encode(P))).
+
 test_v1_echo_request(_Config) ->
     do_test(v1_echo_request()),
     ok.
@@ -114,11 +119,11 @@ test_v1_create_pdp_context_response(_Config) ->
     ok.
 
 test_v2_create_session_request(_Config) ->
-    do_test(v2_create_session_request()),
+    do_test_v2(v2_create_session_request()),
     ok.
 
 test_v2_create_session_response(_Config) ->
-    do_test(v2_create_session_response()),
+    do_test_v2(v2_create_session_response()),
     ok.
 
 all() ->
