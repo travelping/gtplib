@@ -584,8 +584,13 @@ decode_v2_element(112, Instance, <<>>) ->
 decode_v2_element(113, Instance, <<>>) ->
     #v2_hop_counter{instance = Instance};
 
-decode_v2_element(114, Instance, <<>>) ->
-    #v2_ue_time_zone{instance = Instance};
+decode_v2_element(114, Instance, <<M_timezone:8/integer,
+                                   _:6,
+                                   M_dst:2/integer,
+                                   _/binary>>) ->
+    #v2_ue_time_zone{instance = Instance,
+                     timezone = M_timezone,
+                     dst = M_dst};
 
 decode_v2_element(115, Instance, <<>>) ->
     #v2_trace_reference{instance = Instance};
@@ -1022,8 +1027,12 @@ encode_v2_element(#v2_hop_counter{
     encode_v2_element(113, Instance, <<>>);
 
 encode_v2_element(#v2_ue_time_zone{
-                       instance = Instance}) ->
-    encode_v2_element(114, Instance, <<>>);
+                       instance = Instance,
+                       timezone = M_timezone,
+                       dst = M_dst}) ->
+    encode_v2_element(114, Instance, <<M_timezone:8,
+                                       0:6,
+                                       M_dst:2>>);
 
 encode_v2_element(#v2_trace_reference{
                        instance = Instance}) ->

@@ -196,7 +196,9 @@
 }).
 
 -record(v2_ue_time_zone, {
-        instance = 0
+        instance = 0,
+        timezone = 0,
+        dst = 0
 }).
 
 -record(v2_trace_reference, {
