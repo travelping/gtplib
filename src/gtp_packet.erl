@@ -8,7 +8,8 @@
 
 -export([decode/1, msg_description/1, msg_description_v2/1]).
 -compile(export_all).
--compile({parse_transform, cut}).
+-compile([{parse_transform, cut},
+	  bin_opt_info]).
 
 -include("gtp_packet.hrl").
 
@@ -18,12 +19,9 @@
 			      'CPRAI', 'ARRL', 'PPOF', 'PPON/PPEI', 'PPSI', 'CSFBI', 'CLII', 'CPSR',
 			      'Spare', 'Spare', 'Spare', 'Spare', 'PSCI', 'PCRI', 'AOSI', 'AOPI']).
 
-decode(<<1:3, 1:1, _:1, 0:1, 0:1, 0:1, Type:8, Length:16, TEI:32/integer, Data0/binary>>) ->
-    <<Data:Length/bytes, _Next/binary>> = Data0,
-    IEs = decode_v1(Data),
-    #gtp{version = v1, type = message_type_v1(Type), tei = TEI, ie = IEs};
 decode(<<1:3, 1:1, _:1, E:1, S:1, PN:1, Type:8, Length:16, TEI:32/integer,
-	 SeqNo0:16, NPDU0:8, ExtHdrType:8, Data0/binary>>) ->
+	 SeqNo0:16, NPDU0:8, ExtHdrType:8, Data0/binary>>)
+  when E == 1; S == 1; PN == 1 ->
     DataLen = Length - 4,
     <<Data1:DataLen/bytes, _Next/binary>> = Data0,
     SeqNo = case S of
@@ -42,6 +40,10 @@ decode(<<1:3, 1:1, _:1, E:1, S:1, PN:1, Type:8, Length:16, TEI:32/integer,
     #gtp{version = v1, type = message_type_v1(Type), tei = TEI, seq_no = SeqNo,
 	 n_pdu = NPDU, ext_hdr = ExtHdr, ie = IEs};
 
+decode(<<1:3, 1:1, _:1, 0:1, 0:1, 0:1, Type:8, Length:16, TEI:32/integer, Data0/binary>>) ->
+    <<Data:Length/bytes, _Next/binary>> = Data0,
+    IEs = decode_v1(Data),
+    #gtp{version = v1, type = message_type_v1(Type), tei = TEI, ie = IEs};
 
 decode(Data = <<2:3, 0:1, _T:1, _Spare0:3, _/binary>>) ->
     decode_v2_msg(Data);
