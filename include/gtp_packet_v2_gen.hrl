@@ -127,7 +127,8 @@
 }).
 
 -record(v2_charging_id, {
-        instance = 0
+        instance = 0,
+        id = <<0,0,0,0>>
 }).
 
 -record(v2_charging_characteristics, {

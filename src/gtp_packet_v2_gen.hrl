@@ -530,8 +530,9 @@ decode_v2_element(93, Instance, <<M_group/binary>>) ->
     #v2_bearer_context{instance = Instance,
                        group = decode_v2_grouped(M_group)};
 
-decode_v2_element(94, Instance, <<>>) ->
-    #v2_charging_id{instance = Instance};
+decode_v2_element(94, Instance, <<M_id:4/bytes>>) ->
+    #v2_charging_id{instance = Instance,
+                    id = M_id};
 
 decode_v2_element(95, Instance, <<>>) ->
     #v2_charging_characteristics{instance = Instance};
@@ -957,8 +958,9 @@ encode_v2_element(#v2_bearer_context{
     encode_v2_element(93, Instance, <<(encode_v2_grouped(M_group))/binary>>);
 
 encode_v2_element(#v2_charging_id{
-                       instance = Instance}) ->
-    encode_v2_element(94, Instance, <<>>);
+                       instance = Instance,
+                       id = M_id}) ->
+    encode_v2_element(94, Instance, <<M_id:4/bytes>>);
 
 encode_v2_element(#v2_charging_characteristics{
                        instance = Instance}) ->
