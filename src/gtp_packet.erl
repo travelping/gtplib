@@ -131,7 +131,26 @@ decode_exthdr(0, Data, Hdrs) ->
 decode_exthdr(Type, <<Length, Rest/binary>>, Hdrs) ->
     HdrLen = Length * 4 - 2,
     <<HdrData:HdrLen/bytes, NextType:8, Data/binary>> = Rest,
-    decode_exthdr(NextType, Data, [{Type, HdrData|Hdrs]).
+    Hdr = decode_exthdr_type(Type, HdrData),
+    decode_exthdr(NextType, Data, [Hdr|Hdrs]).
+
+decode_exthdr_type(2#00100000, <<Class:8, _/binary>>) ->
+    %% Service Class Indicator
+    {service_class, Class};
+decode_exthdr_type(2#01000000, <<Port:16, _/binary>>) ->
+    %% UDP Port
+    {udp_port, Port};
+decode_exthdr_type(2#10000001, Container) ->
+    %% RAN Container
+    {ran_container, Container};
+decode_exthdr_type(2#10000010, <<_:6, PDU:18, _/binary>>) ->
+    %% Long PDCP PDU Number
+    {long_pdcp_pdu_number, PDU};
+decode_exthdr_type(2#11000000, <<PDU:16, _/binary>>) ->
+    %% PDCP PDU Number
+    {pdcp_pdu_number, PDU};
+decode_exthdr_type(Type, Data) ->
+    {Type, Data}.
 
 decode_tbcd(Bin) ->
     decode_tbcd(Bin, <<>>).
@@ -326,12 +345,32 @@ encode_gtp_v1_opt_hdr(_SeqNo, _NPDU, _ExtHdr) ->
 
 encode_exthdr([], Bin) ->
     <<Bin/binary, 0>>;
-encode_exthdr([{HdrType, Data}|T], Bin) ->
+encode_exthdr([V|T], Bin) ->
+    {HdrType, Data} = encode_exthdr_type(V),
     Hdr = case (pad_length(4, size(Data)) + 2) rem 4 of
 	      0 -> Data;
 	      N -> <<Data/binary, 0:(N*8)>>
 	  end,
     encode_exthdr(T, <<Bin/binary, HdrType:8, ((size(Hdr) + 2) div 4):8, Hdr/binary>>).
+
+encode_exthdr_type({service_class, Class}) ->
+    %% Service Class Indicator
+    {2#00100000, <<Class:8>>};
+encode_exthdr_type({udp_port, Port}) ->
+    %% UDP Port
+    {2#01000000, <<Port:16>>};
+encode_exthdr_type({ran_container, Container}) ->
+    %% RAN Container
+    {2#10000001, Container};
+encode_exthdr_type({long_pdcp_pdu_number, PDU}) ->
+    %% Long PDCP PDU Number
+    {2#10000010, <<0:6, PDU:18>>};
+encode_exthdr_type({pdcp_pdu_number, PDU}) ->
+    %% PDCP PDU Number
+    {2#11000000, <<PDU:16>>};
+encode_exthdr_type({Type, Hdr} = V)
+  when is_integer(Type), is_binary(Hdr) ->
+    V.
 
 encode_tbcd(Number) ->
     encode_tbcd(Number, <<>>).
