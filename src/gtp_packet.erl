@@ -129,9 +129,9 @@ maybe_bin(_, IE) ->
 decode_exthdr(0, Data, Hdrs) ->
     {Data, Hdrs};
 decode_exthdr(Type, <<Length, Rest/binary>>, Hdrs) ->
-    HdrLen = Length * 4,
-    <<Hdr:HdrLen/bytes, NextType:8, Data/binary>> = Rest,
-    decode_exthdr(NextType, Data, [{Type, Hdr}|Hdrs]).
+    HdrLen = Length * 4 - 2,
+    <<HdrData:HdrLen/bytes, NextType:8, Data/binary>> = Rest,
+    decode_exthdr(NextType, Data, [{Type, HdrData|Hdrs]).
 
 decode_tbcd(Bin) ->
     decode_tbcd(Bin, <<>>).
@@ -320,15 +320,18 @@ encode_gtp_v1_opt_hdr(SeqNo, NPDU, ExtHdr)
   when SeqNo /= undefined;
        NPDU /= undefined;
        (ExtHdr /= undefined andalso ExtHdr /= []) ->
-    << (opt_int(SeqNo)):16, (opt_int(NPDU)):8, (encode_ext_hdr(ExtHdr, <<>>))/binary, 0 >>;
+    << (opt_int(SeqNo)):16, (opt_int(NPDU)):8, (encode_exthdr(ExtHdr, <<>>))/binary>>;
 encode_gtp_v1_opt_hdr(_SeqNo, _NPDU, _ExtHdr) ->
     <<>>.
 
-encode_ext_hdr([], Bin) ->
-    Bin;
-encode_ext_hdr([{Type, V}|T], Bin) ->
-    BinV = pad_to(4, V),
-    encode_ext_hdr(T, <<Bin/binary, Type:8, (size(BinV) div 4):8, BinV/binary>>).
+encode_exthdr([], Bin) ->
+    <<Bin/binary, 0>>;
+encode_exthdr([{HdrType, Data}|T], Bin) ->
+    Hdr = case (pad_length(4, size(Data)) + 2) rem 4 of
+	      0 -> Data;
+	      N -> <<Data/binary, 0:(N*8)>>
+	  end,
+    encode_exthdr(T, <<Bin/binary, HdrType:8, ((size(Hdr) + 2) div 4):8, Hdr/binary>>).
 
 encode_tbcd(Number) ->
     encode_tbcd(Number, <<>>).
