@@ -36,13 +36,13 @@ decode(<<1:3, 1:1, _:1, E:1, S:1, PN:1, Type:8, Length:16, TEI:32/integer,
 			 1 -> decode_exthdr(ExtHdrType, Data1, []);
 			 _ -> {Data1, []}
 		     end,
-    IEs = decode_v1(Data),
+    IEs = decode_v1(Type, Data),
     #gtp{version = v1, type = message_type_v1(Type), tei = TEI, seq_no = SeqNo,
 	 n_pdu = NPDU, ext_hdr = ExtHdr, ie = IEs};
 
 decode(<<1:3, 1:1, _:1, 0:1, 0:1, 0:1, Type:8, Length:16, TEI:32/integer, Data0/binary>>) ->
     <<Data:Length/bytes, _Next/binary>> = Data0,
-    IEs = decode_v1(Data),
+    IEs = decode_v1(Type, Data),
     #gtp{version = v1, type = message_type_v1(Type), tei = TEI, ie = IEs};
 
 decode(Data = <<2:3, 0:1, _T:1, _Spare0:3, _/binary>>) ->
@@ -74,7 +74,7 @@ encode(#gtp{version = v1, type = Type, tei = TEI, seq_no = SeqNo,
 	    n_pdu = NPDU, ext_hdr = ExtHdr, ie = IEs}) ->
     Flags = encode_gtp_v1_hdr_flags(SeqNo, NPDU, ExtHdr),
     HdrOpt = encode_gtp_v1_opt_hdr(SeqNo, NPDU, ExtHdr),
-    Data = encode_v1(IEs),
+    Data = encode_v1(Type, IEs),
     <<Flags/binary, (message_type_v1(Type)):8, (size(HdrOpt) + size(Data)):16, TEI:32, HdrOpt/binary, Data/binary>>;
 
 encode(#gtp{version = v2, type = Type, tei = TEI, seq_no = SeqNo, ie = IEs}) ->
@@ -217,7 +217,10 @@ decode_protocol_opts(Protocol, <<Id:16, Length:8, Data:Length/bytes, Next/binary
 decode_protocol_opts(_Protocol, <<Id:16, Length:8, Data:Length/bytes, Next/binary>>, Opts) ->
     decode_protocol_opts(-1, Next, [{Id, Data} | Opts]).
 
-decode_v1(Data) ->
+decode_v1(255, Data) ->
+    %% G-PDU
+    Data;
+decode_v1(_, Data) ->
     decode_v1(Data, -1, 0, #{ {recovery, 0} => undefined }).
 
 v1_instance(CurrId, PrevId, PrevInst)
@@ -298,10 +301,12 @@ encode_v1_element(Id, Instance, Bin) ->
     Size = byte_size(Bin),
     {{Id, Instance}, <<Id:8, Size:16, Bin/binary>>}.
 
-encode_v1(IEs) when is_list(IEs) ->
+encode_v1(g_pdu, Data) when is_binary(Data) ->
+    Data;
+encode_v1(_, IEs) when is_list(IEs) ->
     Data = lists:keysort(1, [encode_v1_element(IE) || IE <- IEs]),
     << <<V/binary>> || {_Id, V} <- Data >>;
-encode_v1(IEs) when is_map(IEs) ->
+encode_v1(_, IEs) when is_map(IEs) ->
     Data = lists:keysort(1, maps:fold(encode_ie_map(fun encode_v1_element/1, _, _, _), [], IEs)),
     << <<V/binary>> || {_Id, V} <- Data >>.
 
