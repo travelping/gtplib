@@ -83,6 +83,11 @@ v2_create_session_response() ->
 	       "01b822dbd5a25bc3500016006d09000000000000000000000000000000000000"
 	       "00005e00040042bb0e3103000100024a0004000a7e9824").
 
+g_pdu() ->
+    hexstr2bin("30ff00540000000c45000054fd1640003f0113cc0ab41003080808080800b437"
+	       "247b000153e61a5900000000e7390b0000000000101112131415161718191a1b"
+	       "1c1d1e1f202122232425262728292a2b2c2d2e2f3031323334353637").
+
 %%--------------------------------------------------------------------
 %% @spec suite() -> Info
 %% Info = [tuple()]
@@ -126,10 +131,15 @@ test_v2_create_session_response(_Config) ->
     do_test_v2(v2_create_session_response()),
     ok.
 
+test_g_pdu(_Config) ->
+    do_test(g_pdu()),
+    ok.
+
 all() ->
 	[test_v1_echo_request,
 	 test_v1_echo_response,
 	 test_v1_create_pdp_context_request,
 	 test_v1_create_pdp_context_response,
 	 test_v2_create_session_request,
-	 test_v2_create_session_response].
+	 test_v2_create_session_response,
+	 test_g_pdu].
