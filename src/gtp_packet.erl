@@ -205,6 +205,9 @@ decode_isdn_address_string(<<Extension:1, Nature:3, Plan:4, Number/binary>>) ->
 decode_protocol_ppp_opt(Id, Data) ->
     ppp_frame:decode(<<Id:16, Data/binary>>).
 
+%% GSM 09.60 version 6.1.0 Release 1997
+decode_protocol_config_opts(<<0:1, Protocol:7, Opts/binary>>) ->
+    {{rel97, Protocol}, Opts};
 decode_protocol_config_opts(<<1:1, _Spare:4, Protocol:3, Opts/binary>>) ->
     {Protocol, decode_protocol_opts(Protocol, Opts, [])}.
 
@@ -433,6 +436,10 @@ encode_protocol_ppp_opt(Frame) ->
     <<Id:16, Data/binary>> = ppp_frame:encode(Frame),
     {Id, Data}.
 
+%% GSM 09.60 version 6.1.0 Release 1997
+encode_protocol_config_opts({{rel97, Protocol}, Opts})
+  when is_binary(Opts) ->
+    <<0:1, Protocol:7, Opts/binary>>;
 encode_protocol_config_opts({Protocol, Opts}) ->
     encode_protocol_opts(Protocol, Opts, <<1:1, 0:4, Protocol:3>>).
 

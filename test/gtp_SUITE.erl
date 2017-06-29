@@ -83,6 +83,9 @@ v2_create_session_response() ->
 	       "01b822dbd5a25bc3500016006d09000000000000000000000000000000000000"
 	       "00005e00040042bb0e3103000100024a0004000a7e9824").
 
+v1_pco_rel97() ->
+    hexstr2bin("3215000A0003A8F4696E0000018084000100").
+
 g_pdu() ->
     hexstr2bin("30ff00540000000c45000054fd1640003f0113cc0ab41003080808080800b437"
 	       "247b000153e61a5900000000e7390b0000000000101112131415161718191a1b"
@@ -135,6 +138,10 @@ test_g_pdu(_Config) ->
     do_test(g_pdu()),
     ok.
 
+test_v1_pco_rel97(_Config) ->
+    do_test(v1_pco_rel97()),
+    ok.
+
 all() ->
 	[test_v1_echo_request,
 	 test_v1_echo_response,
@@ -142,4 +149,5 @@ all() ->
 	 test_v1_create_pdp_context_response,
 	 test_v2_create_session_request,
 	 test_v2_create_session_response,
-	 test_g_pdu].
+	 test_g_pdu,
+	 test_v1_pco_rel97].
