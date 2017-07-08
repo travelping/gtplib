@@ -17,6 +17,7 @@
 -compile(export_all).
 
 -include_lib("common_test/include/ct.hrl").
+-include("../include/gtp_packet.hrl").
 
 -define(equal(Expected, Actual),
     (fun (Expected@@@, Expected@@@) -> true;
@@ -25,6 +26,16 @@
                     [?FILE, ?LINE, ??Actual, Expected@@@, Actual@@@]),
              false
      end)(Expected, Actual) orelse error(badmatch)).
+
+-define(match(Guard, Expr),
+	((fun () ->
+		  case (Expr) of
+		      Guard -> ok;
+		      V -> ct:pal("MISMATCH(~s:~b, ~s)~nExpected: ~p~nActual:   ~p~n",
+				   [?FILE, ?LINE, ??Expr, ??Guard, V]),
+			    error(badmatch)
+		  end
+	  end)())).
 
 %% hexstr2bin from otp/lib/crypto/test/crypto_SUITE.erl
 hexstr2bin(S) ->
@@ -86,6 +97,67 @@ v2_create_session_response() ->
 v1_pco_rel97() ->
     hexstr2bin("3215000A0003A8F4696E0000018084000100").
 
+v2_pco_vendor_ext() ->
+    IEs =
+	[#v2_access_point_name{
+	    apn = [<<"example">>,<<"net">>]},
+	 #v2_aggregate_maximum_bit_rate{
+	    uplink = 48128,
+	    downlink = 1704125},
+	 #v2_apn_restriction{
+	    restriction_type_value = 0},
+	 #v2_bearer_context{
+	    group = [#v2_bearer_level_quality_of_service{
+			pci = 1,pl = 10,pvi = 0,label = 8,
+			maximum_bit_rate_for_uplink = 0,
+			maximum_bit_rate_for_downlink = 0,
+			guaranteed_bit_rate_for_uplink = 0,
+			guaranteed_bit_rate_for_downlink = 0},
+		     #v2_eps_bearer_id{eps_bearer_id = 5},
+		     #v2_fully_qualified_tunnel_endpoint_identifier{
+			instance = 2,
+			interface_type = 4,key = 5379562,ipv4 = <<"À¨É°">>,
+			ipv6 = undefined}]},
+	 #v2_fully_qualified_tunnel_endpoint_identifier{
+	    interface_type = 6,key = 5379554,ipv4 = <<"À¨É°">>,
+	    ipv6 = undefined},
+	 #v2_indication{
+	    flags = ['P','CRSI']},
+	 #v2_international_mobile_subscriber_identity{
+	    imsi = <<"111111111111111">>},
+	 #v2_mobile_equipment_identity{
+	    mei = <<1,0,2,3,4,4,6,7>>},
+	 #v2_msisdn{msisdn = <<"001011111111111">>},
+	 #v2_pdn_address_allocation{
+	    type = ipv4, address = <<0,0,0,0>>},
+	 #v2_pdn_type{pdn_type = ipv4},
+	 #v2_protocol_configuration_options{
+	    config = {0,
+		      [{ipcp,'CP-Configure-Request',0,
+			[{ms_dns1,<<0,0,0,0>>},{ms_dns2,<<0,0,0,0>>}]},
+		       {13,<<>>},
+		       {65280,<<19,1,132>>},
+		       {12,<<>>},
+		       {10,<<>>},
+		       {16,<<>>}]}},
+	 #v2_rat_type{rat_type = 6},
+	 #v2_selection_mode{mode = 0},
+	 #v2_serving_network{
+	    mcc = <<"302">>, mnc = <<"610">>},
+	 #v2_ue_time_zone{timezone = 138,dst = 0},
+	 #v2_user_location_information{
+	    cgi = undefined,
+	    sai = undefined,
+	    rai = undefined,
+	    tai = <<3,2,22,43,238>>,
+	    ecgi = <<3,2,34,1,187,116,1>>,
+	    lai = undefined}],
+    Msg = #gtp{version = v2,
+	       type = create_session_request,
+	       seq_no = 1,
+	       tei = 0,
+	       ie = IEs}.
+
 g_pdu() ->
     hexstr2bin("30ff00540000000c45000054fd1640003f0113cc0ab41003080808080800b437"
 	       "247b000153e61a5900000000e7390b0000000000101112131415161718191a1b"
@@ -142,6 +214,11 @@ test_v1_pco_rel97(_Config) ->
     do_test(v1_pco_rel97()),
     ok.
 
+test_v2_pco_vendor_ext(_Config) ->
+    Msg = v2_pco_vendor_ext(),
+    ?match(Data when is_binary(Data), (catch gtp_packet:encode(Msg))),
+    ok.
+
 all() ->
 	[test_v1_echo_request,
 	 test_v1_echo_response,
@@ -150,4 +227,5 @@ all() ->
 	 test_v2_create_session_request,
 	 test_v2_create_session_response,
 	 test_g_pdu,
-	 test_v1_pco_rel97].
+	 test_v1_pco_rel97,
+	 test_v2_pco_vendor_ext].

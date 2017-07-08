@@ -446,7 +446,7 @@ encode_protocol_config_opts({Protocol, Opts}) ->
 encode_protocol_opts(_Protocol, [], Opts) ->
     Opts;
 encode_protocol_opts(Protocol, [{Id, Data} | T], Opts)
-  when Id < 16#8000; Id > 16#FF00 ->
+  when Id < 16#8000; Id >= 16#FF00 ->
     encode_protocol_opts(-1, T, <<Opts/binary, Id:16, (size(Data)):8, Data/binary>>);
 encode_protocol_opts(Protocol, [Opt | T], Opts)
   when Protocol == 0 ->
