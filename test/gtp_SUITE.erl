@@ -173,11 +173,13 @@ suite() ->
 
 do_test(Msg) ->
     P = gtp_packet:decode(Msg),
+    ?match(#gtp{ie = IEs} when is_map(IEs), P),
     ct:pal("Decoded Msg: ~p", [P]),
     ?equal(Msg, gtp_packet:encode(P)).
 
 do_test_v2(Msg) ->
     P = gtp_packet:decode(Msg),
+    ?match(#gtp{ie = IEs} when is_map(IEs), P),
     ct:pal("Decoded Msg: ~p", [P]),
     ?equal(P, gtp_packet:decode(gtp_packet:encode(P))).
 
@@ -219,6 +221,51 @@ test_v2_pco_vendor_ext(_Config) ->
     ?match(Data when is_binary(Data), (catch gtp_packet:encode(Msg))),
     ok.
 
+partial_decode(_Config) ->
+    Msg0 = gtp_packet:decode(v1_create_pdp_context_request_2(), #{ies => binary}),
+    ?match(#gtp{ie = IEs} when is_binary(IEs), Msg0),
+    Msg1 = gtp_packet:decode_ies(Msg0),
+    ?match(#gtp{ie = IEs} when is_map(IEs), Msg1),
+    Msg2 = gtp_packet:decode_ies(Msg0, #{ies => map}),
+    ?match(#gtp{ie = IEs} when is_map(IEs), Msg2),
+    Msg3 = gtp_packet:decode_ies(Msg0, #{ies => binary}),
+    ?match(#gtp{ie = IEs} when is_binary(IEs), Msg3),
+    Msg4 = (catch gtp_packet:decode_ies(Msg1)),
+    ?match(#gtp{ie = IEs} when is_map(IEs), Msg4),
+    Msg5 = (catch gtp_packet:decode_ies(Msg1, #{ies => binary})),
+    ?match({'EXIT', {badargs,_}}, Msg5),
+
+    Msg10 = gtp_packet:decode(v2_create_session_request(), #{ies => binary}),
+    ?match(#gtp{ie = IEs} when is_binary(IEs), Msg10),
+    Msg11 = gtp_packet:decode_ies(Msg10),
+    ?match(#gtp{ie = IEs} when is_map(IEs), Msg11),
+    Msg12 = gtp_packet:decode_ies(Msg10, #{ies => map}),
+    ?match(#gtp{ie = IEs} when is_map(IEs), Msg12),
+    Msg13 = gtp_packet:decode_ies(Msg10, #{ies => binary}),
+    ?match(#gtp{ie = IEs} when is_binary(IEs), Msg13),
+    Msg14 = (catch gtp_packet:decode_ies(Msg11)),
+    ?match(#gtp{ie = IEs} when is_map(IEs), Msg14),
+    Msg15 = (catch gtp_packet:decode_ies(Msg11, #{ies => binary})),
+    ?match({'EXIT', {badargs,_}}, Msg15),
+
+    ok.
+
+partial_encode(_Config) ->
+    Msg0 = gtp_packet:decode(v1_create_pdp_context_request_2()),
+    ?match(#gtp{ie = IEs} when is_map(IEs), Msg0),
+    Msg1 = gtp_packet:encode_ies(Msg0),
+    ?match(#gtp{ie = IEs} when is_binary(IEs), Msg1),
+    Msg2 = gtp_packet:encode(Msg1),
+    ?match(_ when is_binary(Msg2), Msg2),
+
+    Msg10 = gtp_packet:decode(v2_create_session_request()),
+    ?match(#gtp{ie = IEs} when is_map(IEs), Msg10),
+    Msg11 = gtp_packet:encode_ies(Msg10),
+    ?match(#gtp{ie = IEs} when is_binary(IEs), Msg11),
+    Msg12 = gtp_packet:encode(Msg11),
+    ?match(_ when is_binary(Msg12), Msg12),
+    ok.
+
 all() ->
 	[test_v1_echo_request,
 	 test_v1_echo_response,
@@ -228,4 +275,6 @@ all() ->
 	 test_v2_create_session_response,
 	 test_g_pdu,
 	 test_v1_pco_rel97,
-	 test_v2_pco_vendor_ext].
+	 test_v2_pco_vendor_ext,
+	 partial_decode,
+	 partial_encode].

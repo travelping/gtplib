@@ -6,7 +6,9 @@
 
 -module(gtp_packet).
 
--export([decode/1, msg_description/1, msg_description_v2/1]).
+-export([encode/1, encode_ies/1,
+	 decode/1, decode/2, decode_ies/1, decode_ies/2,
+	 msg_description/1, msg_description_v2/1]).
 -compile(export_all).
 -compile([{parse_transform, cut},
 	  bin_opt_info]).
@@ -19,8 +21,55 @@
 			      'CPRAI', 'ARRL', 'PPOF', 'PPON/PPEI', 'PPSI', 'CSFBI', 'CLII', 'CPSR',
 			      'Spare', 'Spare', 'Spare', 'Spare', 'PSCI', 'PCRI', 'AOSI', 'AOPI']).
 
-decode(<<1:3, 1:1, _:1, E:1, S:1, PN:1, Type:8, Length:16, TEI:32/integer,
-	 SeqNo0:16, NPDU0:8, ExtHdrType:8, Data0/binary>>)
+%%====================================================================
+%% API
+%%====================================================================
+
+decode(Data) ->
+    decode(Data, #{ies => map}).
+
+decode(Data, Opts) ->
+    Msg = decode_header(Data),
+    decode_ies(Msg, Opts).
+
+decode_ies(Msg) ->
+    decode_ies(Msg, #{ies => map}).
+
+decode_ies(#gtp{ie = IEs} = Msg, #{ies := map})
+  when is_map(IEs) ->
+    Msg;
+decode_ies(#gtp{ie = IEs} = Msg, #{ies := Format} = Opts)
+  when not is_binary(IEs) orelse (Format /= map andalso Format /= binary) ->
+    error(badargs, [Msg, Opts]);
+decode_ies(#gtp{version = v1, type = Type, ie = IEs} = Msg, #{ies := map}) ->
+    Msg#gtp{ie = decode_v1(Type, IEs)};
+decode_ies(#gtp{version = v2, ie = IEs} = Msg, #{ies := map}) ->
+    Msg#gtp{ie = decode_v2(IEs)};
+decode_ies(Msg, _) ->
+    Msg.
+
+encode(#gtp{version = v1, type = Type, tei = TEI, seq_no = SeqNo,
+	    n_pdu = NPDU, ext_hdr = ExtHdr, ie = IEs}) ->
+    Flags = encode_gtp_v1_hdr_flags(SeqNo, NPDU, ExtHdr),
+    HdrOpt = encode_gtp_v1_opt_hdr(SeqNo, NPDU, ExtHdr),
+    Data = encode_v1(Type, IEs),
+    <<Flags/binary, (message_type_v1(Type)):8, (size(HdrOpt) + size(Data)):16, TEI:32, HdrOpt/binary, Data/binary>>;
+
+
+encode(#gtp{version = v2, type = Type, tei = TEI, seq_no = SeqNo, ie = IEs}) ->
+    encode_v2_msg(message_type_v2(Type), 0, TEI, SeqNo, encode_v2(IEs)).
+
+encode_ies(#gtp{version = v1, type = Type, ie = IEs} = Msg) ->
+    Msg#gtp{ie = encode_v1(Type, IEs)};
+encode_ies(#gtp{version = v2, ie = IEs} = Msg) ->
+    Msg#gtp{ie = encode_v2(IEs)}.
+
+%%====================================================================
+%% Helpers
+%%====================================================================
+
+decode_header(<<1:3, 1:1, _:1, E:1, S:1, PN:1, Type:8, Length:16, TEI:32/integer,
+		SeqNo0:16, NPDU0:8, ExtHdrType:8, Data0/binary>>)
   when E == 1; S == 1; PN == 1 ->
     DataLen = Length - 4,
     <<Data1:DataLen/bytes, _Next/binary>> = Data0,
@@ -32,22 +81,21 @@ decode(<<1:3, 1:1, _:1, E:1, S:1, PN:1, Type:8, Length:16, TEI:32/integer,
 	       1 -> NPDU0;
 	       _ -> undefined
 	   end,
-    {Data, ExtHdr} = case E of
+    {IEs, ExtHdr} = case E of
 			 1 -> decode_exthdr(ExtHdrType, Data1, []);
 			 _ -> {Data1, []}
 		     end,
-    IEs = decode_v1(Type, Data),
     #gtp{version = v1, type = message_type_v1(Type), tei = TEI, seq_no = SeqNo,
 	 n_pdu = NPDU, ext_hdr = ExtHdr, ie = IEs};
 
-decode(<<1:3, 1:1, _:1, 0:1, 0:1, 0:1, Type:8, Length:16, TEI:32/integer, Data0/binary>>) ->
-    <<Data:Length/bytes, _Next/binary>> = Data0,
-    IEs = decode_v1(Type, Data),
+decode_header(<<1:3, 1:1, _:1, 0:1, 0:1, 0:1, Type:8, Length:16, TEI:32/integer,
+		Data0/binary>>) ->
+    <<IEs:Length/bytes, _Next/binary>> = Data0,
     #gtp{version = v1, type = message_type_v1(Type), tei = TEI, ie = IEs};
 
-decode(Data = <<2:3, 0:1, _T:1, _Spare0:3, _/binary>>) ->
+decode_header(Data = <<2:3, 0:1, _T:1, _Spare0:3, _/binary>>) ->
     decode_v2_msg(Data);
-decode(Data = <<2:3, 1:1, _T:1, _Spare0:3, _/binary>>) ->
+decode_header(Data = <<2:3, 1:1, _T:1, _Spare0:3, _/binary>>) ->
     decode_v2_msg(Data, []).
 
 decode_v2_msg(Data = <<2:3, _P:1, _T:1, _Spare0:3, _Type:8, Length:16, _/binary>>, Acc) ->
@@ -60,25 +108,13 @@ decode_v2_msg(Data, Acc) ->
 decode_v2_msg(<<2:3, _:1, 1:1, _Spare0:3, Type:8, Length:16,
 		TEI:32/integer, SeqNo:24, _Spare1:8, Data0/binary>>) ->
     DataLen = Length - 8,
-    <<Data1:DataLen/bytes, _Next/binary>> = Data0,
-    IEs = decode_v2(Data1),
+    <<IEs:DataLen/bytes, _Next/binary>> = Data0,
     #gtp{version = v2, type = message_type_v2(Type), tei = TEI, seq_no = SeqNo, ie = IEs};
 decode_v2_msg(<<2:3, _:1, 0:1, _Spare0:3, Type:8, Length:16,
 		SeqNo:24, _Spare1:8, Data0/binary>>) ->
     DataLen = Length - 4,
-    <<Data1:DataLen/bytes, _Next/binary>> = Data0,
-    IEs = decode_v2(Data1),
+    <<IEs:DataLen/bytes, _Next/binary>> = Data0,
     #gtp{version = v2, type = message_type_v2(Type), tei = undefined, seq_no = SeqNo, ie = IEs}.
-
-encode(#gtp{version = v1, type = Type, tei = TEI, seq_no = SeqNo,
-	    n_pdu = NPDU, ext_hdr = ExtHdr, ie = IEs}) ->
-    Flags = encode_gtp_v1_hdr_flags(SeqNo, NPDU, ExtHdr),
-    HdrOpt = encode_gtp_v1_opt_hdr(SeqNo, NPDU, ExtHdr),
-    Data = encode_v1(Type, IEs),
-    <<Flags/binary, (message_type_v1(Type)):8, (size(HdrOpt) + size(Data)):16, TEI:32, HdrOpt/binary, Data/binary>>;
-
-encode(#gtp{version = v2, type = Type, tei = TEI, seq_no = SeqNo, ie = IEs}) ->
-    encode_v2_msg(message_type_v2(Type), 0, TEI, SeqNo, encode_v2(IEs)).
 
 %%%===================================================================
 %%% Internal functions
@@ -304,8 +340,10 @@ encode_v1_element(Id, Instance, Bin) ->
     Size = byte_size(Bin),
     {{Id, Instance}, <<Id:8, Size:16, Bin/binary>>}.
 
-encode_v1(g_pdu, Data) when is_binary(Data) ->
-    Data;
+encode_v1(_, IEs) when is_binary(IEs) ->
+    IEs;
+%% encode_v1(g_pdu, Data) when is_binary(Data) ->
+%%     Data;
 encode_v1(_, IEs) when is_list(IEs) ->
     Data = lists:keysort(1, [encode_v1_element(IE) || IE <- IEs]),
     << <<V/binary>> || {_Id, V} <- Data >>;
@@ -317,6 +355,8 @@ encode_v2_element(Id, Instance, Bin) ->
     Size = byte_size(Bin),
     {{Id, Instance}, <<Id:8, Size:16, 0:4, Instance:4, Bin/binary>>}.
 
+encode_v2(IEs) when is_binary(IEs) ->
+    IEs;
 encode_v2(IEs) when is_list(IEs) ->
     Data = [encode_v2_element(IE) || IE <- IEs],
     << <<V/binary>> || {_Id, V} <- Data >>;
