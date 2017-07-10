@@ -256,7 +256,7 @@ decode_protocol_opts(Protocol, <<Id:16, Length:8, Data:Length/bytes, Next/binary
 decode_protocol_opts(_Protocol, <<Id:16, Length:8, Data:Length/bytes, Next/binary>>, Opts) ->
     decode_protocol_opts(-1, Next, [{Id, Data} | Opts]).
 
-decode_v1(255, Data) ->
+decode_v1(g_pdu, Data) ->
     %% G-PDU
     Data;
 decode_v1(_, Data) ->

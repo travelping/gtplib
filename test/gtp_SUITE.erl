@@ -209,7 +209,13 @@ test_v2_create_session_response(_Config) ->
     ok.
 
 test_g_pdu(_Config) ->
-    do_test(g_pdu()),
+    BinMsg = g_pdu(),
+    Msg0 = gtp_packet:decode(BinMsg, #{ies => binary}),
+    ?match(#gtp{ie = IEs} when is_binary(IEs), Msg0),
+    Msg1 = gtp_packet:decode(BinMsg, #{ies => map}),
+    ?match(#gtp{ie = IEs} when is_binary(IEs), Msg1),
+
+    ?equal(BinMsg, gtp_packet:encode(Msg1)),
     ok.
 
 test_v1_pco_rel97(_Config) ->
