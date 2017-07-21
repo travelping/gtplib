@@ -73,6 +73,11 @@ v1_create_pdp_context_request_2() ->
 	       "5368165092359710").
 
 v1_create_pdp_context_response() ->
+    hexstr2bin("3211004e0000000144010000018008fe0e2b100000000111000000017f000000"
+	       "01800006f1210a1c010284001480802110020000108106080808088306000000"
+	       "00850004ac1410a8850004ac1410a9870004000b921f").
+
+v1_ignore_spare_bits() ->
     hexstr2bin("3211004e0000000144010000018008000e2b100000000111000000017f000000"
 	       "01800006f1210a1c010284001480802110020000108106080808088306000000"
 	       "00850004ac1410a8850004ac1410a9870004000b921f").
@@ -200,6 +205,12 @@ test_v1_create_pdp_context_response(_Config) ->
     do_test(v1_create_pdp_context_response()),
     ok.
 
+test_v1_ignore_spare_bits() ->
+    [{doc, "Check that decode ignores spare bit values"}].
+test_v1_ignore_spare_bits(_Config) ->
+    Msg = gtp_packet:decode(v1_ignore_spare_bits()),
+    ?equal(Msg, gtp_packet:decode(gtp_packet:encode(Msg))).
+
 test_v2_create_session_request(_Config) ->
     do_test_v2(v2_create_session_request()),
     ok.
@@ -277,6 +288,7 @@ all() ->
 	 test_v1_echo_response,
 	 test_v1_create_pdp_context_request,
 	 test_v1_create_pdp_context_response,
+	 test_v1_ignore_spare_bits,
 	 test_v2_create_session_request,
 	 test_v2_create_session_response,
 	 test_g_pdu,
