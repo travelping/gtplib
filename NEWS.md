@@ -3,6 +3,16 @@ gtplib
 
 Erlang library for encoding and decoding GTPv1 and GTPv2 frames.
 
+Version 1.2.0 - 21 Jul 2017
+---------------------------
+
+* support GTPv2 UE Time Zone message element
+* enhanced test suite
+* fixed G-PDU decoding
+* split message header and message element decoding (API enhancement)
+* remove kernel netlink support
+* add support for GSM 09.60 version 6.1.0 Release 1997 PCOs
+
 Version 1.1.0 - 21 Oct 2016
 ---------------------------
 
