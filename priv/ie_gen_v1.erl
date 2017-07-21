@@ -483,7 +483,7 @@ gen_decoder_header_match({'_', 0}) ->
 gen_decoder_header_match({'_', Size}) ->
     [io_lib:format("_:~w", [Size])];
 gen_decoder_header_match({'1', Size}) ->
-    [io_lib:format("~w:~w", [(1 bsl Size) - 1, Size])];
+    [io_lib:format("_:~w", [Size])];
 gen_decoder_header_match({Value, Size}) when is_integer(Value); is_atom(Value) ->
     [io_lib:format("~w:~w", [Value, Size])];
 gen_decoder_header_match({Name, {flags, Flags}}) ->

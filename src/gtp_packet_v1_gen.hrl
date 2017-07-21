@@ -344,7 +344,7 @@ decode_v1_element(5, Instance, <<M_p_tmsi:4/bytes>>) ->
     #packet_tmsi{instance = Instance,
                  p_tmsi = M_p_tmsi};
 
-decode_v1_element(8, Instance, <<127:7,
+decode_v1_element(8, Instance, <<_:7,
                                  M_required:1/integer>>) ->
     #reordering_required{instance = Instance,
                          required = enum_required(M_required)};
@@ -363,7 +363,7 @@ decode_v1_element(11, Instance, <<>>) ->
 decode_v1_element(12, Instance, <<>>) ->
     #p_tmsi_signature{instance = Instance};
 
-decode_v1_element(13, Instance, <<127:7,
+decode_v1_element(13, Instance, <<_:7,
                                   M_validated:1/integer>>) ->
     #ms_validated{instance = Instance,
                   validated = enum_validated(M_validated)};
@@ -372,7 +372,7 @@ decode_v1_element(14, Instance, <<M_restart_counter:8/integer>>) ->
     #recovery{instance = Instance,
               restart_counter = M_restart_counter};
 
-decode_v1_element(15, Instance, <<63:6,
+decode_v1_element(15, Instance, <<_:6,
                                   M_mode:2/integer>>) ->
     #selection_mode{instance = Instance,
                     mode = M_mode};
@@ -392,7 +392,7 @@ decode_v1_element(18, Instance, <<_:4,
                                         nsapi = M_nsapi,
                                         tei = M_tei};
 
-decode_v1_element(19, Instance, <<127:7,
+decode_v1_element(19, Instance, <<_:7,
                                   M_value:1/integer>>) ->
     #teardown_ind{instance = Instance,
                   value = M_value};
@@ -434,7 +434,7 @@ decode_v1_element(127, Instance, <<M_id:4/bytes>>) ->
     #charging_id{instance = Instance,
                  id = M_id};
 
-decode_v1_element(128, Instance, <<15:4,
+decode_v1_element(128, Instance, <<_:4,
                                    M_pdp_type_organization:4/integer,
                                    M_pdp_type_number:8/integer,
                                    M_pdp_address/binary>>) ->
@@ -443,7 +443,7 @@ decode_v1_element(128, Instance, <<15:4,
                       pdp_type_number = M_pdp_type_number,
                       pdp_address = M_pdp_address};
 
-decode_v1_element(129, Instance, <<15:4,
+decode_v1_element(129, Instance, <<_:4,
                                    M_cksn:4/integer,
                                    1:2,
                                    M_no_of_vectors:3/integer,
@@ -474,11 +474,11 @@ decode_v1_element(129, Instance, <<15:4,
                     container_length = M_container_length,
                     container = [X || <<X:1/bytes>> <= M_container]};
 
-decode_v1_element(129, Instance, <<15:4,
+decode_v1_element(129, Instance, <<_:4,
                                    M_ksi:4/integer,
                                    2:2,
                                    M_no_of_vectors:3/integer,
-                                   7:3,
+                                   _:3,
                                    M_ck:16/bytes,
                                    M_ik:16/bytes,
                                    M_quintuplet_length:16/integer,
@@ -508,7 +508,7 @@ decode_v1_element(129, Instance, <<15:4,
                      container_length = M_container_length,
                      container = [X || <<X:1/bytes>> <= M_container]};
 
-decode_v1_element(129, Instance, <<15:4,
+decode_v1_element(129, Instance, <<_:4,
                                    M_cksn:4/integer,
                                    3:2,
                                    M_no_of_vectors:3/integer,
@@ -541,7 +541,7 @@ decode_v1_element(129, Instance, <<15:4,
                              container_length = M_container_length,
                              container = [X || <<X:1/bytes>> <= M_container]};
 
-decode_v1_element(129, Instance, <<15:4,
+decode_v1_element(129, Instance, <<_:4,
                                    M_ksi:4/integer,
                                    0:2,
                                    M_no_of_vectors:3/integer,
