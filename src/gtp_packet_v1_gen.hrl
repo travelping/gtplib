@@ -203,7 +203,7 @@ message_type_v1(240) -> data_record_transfer_request;
 message_type_v1(241) -> data_record_transfer_response;
 message_type_v1(254) -> end_marker;
 message_type_v1(255) -> g_pdu;
-message_type_v1({Vendor, Type}) when is_integer(Vendor), is_integer(Type) -> {Vendor, Type}.
+message_type_v1(Type) -> error(badarg, [Type]).
 
 enum_validated(no) -> 0;
 enum_validated(yes) -> 1;

@@ -233,7 +233,7 @@ message_type_v2(233) -> mbms_session_update_request;
 message_type_v2(234) -> mbms_session_update_response;
 message_type_v2(235) -> mbms_session_stop_request;
 message_type_v2(236) -> mbms_session_stop_response;
-message_type_v2({Vendor, Type}) when is_integer(Vendor), is_integer(Type) -> {Vendor, Type}.
+message_type_v2(Type) -> error(badarg, [Type]).
 
 enum_v2_pdn_type(ipv4) -> 1;
 enum_v2_pdn_type(ipv6) -> 2;

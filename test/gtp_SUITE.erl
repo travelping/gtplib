@@ -52,6 +52,9 @@ mkint(C) when $A =< C, C =< $F ->
 mkint(C) when $a =< C, C =< $f ->
     C - $a + 10.
 
+v1_invalid_msg() ->
+    hexstr2bin("320000040000000044000000").
+
 v1_echo_request() ->
     hexstr2bin("320100040000000044000000").
 
@@ -81,6 +84,9 @@ v1_ignore_spare_bits() ->
     hexstr2bin("3211004e0000000144010000018008000e2b100000000111000000017f000000"
 	       "01800006f1210a1c010284001480802110020000108106080808088306000000"
 	       "00850004ac1410a8850004ac1410a9870004000b921f").
+
+v2_invalid_msg() ->
+    hexstr2bin("480000080000000000000100").
 
 v2_create_session_request() ->
     hexstr2bin("482000f300000000001019000100080032021308000002f44c00060034767654"
@@ -188,6 +194,10 @@ do_test_v2(Msg) ->
     ct:pal("Decoded Msg: ~p", [P]),
     ?equal(P, gtp_packet:decode(gtp_packet:encode(P))).
 
+test_v1_invalid_msg(_Config) ->
+    ?match({'EXIT', {badarg, _}}, (catch gtp_packet:decode(v1_invalid_msg()))),
+    ok.
+
 test_v1_echo_request(_Config) ->
     do_test(v1_echo_request()),
     ok.
@@ -210,6 +220,10 @@ test_v1_ignore_spare_bits() ->
 test_v1_ignore_spare_bits(_Config) ->
     Msg = gtp_packet:decode(v1_ignore_spare_bits()),
     ?equal(Msg, gtp_packet:decode(gtp_packet:encode(Msg))).
+
+test_v2_invalid_msg(_Config) ->
+    ?match({'EXIT', {badarg, _}}, (catch gtp_packet:decode(v2_invalid_msg()))),
+    ok.
 
 test_v2_create_session_request(_Config) ->
     do_test_v2(v2_create_session_request()),
@@ -284,11 +298,13 @@ partial_encode(_Config) ->
     ok.
 
 all() ->
-	[test_v1_echo_request,
+	[test_v1_invalid_msg,
+	 test_v1_echo_request,
 	 test_v1_echo_response,
 	 test_v1_create_pdp_context_request,
 	 test_v1_create_pdp_context_response,
 	 test_v1_ignore_spare_bits,
+	 test_v2_invalid_msg,
 	 test_v2_create_session_request,
 	 test_v2_create_session_response,
 	 test_g_pdu,
