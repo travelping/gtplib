@@ -586,8 +586,8 @@ main(_) ->
 				 ++ ["msg_description_v2(X) -> io_lib:format(\"~p\", [X])"], ";\n") ++ ".\n",
 
     {FwdFuns, RevFuns} = gen_message_type(msgs(), {[], []}),
-    WildFun = ["message_type_v2({Vendor, Type}) when is_integer(Vendor), is_integer(Type) -> {Vendor, Type}"],
-    MTypes = string:join(FwdFuns ++ RevFuns ++ WildFun, ";\n") ++ ".\n",
+    ErrorFun = ["message_type_v2(Type) -> error(badarg, [Type])"],
+    MTypes = string:join(FwdFuns ++ RevFuns ++ ErrorFun, ";\n") ++ ".\n",
 
     Records = string:join([write_record(X) || X <- ies()], "\n"),
     HrlRecs = io_lib:format("%% This file is auto-generated. DO NOT EDIT~n~n~s~n", [Records]),
