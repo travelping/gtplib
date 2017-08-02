@@ -399,85 +399,85 @@ enum_v2_v2_cause(119) -> mme_sgsn_refuses_due_to_vplmn_policy;
 enum_v2_v2_cause(120) -> gtp_c_entity_congestion;
 enum_v2_v2_cause(X) when is_integer(X) -> X.
 
-decode_v2_element(1, Instance, <<M_imsi/binary>>) ->
+decode_v2_element(<<M_imsi/binary>>, 1, Instance) ->
     #v2_international_mobile_subscriber_identity{instance = Instance,
                                                  imsi = decode_tbcd(M_imsi)};
 
-decode_v2_element(2, Instance, <<M_v2_cause:8/integer,
-                                 _:5,
-                                 M_pce:1/integer,
-                                 M_bce:1/integer,
-                                 M_cs:1/integer,
-                                 _/binary>>) ->
+decode_v2_element(<<M_v2_cause:8/integer,
+                    _:5,
+                    M_pce:1/integer,
+                    M_bce:1/integer,
+                    M_cs:1/integer,
+                    _/binary>>, 2, Instance) ->
     #v2_cause{instance = Instance,
               v2_cause = enum_v2_v2_cause(M_v2_cause),
               pce = M_pce,
               bce = M_bce,
               cs = M_cs};
 
-decode_v2_element(3, Instance, <<M_restart_counter:8/integer,
-                                 _/binary>>) ->
+decode_v2_element(<<M_restart_counter:8/integer,
+                    _/binary>>, 3, Instance) ->
     #v2_recovery{instance = Instance,
                  restart_counter = M_restart_counter};
 
-decode_v2_element(51, Instance, <<>>) ->
+decode_v2_element(<<>>, 51, Instance) ->
     #v2_stn_sr{instance = Instance};
 
-decode_v2_element(71, Instance, <<M_apn/binary>>) ->
+decode_v2_element(<<M_apn/binary>>, 71, Instance) ->
     #v2_access_point_name{instance = Instance,
                           apn = decode_apn(M_apn)};
 
-decode_v2_element(72, Instance, <<M_uplink:32/integer,
-                                  M_downlink:32/integer,
-                                  _/binary>>) ->
+decode_v2_element(<<M_uplink:32/integer,
+                    M_downlink:32/integer,
+                    _/binary>>, 72, Instance) ->
     #v2_aggregate_maximum_bit_rate{instance = Instance,
                                    uplink = M_uplink,
                                    downlink = M_downlink};
 
-decode_v2_element(73, Instance, <<_:4,
-                                  M_eps_bearer_id:4/integer,
-                                  _/binary>>) ->
+decode_v2_element(<<_:4,
+                    M_eps_bearer_id:4/integer,
+                    _/binary>>, 73, Instance) ->
     #v2_eps_bearer_id{instance = Instance,
                       eps_bearer_id = M_eps_bearer_id};
 
-decode_v2_element(74, Instance, <<M_ip/binary>>) ->
+decode_v2_element(<<M_ip/binary>>, 74, Instance) ->
     #v2_ip_address{instance = Instance,
                    ip = M_ip};
 
-decode_v2_element(75, Instance, <<M_mei/binary>>) ->
+decode_v2_element(<<M_mei/binary>>, 75, Instance) ->
     #v2_mobile_equipment_identity{instance = Instance,
                                   mei = M_mei};
 
-decode_v2_element(76, Instance, <<M_msisdn/binary>>) ->
+decode_v2_element(<<M_msisdn/binary>>, 76, Instance) ->
     #v2_msisdn{instance = Instance,
                msisdn = decode_tbcd(M_msisdn)};
 
-decode_v2_element(77, Instance, <<M_flags/binary>>) ->
+decode_v2_element(<<M_flags/binary>>, 77, Instance) ->
     #v2_indication{instance = Instance,
                    flags = decode_v2_indication_flags(M_flags)};
 
-decode_v2_element(78, Instance, <<M_config/binary>>) ->
+decode_v2_element(<<M_config/binary>>, 78, Instance) ->
     #v2_protocol_configuration_options{instance = Instance,
                                        config = decode_protocol_config_opts(M_config)};
 
-decode_v2_element(79, Instance, <<_:5,
-                                  M_type:3/integer,
-                                  M_address/binary>>) ->
+decode_v2_element(<<_:5,
+                    M_type:3/integer,
+                    M_address/binary>>, 79, Instance) ->
     #v2_pdn_address_allocation{instance = Instance,
                                type = enum_v2_type(M_type),
                                address = M_address};
 
-decode_v2_element(80, Instance, <<_:1,
-                                  M_pci:1/integer,
-                                  M_pl:4/integer,
-                                  _:1,
-                                  M_pvi:1/integer,
-                                  M_label:8/integer,
-                                  M_maximum_bit_rate_for_uplink:40/integer,
-                                  M_maximum_bit_rate_for_downlink:40/integer,
-                                  M_guaranteed_bit_rate_for_uplink:40/integer,
-                                  M_guaranteed_bit_rate_for_downlink:40/integer,
-                                  _/binary>>) ->
+decode_v2_element(<<_:1,
+                    M_pci:1/integer,
+                    M_pl:4/integer,
+                    _:1,
+                    M_pvi:1/integer,
+                    M_label:8/integer,
+                    M_maximum_bit_rate_for_uplink:40/integer,
+                    M_maximum_bit_rate_for_downlink:40/integer,
+                    M_guaranteed_bit_rate_for_uplink:40/integer,
+                    M_guaranteed_bit_rate_for_downlink:40/integer,
+                    _/binary>>, 80, Instance) ->
     #v2_bearer_level_quality_of_service{instance = Instance,
                                         pci = M_pci,
                                         pl = M_pl,
@@ -488,324 +488,324 @@ decode_v2_element(80, Instance, <<_:1,
                                         guaranteed_bit_rate_for_uplink = M_guaranteed_bit_rate_for_uplink,
                                         guaranteed_bit_rate_for_downlink = M_guaranteed_bit_rate_for_downlink};
 
-decode_v2_element(81, Instance, <<>>) ->
+decode_v2_element(<<>>, 81, Instance) ->
     #v2_flow_quality_of_service{instance = Instance};
 
-decode_v2_element(82, Instance, <<M_rat_type:8/integer,
-                                  _/binary>>) ->
+decode_v2_element(<<M_rat_type:8/integer,
+                    _/binary>>, 82, Instance) ->
     #v2_rat_type{instance = Instance,
                  rat_type = M_rat_type};
 
-decode_v2_element(83, Instance, Data) ->
-    decode_v2_mccmnc(Instance, Data);
+decode_v2_element(<<Data/binary>>, 83, Instance) ->
+    decode_v2_mccmnc(Data, Instance);
 
-decode_v2_element(84, Instance, <<>>) ->
+decode_v2_element(<<>>, 84, Instance) ->
     #v2_eps_bearer_level_traffic_flow_template{instance = Instance};
 
-decode_v2_element(85, Instance, <<>>) ->
+decode_v2_element(<<>>, 85, Instance) ->
     #v2_traffic_aggregation_description{instance = Instance};
 
-decode_v2_element(86, Instance, Data) ->
-    decode_v2_user_location_information(Instance, Data);
+decode_v2_element(<<Data/binary>>, 86, Instance) ->
+    decode_v2_user_location_information(Data, Instance);
 
-decode_v2_element(87, Instance, Data) ->
-    decode_v2_fully_qualified_tunnel_endpoint_identifier(Instance, Data);
+decode_v2_element(<<Data/binary>>, 87, Instance) ->
+    decode_v2_fully_qualified_tunnel_endpoint_identifier(Data, Instance);
 
-decode_v2_element(88, Instance, <<>>) ->
+decode_v2_element(<<>>, 88, Instance) ->
     #v2_tmsi{instance = Instance};
 
-decode_v2_element(89, Instance, <<>>) ->
+decode_v2_element(<<>>, 89, Instance) ->
     #v2_global_cn_id{instance = Instance};
 
-decode_v2_element(90, Instance, <<>>) ->
+decode_v2_element(<<>>, 90, Instance) ->
     #v2_s103_pdn_data_forwarding_info{instance = Instance};
 
-decode_v2_element(91, Instance, <<>>) ->
+decode_v2_element(<<>>, 91, Instance) ->
     #v2_s1_u_data_forwarding_info{instance = Instance};
 
-decode_v2_element(92, Instance, <<>>) ->
+decode_v2_element(<<>>, 92, Instance) ->
     #v2_delay_value{instance = Instance};
 
-decode_v2_element(93, Instance, <<M_group/binary>>) ->
+decode_v2_element(<<M_group/binary>>, 93, Instance) ->
     #v2_bearer_context{instance = Instance,
                        group = decode_v2_grouped(M_group)};
 
-decode_v2_element(94, Instance, <<M_id:4/bytes>>) ->
+decode_v2_element(<<M_id:4/bytes>>, 94, Instance) ->
     #v2_charging_id{instance = Instance,
                     id = M_id};
 
-decode_v2_element(95, Instance, <<>>) ->
+decode_v2_element(<<>>, 95, Instance) ->
     #v2_charging_characteristics{instance = Instance};
 
-decode_v2_element(96, Instance, <<>>) ->
+decode_v2_element(<<>>, 96, Instance) ->
     #v2_trace_information{instance = Instance};
 
-decode_v2_element(97, Instance, <<>>) ->
+decode_v2_element(<<>>, 97, Instance) ->
     #v2_bearer_flags{instance = Instance};
 
-decode_v2_element(99, Instance, <<_:4,
-                                  M_pdn_type:4/integer,
-                                  _/binary>>) ->
+decode_v2_element(<<_:4,
+                    M_pdn_type:4/integer,
+                    _/binary>>, 99, Instance) ->
     #v2_pdn_type{instance = Instance,
                  pdn_type = enum_v2_pdn_type(M_pdn_type)};
 
-decode_v2_element(100, Instance, <<>>) ->
+decode_v2_element(<<>>, 100, Instance) ->
     #v2_procedure_transaction_id{instance = Instance};
 
-decode_v2_element(103, Instance, <<>>) ->
+decode_v2_element(<<>>, 103, Instance) ->
     #v2_mm_context_1{instance = Instance};
 
-decode_v2_element(104, Instance, <<>>) ->
+decode_v2_element(<<>>, 104, Instance) ->
     #v2_mm_context_2{instance = Instance};
 
-decode_v2_element(105, Instance, <<>>) ->
+decode_v2_element(<<>>, 105, Instance) ->
     #v2_mm_context_3{instance = Instance};
 
-decode_v2_element(106, Instance, <<>>) ->
+decode_v2_element(<<>>, 106, Instance) ->
     #v2_mm_context_4{instance = Instance};
 
-decode_v2_element(107, Instance, <<>>) ->
+decode_v2_element(<<>>, 107, Instance) ->
     #v2_mm_context_5{instance = Instance};
 
-decode_v2_element(108, Instance, <<>>) ->
+decode_v2_element(<<>>, 108, Instance) ->
     #v2_mm_context_6{instance = Instance};
 
-decode_v2_element(109, Instance, <<>>) ->
+decode_v2_element(<<>>, 109, Instance) ->
     #v2_pdn_connection{instance = Instance};
 
-decode_v2_element(110, Instance, <<>>) ->
+decode_v2_element(<<>>, 110, Instance) ->
     #v2_pdu_numbers{instance = Instance};
 
-decode_v2_element(111, Instance, <<>>) ->
+decode_v2_element(<<>>, 111, Instance) ->
     #v2_p_tmsi{instance = Instance};
 
-decode_v2_element(112, Instance, <<>>) ->
+decode_v2_element(<<>>, 112, Instance) ->
     #v2_p_tmsi_signature{instance = Instance};
 
-decode_v2_element(113, Instance, <<>>) ->
+decode_v2_element(<<>>, 113, Instance) ->
     #v2_hop_counter{instance = Instance};
 
-decode_v2_element(114, Instance, <<M_timezone:8/integer,
-                                   _:6,
-                                   M_dst:2/integer,
-                                   _/binary>>) ->
+decode_v2_element(<<M_timezone:8/integer,
+                    _:6,
+                    M_dst:2/integer,
+                    _/binary>>, 114, Instance) ->
     #v2_ue_time_zone{instance = Instance,
                      timezone = M_timezone,
                      dst = M_dst};
 
-decode_v2_element(115, Instance, <<>>) ->
+decode_v2_element(<<>>, 115, Instance) ->
     #v2_trace_reference{instance = Instance};
 
-decode_v2_element(116, Instance, <<>>) ->
+decode_v2_element(<<>>, 116, Instance) ->
     #v2_complete_request_message{instance = Instance};
 
-decode_v2_element(117, Instance, <<>>) ->
+decode_v2_element(<<>>, 117, Instance) ->
     #v2_guti{instance = Instance};
 
-decode_v2_element(118, Instance, <<>>) ->
+decode_v2_element(<<>>, 118, Instance) ->
     #v2_f_container{instance = Instance};
 
-decode_v2_element(119, Instance, <<>>) ->
+decode_v2_element(<<>>, 119, Instance) ->
     #v2_f_cause{instance = Instance};
 
-decode_v2_element(120, Instance, <<>>) ->
+decode_v2_element(<<>>, 120, Instance) ->
     #v2_plmn_id{instance = Instance};
 
-decode_v2_element(121, Instance, <<>>) ->
+decode_v2_element(<<>>, 121, Instance) ->
     #v2_target_identification{instance = Instance};
 
-decode_v2_element(123, Instance, <<>>) ->
+decode_v2_element(<<>>, 123, Instance) ->
     #v2_packet_flow_id_{instance = Instance};
 
-decode_v2_element(124, Instance, <<>>) ->
+decode_v2_element(<<>>, 124, Instance) ->
     #v2_rab_context_{instance = Instance};
 
-decode_v2_element(125, Instance, <<>>) ->
+decode_v2_element(<<>>, 125, Instance) ->
     #v2_source_rnc_pdcp_context_info{instance = Instance};
 
-decode_v2_element(126, Instance, <<>>) ->
+decode_v2_element(<<>>, 126, Instance) ->
     #v2_udp_source_port_number{instance = Instance};
 
-decode_v2_element(127, Instance, <<M_restriction_type_value:8/integer,
-                                   _/binary>>) ->
+decode_v2_element(<<M_restriction_type_value:8/integer,
+                    _/binary>>, 127, Instance) ->
     #v2_apn_restriction{instance = Instance,
                         restriction_type_value = M_restriction_type_value};
 
-decode_v2_element(128, Instance, <<_:6,
-                                   M_mode:2/integer,
-                                   _/binary>>) ->
+decode_v2_element(<<_:6,
+                    M_mode:2/integer,
+                    _/binary>>, 128, Instance) ->
     #v2_selection_mode{instance = Instance,
                        mode = M_mode};
 
-decode_v2_element(129, Instance, <<>>) ->
+decode_v2_element(<<>>, 129, Instance) ->
     #v2_source_identification{instance = Instance};
 
-decode_v2_element(131, Instance, <<>>) ->
+decode_v2_element(<<>>, 131, Instance) ->
     #v2_change_reporting_action{instance = Instance};
 
-decode_v2_element(132, Instance, <<>>) ->
+decode_v2_element(<<>>, 132, Instance) ->
     #v2_fully_qualified_pdn_connection_set_identifier{instance = Instance};
 
-decode_v2_element(133, Instance, <<>>) ->
+decode_v2_element(<<>>, 133, Instance) ->
     #v2_channel_needed{instance = Instance};
 
-decode_v2_element(134, Instance, <<>>) ->
+decode_v2_element(<<>>, 134, Instance) ->
     #v2_emlpp_priority{instance = Instance};
 
-decode_v2_element(135, Instance, <<>>) ->
+decode_v2_element(<<>>, 135, Instance) ->
     #v2_node_type{instance = Instance};
 
-decode_v2_element(136, Instance, <<>>) ->
+decode_v2_element(<<>>, 136, Instance) ->
     #v2_fully_qualified_domain_name{instance = Instance};
 
-decode_v2_element(137, Instance, <<>>) ->
+decode_v2_element(<<>>, 137, Instance) ->
     #v2_transaction_identifier{instance = Instance};
 
-decode_v2_element(138, Instance, <<>>) ->
+decode_v2_element(<<>>, 138, Instance) ->
     #v2_mbms_session_duration{instance = Instance};
 
-decode_v2_element(139, Instance, <<>>) ->
+decode_v2_element(<<>>, 139, Instance) ->
     #v2_mbms_service_area{instance = Instance};
 
-decode_v2_element(140, Instance, <<>>) ->
+decode_v2_element(<<>>, 140, Instance) ->
     #v2_mbms_session_identifier{instance = Instance};
 
-decode_v2_element(141, Instance, <<>>) ->
+decode_v2_element(<<>>, 141, Instance) ->
     #v2_mbms_flow_identifier{instance = Instance};
 
-decode_v2_element(142, Instance, <<>>) ->
+decode_v2_element(<<>>, 142, Instance) ->
     #v2_mbms_ip_multicast_distribution{instance = Instance};
 
-decode_v2_element(143, Instance, <<>>) ->
+decode_v2_element(<<>>, 143, Instance) ->
     #v2_mbms_distribution_acknowledge{instance = Instance};
 
-decode_v2_element(144, Instance, <<>>) ->
+decode_v2_element(<<>>, 144, Instance) ->
     #v2_rfsp_index{instance = Instance};
 
-decode_v2_element(145, Instance, <<>>) ->
+decode_v2_element(<<>>, 145, Instance) ->
     #v2_user_csg_information{instance = Instance};
 
-decode_v2_element(146, Instance, <<>>) ->
+decode_v2_element(<<>>, 146, Instance) ->
     #v2_csg_information_reporting_action{instance = Instance};
 
-decode_v2_element(147, Instance, <<>>) ->
+decode_v2_element(<<>>, 147, Instance) ->
     #v2_csg_id{instance = Instance};
 
-decode_v2_element(148, Instance, <<>>) ->
+decode_v2_element(<<>>, 148, Instance) ->
     #v2_csg_membership_indication{instance = Instance};
 
-decode_v2_element(149, Instance, <<>>) ->
+decode_v2_element(<<>>, 149, Instance) ->
     #v2_service_indicator{instance = Instance};
 
-decode_v2_element(150, Instance, <<>>) ->
+decode_v2_element(<<>>, 150, Instance) ->
     #v2_detach_type{instance = Instance};
 
-decode_v2_element(151, Instance, <<>>) ->
+decode_v2_element(<<>>, 151, Instance) ->
     #v2_local_distiguished_name{instance = Instance};
 
-decode_v2_element(152, Instance, <<>>) ->
+decode_v2_element(<<>>, 152, Instance) ->
     #v2_node_features{instance = Instance};
 
-decode_v2_element(153, Instance, <<>>) ->
+decode_v2_element(<<>>, 153, Instance) ->
     #v2_mbms_time_to_data_transfer{instance = Instance};
 
-decode_v2_element(154, Instance, <<>>) ->
+decode_v2_element(<<>>, 154, Instance) ->
     #v2_throttling{instance = Instance};
 
-decode_v2_element(155, Instance, <<>>) ->
+decode_v2_element(<<>>, 155, Instance) ->
     #v2_allocation_retention_priority{instance = Instance};
 
-decode_v2_element(156, Instance, <<>>) ->
+decode_v2_element(<<>>, 156, Instance) ->
     #v2_epc_timer{instance = Instance};
 
-decode_v2_element(157, Instance, <<>>) ->
+decode_v2_element(<<>>, 157, Instance) ->
     #v2_signalling_priority_indication{instance = Instance};
 
-decode_v2_element(158, Instance, <<>>) ->
+decode_v2_element(<<>>, 158, Instance) ->
     #v2_temporary_mobile_group_identity{instance = Instance};
 
-decode_v2_element(159, Instance, <<>>) ->
+decode_v2_element(<<>>, 159, Instance) ->
     #v2_additional_mm_context_for_srvcc{instance = Instance};
 
-decode_v2_element(160, Instance, <<>>) ->
+decode_v2_element(<<>>, 160, Instance) ->
     #v2_additional_flags_for_srvcc{instance = Instance};
 
-decode_v2_element(162, Instance, <<>>) ->
+decode_v2_element(<<>>, 162, Instance) ->
     #v2_mdt_configuration{instance = Instance};
 
-decode_v2_element(163, Instance, <<>>) ->
+decode_v2_element(<<>>, 163, Instance) ->
     #v2_additional_protocol_configuration_options{instance = Instance};
 
-decode_v2_element(164, Instance, <<>>) ->
+decode_v2_element(<<>>, 164, Instance) ->
     #v2_absolute_time_of_mbms_data_transfer{instance = Instance};
 
-decode_v2_element(165, Instance, <<>>) ->
+decode_v2_element(<<>>, 165, Instance) ->
     #v2_henb_information_reporting_{instance = Instance};
 
-decode_v2_element(166, Instance, <<>>) ->
+decode_v2_element(<<>>, 166, Instance) ->
     #v2_ipv4_configuration_parameters{instance = Instance};
 
-decode_v2_element(167, Instance, <<>>) ->
+decode_v2_element(<<>>, 167, Instance) ->
     #v2_change_to_report_flags_{instance = Instance};
 
-decode_v2_element(168, Instance, <<>>) ->
+decode_v2_element(<<>>, 168, Instance) ->
     #v2_action_indication{instance = Instance};
 
-decode_v2_element(169, Instance, <<>>) ->
+decode_v2_element(<<>>, 169, Instance) ->
     #v2_twan_identifier{instance = Instance};
 
-decode_v2_element(170, Instance, <<>>) ->
+decode_v2_element(<<>>, 170, Instance) ->
     #v2_uli_timestamp{instance = Instance};
 
-decode_v2_element(171, Instance, <<>>) ->
+decode_v2_element(<<>>, 171, Instance) ->
     #v2_mbms_flags{instance = Instance};
 
-decode_v2_element(172, Instance, <<>>) ->
+decode_v2_element(<<>>, 172, Instance) ->
     #v2_ran_nas_cause{instance = Instance};
 
-decode_v2_element(173, Instance, <<>>) ->
+decode_v2_element(<<>>, 173, Instance) ->
     #v2_cn_operator_selection_entity{instance = Instance};
 
-decode_v2_element(174, Instance, <<>>) ->
+decode_v2_element(<<>>, 174, Instance) ->
     #v2_trusted_wlan_mode_indication{instance = Instance};
 
-decode_v2_element(175, Instance, <<>>) ->
+decode_v2_element(<<>>, 175, Instance) ->
     #v2_node_number{instance = Instance};
 
-decode_v2_element(176, Instance, <<>>) ->
+decode_v2_element(<<>>, 176, Instance) ->
     #v2_node_identifier{instance = Instance};
 
-decode_v2_element(177, Instance, <<>>) ->
+decode_v2_element(<<>>, 177, Instance) ->
     #v2_presence_reporting_area_action{instance = Instance};
 
-decode_v2_element(178, Instance, <<>>) ->
+decode_v2_element(<<>>, 178, Instance) ->
     #v2_presence_reporting_area_information{instance = Instance};
 
-decode_v2_element(179, Instance, <<>>) ->
+decode_v2_element(<<>>, 179, Instance) ->
     #v2_twan_identifier_timestamp{instance = Instance};
 
-decode_v2_element(180, Instance, <<>>) ->
+decode_v2_element(<<>>, 180, Instance) ->
     #v2_overload_control_information{instance = Instance};
 
-decode_v2_element(181, Instance, <<>>) ->
+decode_v2_element(<<>>, 181, Instance) ->
     #v2_load_control_information{instance = Instance};
 
-decode_v2_element(182, Instance, <<>>) ->
+decode_v2_element(<<>>, 182, Instance) ->
     #v2_metric{instance = Instance};
 
-decode_v2_element(183, Instance, <<>>) ->
+decode_v2_element(<<>>, 183, Instance) ->
     #v2_sequence_number{instance = Instance};
 
-decode_v2_element(184, Instance, <<>>) ->
+decode_v2_element(<<>>, 184, Instance) ->
     #v2_apn_and_relative_capacity{instance = Instance};
 
-decode_v2_element(185, Instance, <<>>) ->
+decode_v2_element(<<>>, 185, Instance) ->
     #v2_wlan_offloadability_indication{instance = Instance};
 
-decode_v2_element(255, Instance, <<>>) ->
+decode_v2_element(<<>>, 255, Instance) ->
     #v2_private_extension{instance = Instance};
 
-decode_v2_element(Tag, Instance, Value) ->
+decode_v2_element(Value, Tag, Instance) ->
         {Tag, Instance, Value}.
 
 encode_v2_element(#v2_international_mobile_subscriber_identity{

@@ -699,21 +699,21 @@ write_record(_) ->
 
 write_decoder(FunName, {Id, Name, _Length, Fields})
   when is_list(Fields) ->
-    FunHead = io_lib:format("~s(~w, Instance, ", [FunName, Id]),
-    MatchIdent = indent(FunHead, 2),
+    MatchIdent = indent(FunName, 3),
     Match = string:join(collect(fun(X) -> gen_decoder_header_match(X) end, Fields), [",\n", MatchIdent]),
     Body = build_late_assign(Fields),
     RecIdent = indent(Name, 6),
     RecAssign = string:join(["instance = Instance" |
 			     collect(fun gen_decoder_record_assign/1, Fields)], [",\n", RecIdent]),
-    io_lib:format("~s<<~s>>) ->~n~s    #~s{~s}", [FunHead, Match, Body, s2a(Name), RecAssign]);
+    io_lib:format("~s(<<~s>>, ~w, Instance) ->~n~s    #~s{~s}",
+		  [FunName, Match, Id, Body, s2a(Name), RecAssign]);
 write_decoder(FunName, {Id, _Name, Helper})
   when is_atom(Helper) ->
-    io_lib:format("~s(~w, Instance, Data) ->~n    decode_~s(Instance, Data)",
+    io_lib:format("~s(<<Data/binary>>, ~w, Instance) ->~n    decode_~s(Data, Instance)",
 		  [FunName, Id, Helper]);
 write_decoder(FunName, {Id, _Name, Length, Helper})
   when is_integer(Length), is_atom(Helper) ->
-    io_lib:format("~s(~w, Instance, Data) ->~n    decode_~s(Instance, Data)",
+    io_lib:format("~s(<<Data/binary>>, ~w, Instance) ->~n    decode_~s(Data, Instance)",
 		  [FunName, Id, Helper]).
 
 write_encoder(FunName, {Id, Name, _Length, Fields})
@@ -747,19 +747,19 @@ main(_) ->
     HrlRecs = io_lib:format("%% This file is auto-generated. DO NOT EDIT~n~n~s~n", [Records]),
     Enums = write_enums(ies()),
 
-    CatchAnyDecoder = "decode_v1_element(Tag, Instance, Value) ->\n        {Tag, Instance, Value}",
+    CatchAnyDecoder = "decode_v1_element(Value, Tag, Instance) ->\n        {Tag, Instance, Value}",
 
     Funs = string:join([write_decoder("decode_v1_element", X) || X <- ies()] ++ [CatchAnyDecoder], ";\n\n"),
 
     MainDecodeSwitch = ["decode_v1(<<>>, _PrevId, _PrevInst, IEs) ->\n    IEs;\n",
 	[io_lib:format("decode_v1(<<~w, Data:~w/bytes, Next/binary>>, PrevInst, PrevId, IEs) ->~n"
 		       "    Instance = v1_instance(~w, PrevId, PrevInst),~n"
-		       "    IE = decode_v1_element(~w, Instance, Data),~n"
+		       "    IE = decode_v1_element(Data, ~w, Instance),~n"
 		       "    decode_v1(Next, ~w, Instance, put_ie(IE, IEs));~n", [Id, Length, Id, Id, Id]) || {Id, _, Length, _} <- ies(), Id < 128],
 	"decode_v1(<<Id, Length:16/integer, Rest/binary>>, PrevId, PrevInst, IEs) when Id > 127 ->\n"
 	"    <<Data:Length/binary, Next/binary>> = Rest,\n"
 	"    Instance = v1_instance(Id, PrevId, PrevInst),\n"
-	"    IE = decode_v1_element(Id, Instance, Data),\n"
+	"    IE = decode_v1_element(Data, Id, Instance),\n"
 	"    decode_v1(Next, Id, Instance, put_ie(IE, IEs));\n"
 	"decode_v1(<<Id, Rest/binary>>, PrevId, PrevInst, IEs) ->\n"
 	"    Instance = v1_instance(Id, PrevId, PrevInst),\n"

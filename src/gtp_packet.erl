@@ -12,7 +12,8 @@
 -compile(export_all).
 -compile([{parse_transform, cut},
 	  bin_opt_info]).
-
+-compile({inline,[decode_tbcd/1, decode_apn/1,
+		  decode_v2_grouped/1]}).
 -include("gtp_packet.hrl").
 
 -define(V2_INDICATION_FLAGS, ['DAF', 'DTF', 'HI', 'DFI', 'OI', 'ISRSI', 'ISRAI', 'SGWCI',
@@ -93,27 +94,16 @@ decode_header(<<1:3, 1:1, _:1, 0:1, 0:1, 0:1, Type:8, Length:16, TEI:32/integer,
     <<IEs:Length/bytes, _Next/binary>> = Data0,
     #gtp{version = v1, type = message_type_v1(Type), tei = TEI, ie = IEs};
 
-decode_header(Data = <<2:3, 0:1, _T:1, _Spare0:3, _/binary>>) ->
-    decode_v2_msg(Data);
-decode_header(Data = <<2:3, 1:1, _T:1, _Spare0:3, _/binary>>) ->
-    decode_v2_msg(Data, []).
+decode_header(<<2:3, 0:1, T:1, _Spare0:3, Type:8, Length:16,
+		Data:Length/bytes, _Next/binary>>) ->
+    decode_v2_msg(Data, T, Type);
+decode_header(<<2:3, 1:1, T:1, _Spare0:3, Type:8, Length:16,
+		Data:Length/bytes, Next/binary>>) ->
+    {decode_v2_msg(Data, T, Type), decode_header(Next)}.
 
-decode_v2_msg(Data = <<2:3, _P:1, _T:1, _Spare0:3, _Type:8, Length:16, _/binary>>, Acc) ->
-    MsgLen = Length + 4,
-    <<Msg:MsgLen/bytes, Next/binary>> = Data,
-    decode_v2_msg(Next, [decode(Msg) | Acc]);
-decode_v2_msg(Data, Acc) ->
-    {lists:reverse(Acc), Data}.
-
-decode_v2_msg(<<2:3, _:1, 1:1, _Spare0:3, Type:8, Length:16,
-		TEI:32/integer, SeqNo:24, _Spare1:8, Data0/binary>>) ->
-    DataLen = Length - 8,
-    <<IEs:DataLen/bytes, _Next/binary>> = Data0,
+decode_v2_msg(<<TEI:32/integer, SeqNo:24, _Spare1:8, IEs/binary>>, 1, Type) ->
     #gtp{version = v2, type = message_type_v2(Type), tei = TEI, seq_no = SeqNo, ie = IEs};
-decode_v2_msg(<<2:3, _:1, 0:1, _Spare0:3, Type:8, Length:16,
-		SeqNo:24, _Spare1:8, Data0/binary>>) ->
-    DataLen = Length - 4,
-    <<IEs:DataLen/bytes, _Next/binary>> = Data0,
+decode_v2_msg(<<SeqNo:24, _Spare1:8, IEs/binary>>, 0, Type) ->
     #gtp{version = v2, type = message_type_v2(Type), tei = undefined, seq_no = SeqNo, ie = IEs}.
 
 %%%===================================================================
@@ -154,9 +144,9 @@ encode_flag(Flag, Flags) ->
 
 is_bin(Bin) -> bool2int(is_binary(Bin)).
 
-maybe_bin(0, _, Bin, _, IE) ->
+maybe_bin(<<Bin/binary>>, 0, _, _, IE) ->
     {IE, Bin};
-maybe_bin(1, Len, Bin, Pos, IE) ->
+maybe_bin(<<Bin/binary>>, 1, Len, Pos, IE) ->
     <<V:Len/bytes, Rest/binary>> = Bin,
     {setelement(Pos, IE, V), Rest}.
 
@@ -170,25 +160,25 @@ decode_exthdr(0, Data, Hdrs) ->
 decode_exthdr(Type, <<Length, Rest/binary>>, Hdrs) ->
     HdrLen = Length * 4 - 2,
     <<HdrData:HdrLen/bytes, NextType:8, Data/binary>> = Rest,
-    Hdr = decode_exthdr_type(Type, HdrData),
+    Hdr = decode_exthdr_type(HdrData, Type),
     decode_exthdr(NextType, Data, [Hdr|Hdrs]).
 
-decode_exthdr_type(2#00100000, <<Class:8, _/binary>>) ->
+decode_exthdr_type(<<Class:8, _/binary>>, 2#00100000) ->
     %% Service Class Indicator
     {service_class, Class};
-decode_exthdr_type(2#01000000, <<Port:16, _/binary>>) ->
+decode_exthdr_type(<<Port:16, _/binary>>, 2#01000000) ->
     %% UDP Port
     {udp_port, Port};
-decode_exthdr_type(2#10000001, Container) ->
-    %% RAN Container
-    {ran_container, Container};
-decode_exthdr_type(2#10000010, <<_:6, PDU:18, _/binary>>) ->
+decode_exthdr_type(<<_:6, PDU:18, _/binary>>, 2#10000010) ->
     %% Long PDCP PDU Number
     {long_pdcp_pdu_number, PDU};
-decode_exthdr_type(2#11000000, <<PDU:16, _/binary>>) ->
+decode_exthdr_type(<<PDU:16, _/binary>>, 2#11000000) ->
     %% PDCP PDU Number
     {pdcp_pdu_number, PDU};
-decode_exthdr_type(Type, Data) ->
+decode_exthdr_type(Container, 2#10000001) ->
+    %% RAN Container
+    {ran_container, Container};
+decode_exthdr_type(Data, Type) ->
     {Type, Data}.
 
 decode_tbcd(Bin) ->
@@ -210,7 +200,7 @@ decode_tbcd(<<15:4, Lo:4, _/binary>>, BCD) ->
 decode_tbcd(<<Hi:4, Lo:4, Next/binary>>, BCD) ->
     decode_tbcd(Next, <<BCD/binary, (tbcd_to_string(Lo)), (tbcd_to_string(Hi))>>).
 
-decode_v1_rai(Instance, <<MCCHi:8, MNC3:4, MCC3:4, MNCHi:8, LAC:16, RAC:8>>) ->
+decode_v1_rai(<<MCCHi:8, MNC3:4, MCC3:4, MNCHi:8, LAC:16, RAC:8>>, Instance) ->
     #routeing_area_identity{
        instance = Instance,
        mcc = decode_tbcd(<<MCCHi:8, 15:4, MCC3:4>>),
@@ -218,7 +208,7 @@ decode_v1_rai(Instance, <<MCCHi:8, MNC3:4, MCC3:4, MNCHi:8, LAC:16, RAC:8>>) ->
        lac = LAC,
        rac = RAC}.
 
-decode_v1_uli(Instance, <<Type:8, MCCHi:8, MNC3:4, MCC3:4, MNCHi:8, LAC:16, Info:16, _/binary>>) ->
+decode_v1_uli(<<Type:8, MCCHi:8, MNC3:4, MCC3:4, MNCHi:8, LAC:16, Info:16, _/binary>>, Instance) ->
     ULI = #user_location_information{
 	     instance = Instance,
 	     type = Type,
@@ -248,16 +238,16 @@ decode_protocol_ppp_opt(Id, Data) ->
 decode_protocol_config_opts(<<0:1, Protocol:7, Opts/binary>>) ->
     {{rel97, Protocol}, Opts};
 decode_protocol_config_opts(<<1:1, _Spare:4, Protocol:3, Opts/binary>>) ->
-    {Protocol, decode_protocol_opts(Protocol, Opts, [])}.
+    {Protocol, decode_protocol_opts(Opts, Protocol, [])}.
 
-decode_protocol_opts(_Protocol, <<>>, Opts) ->
+decode_protocol_opts(<<>>, _Protocol, Opts) ->
     lists:reverse(Opts);
-decode_protocol_opts(Protocol, <<Id:16, Length:8, Data:Length/bytes, Next/binary>>, Opts)
+decode_protocol_opts(<<Id:16, Length:8, Data:Length/bytes, Next/binary>>, Protocol, Opts)
   when Protocol == 0, Id >= 16#8000, Id < 16#FF00 ->
     Opt = decode_protocol_ppp_opt(Id, Data),
-    decode_protocol_opts(Protocol, Next, [Opt | Opts]);
-decode_protocol_opts(_Protocol, <<Id:16, Length:8, Data:Length/bytes, Next/binary>>, Opts) ->
-    decode_protocol_opts(-1, Next, [{Id, Data} | Opts]).
+    decode_protocol_opts(Next, Protocol, [Opt | Opts]);
+decode_protocol_opts(<<Id:16, Length:8, Data:Length/bytes, Next/binary>>, _Protocol, Opts) ->
+    decode_protocol_opts(Next, -1, [{Id, Data} | Opts]).
 
 decode_v1(g_pdu, Data) ->
     %% G-PDU
@@ -273,41 +263,39 @@ v1_instance(_CurrId, _PrevId, _PrevInst) ->
 
 decode_v2_indication_flags(<<>>, _, Acc) ->
     Acc;
-decode_v2_indication_flags(_, [], Acc) ->
-    Acc;
 decode_v2_indication_flags(<<0:1, Next/bitstring>>, [_ | Flags], Acc) ->
     decode_v2_indication_flags(Next, Flags, Acc);
 decode_v2_indication_flags(<<1:1, Next/bitstring>>, [F | Flags], Acc) ->
     decode_v2_indication_flags(Next, Flags, [F | Acc]).
 
+decode_v2_indication_flags(<<Flags:5/bytes, _/binary>>) ->
+    decode_v2_indication_flags(Flags, ?V2_INDICATION_FLAGS, []);
 decode_v2_indication_flags(Flags) ->
-    decode_v2_indication_flags(pad_to(5, Flags), ?V2_INDICATION_FLAGS, []).
+    decode_v2_indication_flags(Flags, ?V2_INDICATION_FLAGS, []).
 
-decode_v2_user_location_information(Instance,
-				    <<_:2, FlagLAI:1, FlagECGI:1,
+decode_v2_user_location_information(<<_:2, FlagLAI:1, FlagECGI:1,
 				      FlagTAI:1, FlagRAI:1, FlagSAI:1, FlagCGI:1,
-				      Rest0/binary>>) ->
+				      Rest0/binary>>, Instance) ->
     IE0 = #v2_user_location_information{instance = Instance},
-    {IE1, Rest1} = maybe_bin(FlagCGI,  7, Rest0, #v2_user_location_information.cgi,  IE0),
-    {IE2, Rest2} = maybe_bin(FlagSAI,  7, Rest1, #v2_user_location_information.sai,  IE1),
-    {IE3, Rest3} = maybe_bin(FlagRAI,  7, Rest2, #v2_user_location_information.rai,  IE2),
-    {IE4, Rest4} = maybe_bin(FlagTAI,  5, Rest3, #v2_user_location_information.tai,  IE3),
-    {IE5, Rest5} = maybe_bin(FlagECGI, 7, Rest4, #v2_user_location_information.ecgi, IE4),
-    {IE6, _} = maybe_bin(FlagLAI,  5, Rest5, #v2_user_location_information.lai,  IE5),
+    {IE1, Rest1} = maybe_bin(Rest0, FlagCGI,  7, #v2_user_location_information.cgi,  IE0),
+    {IE2, Rest2} = maybe_bin(Rest1, FlagSAI,  7, #v2_user_location_information.sai,  IE1),
+    {IE3, Rest3} = maybe_bin(Rest2, FlagRAI,  7, #v2_user_location_information.rai,  IE2),
+    {IE4, Rest4} = maybe_bin(Rest3, FlagTAI,  5, #v2_user_location_information.tai,  IE3),
+    {IE5, Rest5} = maybe_bin(Rest4, FlagECGI, 7, #v2_user_location_information.ecgi, IE4),
+    {IE6, _} = maybe_bin(Rest5, FlagLAI,  5, #v2_user_location_information.lai,  IE5),
     IE6.
 
-decode_v2_fully_qualified_tunnel_endpoint_identifier(Instance,
-						     <<FlagV4:1, FlagV6:1, InterfaceType:6,
-						       Key:32, Rest0/binary>>) ->
+decode_v2_fully_qualified_tunnel_endpoint_identifier(<<FlagV4:1, FlagV6:1, InterfaceType:6,
+						       Key:32, Rest0/binary>>, Instance) ->
     IE0 = #v2_fully_qualified_tunnel_endpoint_identifier{
 	     instance = Instance,
 	     interface_type = InterfaceType,
 	     key = Key},
-    {IE1, Rest1} = maybe_bin(FlagV4,  4, Rest0, #v2_fully_qualified_tunnel_endpoint_identifier.ipv4,  IE0),
-    {IE2, _} = maybe_bin(FlagV6, 16, Rest1, #v2_fully_qualified_tunnel_endpoint_identifier.ipv6,  IE1),
+    {IE1, Rest1} = maybe_bin(Rest0, FlagV4,  4, #v2_fully_qualified_tunnel_endpoint_identifier.ipv4,  IE0),
+    {IE2, _} = maybe_bin(Rest1, FlagV6, 16, #v2_fully_qualified_tunnel_endpoint_identifier.ipv6,  IE1),
     IE2.
 
-decode_v2_mccmnc(Instance, <<MCCHi:8, MNC3:4, MCC3:4, MNCHi:8, _/binary>>) ->
+decode_v2_mccmnc(<<MCCHi:8, MNC3:4, MCC3:4, MNCHi:8, _/binary>>, Instance) ->
     #v2_serving_network{
        instance = Instance,
        mcc = decode_tbcd(<<MCCHi:8, 15:4, MCC3:4>>),
@@ -320,7 +308,7 @@ decode_v2(Data) ->
 decode_v2(<<>>, IEs) ->
     IEs;
 decode_v2(<<Type:8, Length:16/integer, _Spare:4, Instance:4, Data:Length/bytes, Next/binary>>, IEs) ->
-    IE = decode_v2_element(Type, Instance, Data),
+    IE = decode_v2_element(Data, Type, Instance),
     decode_v2(Next, put_ie(IE, IEs));
 decode_v2(<<Type:8, _Length:16/integer, _Spare:4, Instance:4, Data/binary>>, IEs) ->
     decode_v2(<<>>, put_ie({Type, Instance, Data}, IEs));
@@ -488,7 +476,7 @@ encode_protocol_config_opts({Protocol, Opts}) ->
 
 encode_protocol_opts(_Protocol, [], Opts) ->
     Opts;
-encode_protocol_opts(Protocol, [{Id, Data} | T], Opts)
+encode_protocol_opts(_Protocol, [{Id, Data} | T], Opts)
   when Id < 16#8000; Id >= 16#FF00 ->
     encode_protocol_opts(-1, T, <<Opts/binary, Id:16, (size(Data)):8, Data/binary>>);
 encode_protocol_opts(Protocol, [Opt | T], Opts)
