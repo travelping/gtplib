@@ -149,6 +149,9 @@ put_ie(IE, IEs) ->
 bool2int(false) -> 0;
 bool2int(true)  -> 1.
 
+encode_flag(Flag, Flags) ->
+    bool2int(proplists:get_bool(Flag, Flags)).
+
 is_bin(Bin) -> bool2int(is_binary(Bin)).
 
 maybe_bin(0, _, Bin, _, IE) ->
