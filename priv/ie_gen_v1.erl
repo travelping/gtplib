@@ -233,14 +233,14 @@ ies() ->
      {147, "SGSN Number", '_',
       []},
      {148, "Common Flags", '_',
-      [{"Dual Address Bearer Flag", 1, integer},
-       {"Upgrade QoS Supported", 1, integer},
-       {"NRSN", 1, integer},
-       {"No QoS negotiation", 1, integer},
-       {"MBMS Counting Information", 1, integer},
-       {"RAN Procedures Ready", 1, integer},
-       {"MBMS Service Type", 1, integer},
-       {"Prohibit Payload Compression", 1, integer},
+      [{"Flags", {flags, ["Dual Address Bearer Flag",
+			  "Upgrade QoS Supported",
+			  "NRSN",
+			  "No QoS negotiation",
+			  "MBMS Counting Information",
+			  "RAN Procedures Ready",
+			  "MBMS Service Type",
+			  "Prohibit Payload Compression"]}},
        {'_', 0}]},
      {149, "APN Restriction", '_',
       []},
@@ -333,7 +333,15 @@ ies() ->
      {192, "Evolved Allocation/Retention Priority II", '_',
       []},
      {193, "Extended Common Flags", '_',
-      []},
+      [{"Flags", {flags, ["Unauthenticated IMSI",
+			  "CCRSI",
+			  "CPSR",
+			  "RetLoc",
+			  "VB",
+			  "PCRI",
+			  "BDWI",
+			  "UASI"]}},
+       {'_', 0}]},
      {194, "User CSG Information", '_',
       []},
      {195, "CSG Information Reporting Action", '_',
@@ -464,6 +472,8 @@ gen_record_def({Name, _, {enum, [H|_]}}) ->
     [io_lib:format("~s = ~w", [s2a(Name), H])];
 gen_record_def({Name, _, integer}) ->
     [io_lib:format("~s = 0", [s2a(Name)])];
+gen_record_def({Name, boolean}) ->
+    [io_lib:format("~s = false", [s2a(Name)])];
 gen_record_def({Name, Size, bits}) ->
     [io_lib:format("~s = ~w", [s2a(Name), <<0:Size>>])];
 gen_record_def({Name, Size, bytes}) ->
@@ -488,6 +498,8 @@ gen_decoder_header_match({Value, Size}) when is_integer(Value); is_atom(Value) -
     [io_lib:format("~w:~w", [Value, Size])];
 gen_decoder_header_match({Name, {flags, Flags}}) ->
     [io_lib:format("M_~s_~s:1", [s2a(Name), s2a(Flag)]) || Flag <- Flags];
+gen_decoder_header_match({Name, boolean}) ->
+    [io_lib:format("M_~s:1", [s2a(Name)])];
 gen_decoder_header_match({Name, Size, {enum, _Enum}}) ->
     [io_lib:format("M_~s:~w/integer", [s2a(Name), Size])];
 gen_decoder_header_match({Name, _Fun}) ->
@@ -514,6 +526,8 @@ gen_decoder_record_assign({Name, {flags, Flags}}) ->
     [io_lib:format("~s = ~s", [s2a(Name), string:join(F, " ++ ")])];
 gen_decoder_record_assign({Name, _Size, {enum, _Enum}}) ->
     [io_lib:format("~s = enum_~s(M_~s)", [s2a(Name), s2a(Name), s2a(Name)])];
+gen_decoder_record_assign({Name, boolean}) ->
+    [io_lib:format("~s = int2bool(M_~s)", [s2a(Name), s2a(Name)])];
 gen_decoder_record_assign({Name, Fun}) ->
     [io_lib:format("~s = decode_~s(M_~s)", [s2a(Name), Fun, s2a(Name)])];
 gen_decoder_record_assign({Name, Size, {array, Multi}}) when is_list(Multi) ->
@@ -540,9 +554,11 @@ gen_encoder_bin({'1', Size}) ->
 gen_encoder_bin({Value, Size}) when is_integer(Value); is_atom(Value) ->
     [io_lib:format("~w:~w", [Value, Size])];
 gen_encoder_bin({Name, {flags, Flags}}) ->
-    [io_lib:format("(encode_v1_flag('~s', M_~s)):1", [Flag, s2a(Name)]) || Flag <- Flags];
+    [io_lib:format("(encode_flag('~s', M_~s)):1", [Flag, s2a(Name)]) || Flag <- Flags];
 gen_encoder_bin({Name, Size, {enum, _Enum}}) ->
     [io_lib:format("(enum_~s(M_~s)):~w/integer", [s2a(Name), s2a(Name), Size])];
+gen_encoder_bin({Name, boolean}) ->
+    [io_lib:format("(bool2int(M_~s)):1", [s2a(Name)])];
 gen_encoder_bin({Name, Fun}) ->
     [io_lib:format("(encode_~s(M_~s))/binary", [Fun, s2a(Name)])];
 gen_encoder_bin({Name, Len, {array, _Multi}}) ->

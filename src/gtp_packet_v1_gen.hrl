@@ -637,24 +637,17 @@ decode_v1_element(146, Instance, <<>>) ->
 decode_v1_element(147, Instance, <<>>) ->
     #sgsn_number{instance = Instance};
 
-decode_v1_element(148, Instance, <<M_dual_address_bearer_flag:1/integer,
-                                   M_upgrade_qos_supported:1/integer,
-                                   M_nrsn:1/integer,
-                                   M_no_qos_negotiation:1/integer,
-                                   M_mbms_counting_information:1/integer,
-                                   M_ran_procedures_ready:1/integer,
-                                   M_mbms_service_type:1/integer,
-                                   M_prohibit_payload_compression:1/integer,
+decode_v1_element(148, Instance, <<M_flags_dual_address_bearer_flag:1,
+                                   M_flags_upgrade_qos_supported:1,
+                                   M_flags_nrsn:1,
+                                   M_flags_no_qos_negotiation:1,
+                                   M_flags_mbms_counting_information:1,
+                                   M_flags_ran_procedures_ready:1,
+                                   M_flags_mbms_service_type:1,
+                                   M_flags_prohibit_payload_compression:1,
                                    _/binary>>) ->
     #common_flags{instance = Instance,
-                  dual_address_bearer_flag = M_dual_address_bearer_flag,
-                  upgrade_qos_supported = M_upgrade_qos_supported,
-                  nrsn = M_nrsn,
-                  no_qos_negotiation = M_no_qos_negotiation,
-                  mbms_counting_information = M_mbms_counting_information,
-                  ran_procedures_ready = M_ran_procedures_ready,
-                  mbms_service_type = M_mbms_service_type,
-                  prohibit_payload_compression = M_prohibit_payload_compression};
+                  flags = [ 'Dual Address Bearer Flag' || M_flags_dual_address_bearer_flag =/= 0 ] ++ [ 'Upgrade QoS Supported' || M_flags_upgrade_qos_supported =/= 0 ] ++ [ 'NRSN' || M_flags_nrsn =/= 0 ] ++ [ 'No QoS negotiation' || M_flags_no_qos_negotiation =/= 0 ] ++ [ 'MBMS Counting Information' || M_flags_mbms_counting_information =/= 0 ] ++ [ 'RAN Procedures Ready' || M_flags_ran_procedures_ready =/= 0 ] ++ [ 'MBMS Service Type' || M_flags_mbms_service_type =/= 0 ] ++ [ 'Prohibit Payload Compression' || M_flags_prohibit_payload_compression =/= 0 ]};
 
 decode_v1_element(149, Instance, <<>>) ->
     #apn_restriction{instance = Instance};
@@ -794,8 +787,17 @@ decode_v1_element(191, Instance, <<>>) ->
 decode_v1_element(192, Instance, <<>>) ->
     #evolved_allocation_retention_priority_ii{instance = Instance};
 
-decode_v1_element(193, Instance, <<>>) ->
-    #extended_common_flags{instance = Instance};
+decode_v1_element(193, Instance, <<M_flags_unauthenticated_imsi:1,
+                                   M_flags_ccrsi:1,
+                                   M_flags_cpsr:1,
+                                   M_flags_retloc:1,
+                                   M_flags_vb:1,
+                                   M_flags_pcri:1,
+                                   M_flags_bdwi:1,
+                                   M_flags_uasi:1,
+                                   _/binary>>) ->
+    #extended_common_flags{instance = Instance,
+                           flags = [ 'Unauthenticated IMSI' || M_flags_unauthenticated_imsi =/= 0 ] ++ [ 'CCRSI' || M_flags_ccrsi =/= 0 ] ++ [ 'CPSR' || M_flags_cpsr =/= 0 ] ++ [ 'RetLoc' || M_flags_retloc =/= 0 ] ++ [ 'VB' || M_flags_vb =/= 0 ] ++ [ 'PCRI' || M_flags_pcri =/= 0 ] ++ [ 'BDWI' || M_flags_bdwi =/= 0 ] ++ [ 'UASI' || M_flags_uasi =/= 0 ]};
 
 decode_v1_element(194, Instance, <<>>) ->
     #user_csg_information{instance = Instance};
@@ -1328,22 +1330,15 @@ encode_v1_element(#sgsn_number{
 
 encode_v1_element(#common_flags{
                        instance = Instance,
-                       dual_address_bearer_flag = M_dual_address_bearer_flag,
-                       upgrade_qos_supported = M_upgrade_qos_supported,
-                       nrsn = M_nrsn,
-                       no_qos_negotiation = M_no_qos_negotiation,
-                       mbms_counting_information = M_mbms_counting_information,
-                       ran_procedures_ready = M_ran_procedures_ready,
-                       mbms_service_type = M_mbms_service_type,
-                       prohibit_payload_compression = M_prohibit_payload_compression}) ->
-    encode_v1_element(148, Instance, <<M_dual_address_bearer_flag:1,
-                                       M_upgrade_qos_supported:1,
-                                       M_nrsn:1,
-                                       M_no_qos_negotiation:1,
-                                       M_mbms_counting_information:1,
-                                       M_ran_procedures_ready:1,
-                                       M_mbms_service_type:1,
-                                       M_prohibit_payload_compression:1>>);
+                       flags = M_flags}) ->
+    encode_v1_element(148, Instance, <<(encode_flag('Dual Address Bearer Flag', M_flags)):1,
+                                       (encode_flag('Upgrade QoS Supported', M_flags)):1,
+                                       (encode_flag('NRSN', M_flags)):1,
+                                       (encode_flag('No QoS negotiation', M_flags)):1,
+                                       (encode_flag('MBMS Counting Information', M_flags)):1,
+                                       (encode_flag('RAN Procedures Ready', M_flags)):1,
+                                       (encode_flag('MBMS Service Type', M_flags)):1,
+                                       (encode_flag('Prohibit Payload Compression', M_flags)):1>>);
 
 encode_v1_element(#apn_restriction{
                        instance = Instance}) ->
@@ -1523,8 +1518,16 @@ encode_v1_element(#evolved_allocation_retention_priority_ii{
     encode_v1_element(192, Instance, <<>>);
 
 encode_v1_element(#extended_common_flags{
-                       instance = Instance}) ->
-    encode_v1_element(193, Instance, <<>>);
+                       instance = Instance,
+                       flags = M_flags}) ->
+    encode_v1_element(193, Instance, <<(encode_flag('Unauthenticated IMSI', M_flags)):1,
+                                       (encode_flag('CCRSI', M_flags)):1,
+                                       (encode_flag('CPSR', M_flags)):1,
+                                       (encode_flag('RetLoc', M_flags)):1,
+                                       (encode_flag('VB', M_flags)):1,
+                                       (encode_flag('PCRI', M_flags)):1,
+                                       (encode_flag('BDWI', M_flags)):1,
+                                       (encode_flag('UASI', M_flags)):1>>);
 
 encode_v1_element(#user_csg_information{
                        instance = Instance}) ->

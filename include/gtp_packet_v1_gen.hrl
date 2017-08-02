@@ -271,14 +271,7 @@
 
 -record(common_flags, {
         instance = 0,
-        dual_address_bearer_flag = 0,
-        upgrade_qos_supported = 0,
-        nrsn = 0,
-        no_qos_negotiation = 0,
-        mbms_counting_information = 0,
-        ran_procedures_ready = 0,
-        mbms_service_type = 0,
-        prohibit_payload_compression = 0
+        flags = []
 }).
 
 -record(apn_restriction, {
@@ -455,7 +448,8 @@
 }).
 
 -record(extended_common_flags, {
-        instance = 0
+        instance = 0,
+        flags = []
 }).
 
 -record(user_csg_information, {
