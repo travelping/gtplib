@@ -553,17 +553,18 @@ write_record(_) ->
 
 write_decoder(FunName, {Id, Name, Fields})
   when is_list(Fields) ->
-    FunHead = io_lib:format("~s(~w, Instance, ", [FunName, Id]),
-    MatchIdent = indent(FunHead, 2),
+    MatchIdent = indent(FunName, 3),
     Match = string:join(collect(fun gen_decoder_header_match/1, Fields), [",\n", MatchIdent]),
     Body = build_late_assign(Fields),
     RecIdent = indent(Name, 6),
     RecAssign = string:join(["instance = Instance" |
 			     collect(fun gen_decoder_record_assign/1, Fields)], [",\n", RecIdent]),
-    io_lib:format("~s<<~s>>) ->~n~s    #~s{~s}", [FunHead, Match, Body, s2a(Name), RecAssign]);
+    io_lib:format("~s(<<~s>>, ~w, Instance) ->~n~s    #~s{~s}",
+		  [FunName, Match, Id, Body, s2a(Name), RecAssign]);
+
 write_decoder(FunName, {Id, _Name, Helper})
   when is_atom(Helper) ->
-    io_lib:format("~s(~w, Instance, Data) ->~n    decode_~s(Instance, Data)",
+    io_lib:format("~s(<<Data/binary>>, ~w, Instance) ->~n    decode_~s(Data, Instance)",
 		  [FunName, Id, Helper]).
 
 write_encoder(FunName, {Id, Name, Fields})
@@ -593,7 +594,7 @@ main(_) ->
     HrlRecs = io_lib:format("%% This file is auto-generated. DO NOT EDIT~n~n~s~n", [Records]),
     Enums = write_enums(ies()),
 
-    CatchAnyDecoder = "decode_v2_element(Tag, Instance, Value) ->\n        {Tag, Instance, Value}",
+    CatchAnyDecoder = "decode_v2_element(Value, Tag, Instance) ->\n        {Tag, Instance, Value}",
 
     Funs = string:join([write_decoder("decode_v2_element", X) || X <- ies()] ++ [CatchAnyDecoder], ";\n\n"),
 

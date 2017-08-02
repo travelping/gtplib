@@ -325,131 +325,131 @@ enum_value(230) -> bearer_handling_not_supported;
 enum_value(231) -> target_access_restricted_for_the_subscriber;
 enum_value(X) when is_integer(X) -> X.
 
-decode_v1_element(1, Instance, <<M_value:8/integer>>) ->
+decode_v1_element(<<M_value:8/integer>>, 1, Instance) ->
     #cause{instance = Instance,
            value = enum_value(M_value)};
 
-decode_v1_element(2, Instance, <<M_imsi:64/bits>>) ->
+decode_v1_element(<<M_imsi:64/bits>>, 2, Instance) ->
     #international_mobile_subscriber_identity{instance = Instance,
                                               imsi = decode_tbcd(M_imsi)};
 
-decode_v1_element(3, Instance, Data) ->
-    decode_v1_rai(Instance, Data);
+decode_v1_element(<<Data/binary>>, 3, Instance) ->
+    decode_v1_rai(Data, Instance);
 
-decode_v1_element(4, Instance, <<M_tlli:4/bytes>>) ->
+decode_v1_element(<<M_tlli:4/bytes>>, 4, Instance) ->
     #temporary_logical_link_identity{instance = Instance,
                                      tlli = M_tlli};
 
-decode_v1_element(5, Instance, <<M_p_tmsi:4/bytes>>) ->
+decode_v1_element(<<M_p_tmsi:4/bytes>>, 5, Instance) ->
     #packet_tmsi{instance = Instance,
                  p_tmsi = M_p_tmsi};
 
-decode_v1_element(8, Instance, <<_:7,
-                                 M_required:1/integer>>) ->
+decode_v1_element(<<_:7,
+                    M_required:1/integer>>, 8, Instance) ->
     #reordering_required{instance = Instance,
                          required = enum_required(M_required)};
 
-decode_v1_element(9, Instance, <<M_rand:16/bytes,
-                                 M_sres:4/bytes,
-                                 M_kc:8/bytes>>) ->
+decode_v1_element(<<M_rand:16/bytes,
+                    M_sres:4/bytes,
+                    M_kc:8/bytes>>, 9, Instance) ->
     #authentication_triplet{instance = Instance,
                             rand = M_rand,
                             sres = M_sres,
                             kc = M_kc};
 
-decode_v1_element(11, Instance, <<>>) ->
+decode_v1_element(<<>>, 11, Instance) ->
     #map_cause{instance = Instance};
 
-decode_v1_element(12, Instance, <<>>) ->
+decode_v1_element(<<>>, 12, Instance) ->
     #p_tmsi_signature{instance = Instance};
 
-decode_v1_element(13, Instance, <<_:7,
-                                  M_validated:1/integer>>) ->
+decode_v1_element(<<_:7,
+                    M_validated:1/integer>>, 13, Instance) ->
     #ms_validated{instance = Instance,
                   validated = enum_validated(M_validated)};
 
-decode_v1_element(14, Instance, <<M_restart_counter:8/integer>>) ->
+decode_v1_element(<<M_restart_counter:8/integer>>, 14, Instance) ->
     #recovery{instance = Instance,
               restart_counter = M_restart_counter};
 
-decode_v1_element(15, Instance, <<_:6,
-                                  M_mode:2/integer>>) ->
+decode_v1_element(<<_:6,
+                    M_mode:2/integer>>, 15, Instance) ->
     #selection_mode{instance = Instance,
                     mode = M_mode};
 
-decode_v1_element(16, Instance, <<M_tei:32/integer>>) ->
+decode_v1_element(<<M_tei:32/integer>>, 16, Instance) ->
     #tunnel_endpoint_identifier_data_i{instance = Instance,
                                        tei = M_tei};
 
-decode_v1_element(17, Instance, <<M_tei:32/integer>>) ->
+decode_v1_element(<<M_tei:32/integer>>, 17, Instance) ->
     #tunnel_endpoint_identifier_control_plane{instance = Instance,
                                               tei = M_tei};
 
-decode_v1_element(18, Instance, <<_:4,
-                                  M_nsapi:4/integer,
-                                  M_tei:32/integer>>) ->
+decode_v1_element(<<_:4,
+                    M_nsapi:4/integer,
+                    M_tei:32/integer>>, 18, Instance) ->
     #tunnel_endpoint_identifier_data_ii{instance = Instance,
                                         nsapi = M_nsapi,
                                         tei = M_tei};
 
-decode_v1_element(19, Instance, <<_:7,
-                                  M_value:1/integer>>) ->
+decode_v1_element(<<_:7,
+                    M_value:1/integer>>, 19, Instance) ->
     #teardown_ind{instance = Instance,
                   value = M_value};
 
-decode_v1_element(20, Instance, <<_:4,
-                                  M_nsapi:4/integer>>) ->
+decode_v1_element(<<_:4,
+                    M_nsapi:4/integer>>, 20, Instance) ->
     #nsapi{instance = Instance,
            nsapi = M_nsapi};
 
-decode_v1_element(21, Instance, <<>>) ->
+decode_v1_element(<<>>, 21, Instance) ->
     #ranap_cause{instance = Instance};
 
-decode_v1_element(22, Instance, <<>>) ->
+decode_v1_element(<<>>, 22, Instance) ->
     #rab_context{instance = Instance};
 
-decode_v1_element(23, Instance, <<>>) ->
+decode_v1_element(<<>>, 23, Instance) ->
     #radio_priority_sms{instance = Instance};
 
-decode_v1_element(24, Instance, <<>>) ->
+decode_v1_element(<<>>, 24, Instance) ->
     #radio_priority{instance = Instance};
 
-decode_v1_element(25, Instance, <<>>) ->
+decode_v1_element(<<>>, 25, Instance) ->
     #packet_flow_id{instance = Instance};
 
-decode_v1_element(26, Instance, <<M_value:2/bytes>>) ->
+decode_v1_element(<<M_value:2/bytes>>, 26, Instance) ->
     #charging_characteristics{instance = Instance,
                               value = M_value};
 
-decode_v1_element(27, Instance, <<>>) ->
+decode_v1_element(<<>>, 27, Instance) ->
     #trace_reference{instance = Instance};
 
-decode_v1_element(28, Instance, <<>>) ->
+decode_v1_element(<<>>, 28, Instance) ->
     #trace_type{instance = Instance};
 
-decode_v1_element(29, Instance, <<>>) ->
+decode_v1_element(<<>>, 29, Instance) ->
     #ms_not_reachable_reason{instance = Instance};
 
-decode_v1_element(127, Instance, <<M_id:4/bytes>>) ->
+decode_v1_element(<<M_id:4/bytes>>, 127, Instance) ->
     #charging_id{instance = Instance,
                  id = M_id};
 
-decode_v1_element(128, Instance, <<_:4,
-                                   M_pdp_type_organization:4/integer,
-                                   M_pdp_type_number:8/integer,
-                                   M_pdp_address/binary>>) ->
+decode_v1_element(<<_:4,
+                    M_pdp_type_organization:4/integer,
+                    M_pdp_type_number:8/integer,
+                    M_pdp_address/binary>>, 128, Instance) ->
     #end_user_address{instance = Instance,
                       pdp_type_organization = M_pdp_type_organization,
                       pdp_type_number = M_pdp_type_number,
                       pdp_address = M_pdp_address};
 
-decode_v1_element(129, Instance, <<_:4,
-                                   M_cksn:4/integer,
-                                   1:2,
-                                   M_no_of_vectors:3/integer,
-                                   M_used_cipher:3/integer,
-                                   M_kc:8/bytes,
-                                   M_tripple_Rest/binary>>) ->
+decode_v1_element(<<_:4,
+                    M_cksn:4/integer,
+                    1:2,
+                    M_no_of_vectors:3/integer,
+                    M_used_cipher:3/integer,
+                    M_kc:8/bytes,
+                    M_tripple_Rest/binary>>, 129, Instance) ->
     M_tripple_size = M_no_of_vectors * 8,
     <<M_tripple:M_tripple_size/bytes,
       M_drx_parameter:2/bytes,
@@ -474,15 +474,15 @@ decode_v1_element(129, Instance, <<_:4,
                     container_length = M_container_length,
                     container = [X || <<X:1/bytes>> <= M_container]};
 
-decode_v1_element(129, Instance, <<_:4,
-                                   M_ksi:4/integer,
-                                   2:2,
-                                   M_no_of_vectors:3/integer,
-                                   _:3,
-                                   M_ck:16/bytes,
-                                   M_ik:16/bytes,
-                                   M_quintuplet_length:16/integer,
-                                   M_quintuplet_Rest/binary>>) ->
+decode_v1_element(<<_:4,
+                    M_ksi:4/integer,
+                    2:2,
+                    M_no_of_vectors:3/integer,
+                    _:3,
+                    M_ck:16/bytes,
+                    M_ik:16/bytes,
+                    M_quintuplet_length:16/integer,
+                    M_quintuplet_Rest/binary>>, 129, Instance) ->
     M_quintuplet_size = M_quintuplet_length * 1,
     <<M_quintuplet:M_quintuplet_size/bytes,
       M_drx_parameter:2/bytes,
@@ -508,14 +508,14 @@ decode_v1_element(129, Instance, <<_:4,
                      container_length = M_container_length,
                      container = [X || <<X:1/bytes>> <= M_container]};
 
-decode_v1_element(129, Instance, <<_:4,
-                                   M_cksn:4/integer,
-                                   3:2,
-                                   M_no_of_vectors:3/integer,
-                                   M_used_cipher:3/integer,
-                                   M_kc:8/bytes,
-                                   M_quintuplet_length:16/integer,
-                                   M_quintuplet_Rest/binary>>) ->
+decode_v1_element(<<_:4,
+                    M_cksn:4/integer,
+                    3:2,
+                    M_no_of_vectors:3/integer,
+                    M_used_cipher:3/integer,
+                    M_kc:8/bytes,
+                    M_quintuplet_length:16/integer,
+                    M_quintuplet_Rest/binary>>, 129, Instance) ->
     M_quintuplet_size = M_quintuplet_length * 1,
     <<M_quintuplet:M_quintuplet_size/bytes,
       M_drx_parameter:2/bytes,
@@ -541,15 +541,15 @@ decode_v1_element(129, Instance, <<_:4,
                              container_length = M_container_length,
                              container = [X || <<X:1/bytes>> <= M_container]};
 
-decode_v1_element(129, Instance, <<_:4,
-                                   M_ksi:4/integer,
-                                   0:2,
-                                   M_no_of_vectors:3/integer,
-                                   M_used_cipher:3/integer,
-                                   M_ck:16/bytes,
-                                   M_ik:16/bytes,
-                                   M_quintuplet_length:16/integer,
-                                   M_quintuplet_Rest/binary>>) ->
+decode_v1_element(<<_:4,
+                    M_ksi:4/integer,
+                    0:2,
+                    M_no_of_vectors:3/integer,
+                    M_used_cipher:3/integer,
+                    M_ck:16/bytes,
+                    M_ik:16/bytes,
+                    M_quintuplet_length:16/integer,
+                    M_quintuplet_Rest/binary>>, 129, Instance) ->
     M_quintuplet_size = M_quintuplet_length * 1,
     <<M_quintuplet:M_quintuplet_size/bytes,
       M_drx_parameter:2/bytes,
@@ -576,418 +576,418 @@ decode_v1_element(129, Instance, <<_:4,
                                      container_length = M_container_length,
                                      container = [X || <<X:1/bytes>> <= M_container]};
 
-decode_v1_element(130, Instance, <<>>) ->
+decode_v1_element(<<>>, 130, Instance) ->
     #pdp_context{instance = Instance};
 
-decode_v1_element(131, Instance, <<M_apn/binary>>) ->
+decode_v1_element(<<M_apn/binary>>, 131, Instance) ->
     #access_point_name{instance = Instance,
                        apn = decode_apn(M_apn)};
 
-decode_v1_element(132, Instance, <<M_config/binary>>) ->
+decode_v1_element(<<M_config/binary>>, 132, Instance) ->
     #protocol_configuration_options{instance = Instance,
                                     config = decode_protocol_config_opts(M_config)};
 
-decode_v1_element(133, Instance, <<M_address/binary>>) ->
+decode_v1_element(<<M_address/binary>>, 133, Instance) ->
     #gsn_address{instance = Instance,
                  address = M_address};
 
-decode_v1_element(134, Instance, <<M_msisdn/binary>>) ->
+decode_v1_element(<<M_msisdn/binary>>, 134, Instance) ->
     #ms_international_pstn_isdn_number{instance = Instance,
                                        msisdn = decode_isdn_address_string(M_msisdn)};
 
-decode_v1_element(135, Instance, <<M_priority:8/integer,
-                                   M_data/binary>>) ->
+decode_v1_element(<<M_priority:8/integer,
+                    M_data/binary>>, 135, Instance) ->
     #quality_of_service_profile{instance = Instance,
                                 priority = M_priority,
                                 data = M_data};
 
-decode_v1_element(136, Instance, <<>>) ->
+decode_v1_element(<<>>, 136, Instance) ->
     #authentication_quintuplet{instance = Instance};
 
-decode_v1_element(137, Instance, <<>>) ->
+decode_v1_element(<<>>, 137, Instance) ->
     #traffic_flow_template{instance = Instance};
 
-decode_v1_element(138, Instance, <<>>) ->
+decode_v1_element(<<>>, 138, Instance) ->
     #target_identification{instance = Instance};
 
-decode_v1_element(139, Instance, <<>>) ->
+decode_v1_element(<<>>, 139, Instance) ->
     #utran_transparent_container{instance = Instance};
 
-decode_v1_element(140, Instance, <<>>) ->
+decode_v1_element(<<>>, 140, Instance) ->
     #rab_setup_information{instance = Instance};
 
-decode_v1_element(141, Instance, <<>>) ->
+decode_v1_element(<<>>, 141, Instance) ->
     #extension_header_type_list{instance = Instance};
 
-decode_v1_element(142, Instance, <<>>) ->
+decode_v1_element(<<>>, 142, Instance) ->
     #trigger_id{instance = Instance};
 
-decode_v1_element(143, Instance, <<>>) ->
+decode_v1_element(<<>>, 143, Instance) ->
     #omc_identity{instance = Instance};
 
-decode_v1_element(144, Instance, <<>>) ->
+decode_v1_element(<<>>, 144, Instance) ->
     #ran_transparent_container{instance = Instance};
 
-decode_v1_element(145, Instance, <<>>) ->
+decode_v1_element(<<>>, 145, Instance) ->
     #pdp_context_prioritization{instance = Instance};
 
-decode_v1_element(146, Instance, <<>>) ->
+decode_v1_element(<<>>, 146, Instance) ->
     #additional_rab_setup_information{instance = Instance};
 
-decode_v1_element(147, Instance, <<>>) ->
+decode_v1_element(<<>>, 147, Instance) ->
     #sgsn_number{instance = Instance};
 
-decode_v1_element(148, Instance, <<M_flags_dual_address_bearer_flag:1,
-                                   M_flags_upgrade_qos_supported:1,
-                                   M_flags_nrsn:1,
-                                   M_flags_no_qos_negotiation:1,
-                                   M_flags_mbms_counting_information:1,
-                                   M_flags_ran_procedures_ready:1,
-                                   M_flags_mbms_service_type:1,
-                                   M_flags_prohibit_payload_compression:1,
-                                   _/binary>>) ->
+decode_v1_element(<<M_flags_dual_address_bearer_flag:1,
+                    M_flags_upgrade_qos_supported:1,
+                    M_flags_nrsn:1,
+                    M_flags_no_qos_negotiation:1,
+                    M_flags_mbms_counting_information:1,
+                    M_flags_ran_procedures_ready:1,
+                    M_flags_mbms_service_type:1,
+                    M_flags_prohibit_payload_compression:1,
+                    _/binary>>, 148, Instance) ->
     #common_flags{instance = Instance,
                   flags = [ 'Dual Address Bearer Flag' || M_flags_dual_address_bearer_flag =/= 0 ] ++ [ 'Upgrade QoS Supported' || M_flags_upgrade_qos_supported =/= 0 ] ++ [ 'NRSN' || M_flags_nrsn =/= 0 ] ++ [ 'No QoS negotiation' || M_flags_no_qos_negotiation =/= 0 ] ++ [ 'MBMS Counting Information' || M_flags_mbms_counting_information =/= 0 ] ++ [ 'RAN Procedures Ready' || M_flags_ran_procedures_ready =/= 0 ] ++ [ 'MBMS Service Type' || M_flags_mbms_service_type =/= 0 ] ++ [ 'Prohibit Payload Compression' || M_flags_prohibit_payload_compression =/= 0 ]};
 
-decode_v1_element(149, Instance, <<>>) ->
+decode_v1_element(<<>>, 149, Instance) ->
     #apn_restriction{instance = Instance};
 
-decode_v1_element(150, Instance, <<>>) ->
+decode_v1_element(<<>>, 150, Instance) ->
     #radio_priority_lcs{instance = Instance};
 
-decode_v1_element(151, Instance, <<M_rat_type:8/integer,
-                                   _/binary>>) ->
+decode_v1_element(<<M_rat_type:8/integer,
+                    _/binary>>, 151, Instance) ->
     #rat_type{instance = Instance,
               rat_type = M_rat_type};
 
-decode_v1_element(152, Instance, Data) ->
-    decode_v1_uli(Instance, Data);
+decode_v1_element(<<Data/binary>>, 152, Instance) ->
+    decode_v1_uli(Data, Instance);
 
-decode_v1_element(153, Instance, <<M_timezone:8/integer,
-                                   _:6,
-                                   M_dst:2/integer,
-                                   _/binary>>) ->
+decode_v1_element(<<M_timezone:8/integer,
+                    _:6,
+                    M_dst:2/integer,
+                    _/binary>>, 153, Instance) ->
     #ms_time_zone{instance = Instance,
                   timezone = M_timezone,
                   dst = M_dst};
 
-decode_v1_element(154, Instance, <<M_imei:64/bits,
-                                   _/binary>>) ->
+decode_v1_element(<<M_imei:64/bits,
+                    _/binary>>, 154, Instance) ->
     #imei{instance = Instance,
           imei = decode_tbcd(M_imei)};
 
-decode_v1_element(155, Instance, <<>>) ->
+decode_v1_element(<<>>, 155, Instance) ->
     #camel_charging_information_container{instance = Instance};
 
-decode_v1_element(156, Instance, <<>>) ->
+decode_v1_element(<<>>, 156, Instance) ->
     #mbms_ue_context{instance = Instance};
 
-decode_v1_element(157, Instance, <<>>) ->
+decode_v1_element(<<>>, 157, Instance) ->
     #temporary_mobile_group_identity{instance = Instance};
 
-decode_v1_element(158, Instance, <<>>) ->
+decode_v1_element(<<>>, 158, Instance) ->
     #rim_routing_address{instance = Instance};
 
-decode_v1_element(159, Instance, <<>>) ->
+decode_v1_element(<<>>, 159, Instance) ->
     #mbms_protocol_configuration_options{instance = Instance};
 
-decode_v1_element(160, Instance, <<>>) ->
+decode_v1_element(<<>>, 160, Instance) ->
     #mbms_service_area{instance = Instance};
 
-decode_v1_element(161, Instance, <<>>) ->
+decode_v1_element(<<>>, 161, Instance) ->
     #source_rnc_pdcp_context_info{instance = Instance};
 
-decode_v1_element(162, Instance, <<>>) ->
+decode_v1_element(<<>>, 162, Instance) ->
     #additional_trace_info{instance = Instance};
 
-decode_v1_element(163, Instance, <<>>) ->
+decode_v1_element(<<>>, 163, Instance) ->
     #hop_counter{instance = Instance};
 
-decode_v1_element(164, Instance, <<>>) ->
+decode_v1_element(<<>>, 164, Instance) ->
     #selected_plmn_id{instance = Instance};
 
-decode_v1_element(165, Instance, <<>>) ->
+decode_v1_element(<<>>, 165, Instance) ->
     #mbms_session_identifier{instance = Instance};
 
-decode_v1_element(166, Instance, <<>>) ->
+decode_v1_element(<<>>, 166, Instance) ->
     #mbms_2g_3g_indicator{instance = Instance};
 
-decode_v1_element(167, Instance, <<>>) ->
+decode_v1_element(<<>>, 167, Instance) ->
     #enhanced_nsapi{instance = Instance};
 
-decode_v1_element(168, Instance, <<>>) ->
+decode_v1_element(<<>>, 168, Instance) ->
     #mbms_session_duration{instance = Instance};
 
-decode_v1_element(169, Instance, <<>>) ->
+decode_v1_element(<<>>, 169, Instance) ->
     #additional_mbms_trace_info{instance = Instance};
 
-decode_v1_element(170, Instance, <<>>) ->
+decode_v1_element(<<>>, 170, Instance) ->
     #mbms_session_repetition_number{instance = Instance};
 
-decode_v1_element(171, Instance, <<>>) ->
+decode_v1_element(<<>>, 171, Instance) ->
     #mbms_time_to_data_transfer{instance = Instance};
 
-decode_v1_element(173, Instance, <<>>) ->
+decode_v1_element(<<>>, 173, Instance) ->
     #bss_container{instance = Instance};
 
-decode_v1_element(174, Instance, <<>>) ->
+decode_v1_element(<<>>, 174, Instance) ->
     #cell_identification{instance = Instance};
 
-decode_v1_element(175, Instance, <<>>) ->
+decode_v1_element(<<>>, 175, Instance) ->
     #pdu_numbers{instance = Instance};
 
-decode_v1_element(176, Instance, <<>>) ->
+decode_v1_element(<<>>, 176, Instance) ->
     #bssgp_cause{instance = Instance};
 
-decode_v1_element(177, Instance, <<>>) ->
+decode_v1_element(<<>>, 177, Instance) ->
     #required_mbms_bearer_capabilities{instance = Instance};
 
-decode_v1_element(178, Instance, <<>>) ->
+decode_v1_element(<<>>, 178, Instance) ->
     #rim_routing_address_discriminator{instance = Instance};
 
-decode_v1_element(179, Instance, <<>>) ->
+decode_v1_element(<<>>, 179, Instance) ->
     #list_of_set_up_pfcs{instance = Instance};
 
-decode_v1_element(180, Instance, <<>>) ->
+decode_v1_element(<<>>, 180, Instance) ->
     #ps_handover_xid_parameters{instance = Instance};
 
-decode_v1_element(181, Instance, <<>>) ->
+decode_v1_element(<<>>, 181, Instance) ->
     #ms_info_change_reporting_action{instance = Instance};
 
-decode_v1_element(182, Instance, <<>>) ->
+decode_v1_element(<<>>, 182, Instance) ->
     #direct_tunnel_flags{instance = Instance};
 
-decode_v1_element(183, Instance, <<>>) ->
+decode_v1_element(<<>>, 183, Instance) ->
     #correlation_id{instance = Instance};
 
-decode_v1_element(184, Instance, <<>>) ->
+decode_v1_element(<<>>, 184, Instance) ->
     #bearer_control_mode{instance = Instance};
 
-decode_v1_element(185, Instance, <<>>) ->
+decode_v1_element(<<>>, 185, Instance) ->
     #mbms_flow_identifier{instance = Instance};
 
-decode_v1_element(186, Instance, <<>>) ->
+decode_v1_element(<<>>, 186, Instance) ->
     #mbms_ip_multicast_distribution{instance = Instance};
 
-decode_v1_element(187, Instance, <<>>) ->
+decode_v1_element(<<>>, 187, Instance) ->
     #mbms_distribution_acknowledgement{instance = Instance};
 
-decode_v1_element(188, Instance, <<>>) ->
+decode_v1_element(<<>>, 188, Instance) ->
     #reliable_inter_rat_handover_info{instance = Instance};
 
-decode_v1_element(189, Instance, <<>>) ->
+decode_v1_element(<<>>, 189, Instance) ->
     #rfsp_index{instance = Instance};
 
-decode_v1_element(190, Instance, <<>>) ->
+decode_v1_element(<<>>, 190, Instance) ->
     #fully_qualified_domain_name{instance = Instance};
 
-decode_v1_element(191, Instance, <<>>) ->
+decode_v1_element(<<>>, 191, Instance) ->
     #evolved_allocation_retention_priority_i{instance = Instance};
 
-decode_v1_element(192, Instance, <<>>) ->
+decode_v1_element(<<>>, 192, Instance) ->
     #evolved_allocation_retention_priority_ii{instance = Instance};
 
-decode_v1_element(193, Instance, <<M_flags_unauthenticated_imsi:1,
-                                   M_flags_ccrsi:1,
-                                   M_flags_cpsr:1,
-                                   M_flags_retloc:1,
-                                   M_flags_vb:1,
-                                   M_flags_pcri:1,
-                                   M_flags_bdwi:1,
-                                   M_flags_uasi:1,
-                                   _/binary>>) ->
+decode_v1_element(<<M_flags_unauthenticated_imsi:1,
+                    M_flags_ccrsi:1,
+                    M_flags_cpsr:1,
+                    M_flags_retloc:1,
+                    M_flags_vb:1,
+                    M_flags_pcri:1,
+                    M_flags_bdwi:1,
+                    M_flags_uasi:1,
+                    _/binary>>, 193, Instance) ->
     #extended_common_flags{instance = Instance,
                            flags = [ 'Unauthenticated IMSI' || M_flags_unauthenticated_imsi =/= 0 ] ++ [ 'CCRSI' || M_flags_ccrsi =/= 0 ] ++ [ 'CPSR' || M_flags_cpsr =/= 0 ] ++ [ 'RetLoc' || M_flags_retloc =/= 0 ] ++ [ 'VB' || M_flags_vb =/= 0 ] ++ [ 'PCRI' || M_flags_pcri =/= 0 ] ++ [ 'BDWI' || M_flags_bdwi =/= 0 ] ++ [ 'UASI' || M_flags_uasi =/= 0 ]};
 
-decode_v1_element(194, Instance, <<>>) ->
+decode_v1_element(<<>>, 194, Instance) ->
     #user_csg_information{instance = Instance};
 
-decode_v1_element(195, Instance, <<>>) ->
+decode_v1_element(<<>>, 195, Instance) ->
     #csg_information_reporting_action{instance = Instance};
 
-decode_v1_element(196, Instance, <<>>) ->
+decode_v1_element(<<>>, 196, Instance) ->
     #csg_id{instance = Instance};
 
-decode_v1_element(197, Instance, <<>>) ->
+decode_v1_element(<<>>, 197, Instance) ->
     #csg_membership_indication{instance = Instance};
 
-decode_v1_element(198, Instance, <<>>) ->
+decode_v1_element(<<>>, 198, Instance) ->
     #aggregate_maximum_bit_rate{instance = Instance};
 
-decode_v1_element(199, Instance, <<>>) ->
+decode_v1_element(<<>>, 199, Instance) ->
     #ue_network_capability{instance = Instance};
 
-decode_v1_element(200, Instance, <<>>) ->
+decode_v1_element(<<>>, 200, Instance) ->
     #ue_ambr{instance = Instance};
 
-decode_v1_element(201, Instance, <<>>) ->
+decode_v1_element(<<>>, 201, Instance) ->
     #apn_ambr_with_nsapi{instance = Instance};
 
-decode_v1_element(202, Instance, <<>>) ->
+decode_v1_element(<<>>, 202, Instance) ->
     #ggsn_back_off_time{instance = Instance};
 
-decode_v1_element(203, Instance, <<>>) ->
+decode_v1_element(<<>>, 203, Instance) ->
     #signalling_priority_indication{instance = Instance};
 
-decode_v1_element(204, Instance, <<>>) ->
+decode_v1_element(<<>>, 204, Instance) ->
     #signalling_priority_indication_with_nsapi{instance = Instance};
 
-decode_v1_element(205, Instance, <<>>) ->
+decode_v1_element(<<>>, 205, Instance) ->
     #higher_bitrates_than_16_mbps_flag{instance = Instance};
 
-decode_v1_element(207, Instance, <<>>) ->
+decode_v1_element(<<>>, 207, Instance) ->
     #additional_mm_context_for_srvcc{instance = Instance};
 
-decode_v1_element(208, Instance, <<>>) ->
+decode_v1_element(<<>>, 208, Instance) ->
     #additional_flags_for_srvcc{instance = Instance};
 
-decode_v1_element(209, Instance, <<>>) ->
+decode_v1_element(<<>>, 209, Instance) ->
     #stn_sr{instance = Instance};
 
-decode_v1_element(210, Instance, <<>>) ->
+decode_v1_element(<<>>, 210, Instance) ->
     #c_msisdn{instance = Instance};
 
-decode_v1_element(211, Instance, <<>>) ->
+decode_v1_element(<<>>, 211, Instance) ->
     #extended_ranap_cause{instance = Instance};
 
-decode_v1_element(212, Instance, <<>>) ->
+decode_v1_element(<<>>, 212, Instance) ->
     #enodeb_id{instance = Instance};
 
-decode_v1_element(213, Instance, <<>>) ->
+decode_v1_element(<<>>, 213, Instance) ->
     #selection_mode_with_nsapi{instance = Instance};
 
-decode_v1_element(214, Instance, <<>>) ->
+decode_v1_element(<<>>, 214, Instance) ->
     #uli_timestamp{instance = Instance};
 
-decode_v1_element(215, Instance, <<>>) ->
+decode_v1_element(<<>>, 215, Instance) ->
     #local_home_network_id_with_nsapi{instance = Instance};
 
-decode_v1_element(216, Instance, <<>>) ->
+decode_v1_element(<<>>, 216, Instance) ->
     #cn_operator_selection_entity{instance = Instance};
 
-decode_v1_element(251, Instance, <<>>) ->
+decode_v1_element(<<>>, 251, Instance) ->
     #charging_gateway_address{instance = Instance};
 
-decode_v1_element(255, Instance, <<>>) ->
+decode_v1_element(<<>>, 255, Instance) ->
     #private_extension{instance = Instance};
 
-decode_v1_element(Tag, Instance, Value) ->
+decode_v1_element(Value, Tag, Instance) ->
         {Tag, Instance, Value}.
 
 decode_v1(<<>>, _PrevId, _PrevInst, IEs) ->
     IEs;
 decode_v1(<<1, Data:1/bytes, Next/binary>>, PrevInst, PrevId, IEs) ->
     Instance = v1_instance(1, PrevId, PrevInst),
-    IE = decode_v1_element(1, Instance, Data),
+    IE = decode_v1_element(Data, 1, Instance),
     decode_v1(Next, 1, Instance, put_ie(IE, IEs));
 decode_v1(<<2, Data:8/bytes, Next/binary>>, PrevInst, PrevId, IEs) ->
     Instance = v1_instance(2, PrevId, PrevInst),
-    IE = decode_v1_element(2, Instance, Data),
+    IE = decode_v1_element(Data, 2, Instance),
     decode_v1(Next, 2, Instance, put_ie(IE, IEs));
 decode_v1(<<3, Data:6/bytes, Next/binary>>, PrevInst, PrevId, IEs) ->
     Instance = v1_instance(3, PrevId, PrevInst),
-    IE = decode_v1_element(3, Instance, Data),
+    IE = decode_v1_element(Data, 3, Instance),
     decode_v1(Next, 3, Instance, put_ie(IE, IEs));
 decode_v1(<<4, Data:4/bytes, Next/binary>>, PrevInst, PrevId, IEs) ->
     Instance = v1_instance(4, PrevId, PrevInst),
-    IE = decode_v1_element(4, Instance, Data),
+    IE = decode_v1_element(Data, 4, Instance),
     decode_v1(Next, 4, Instance, put_ie(IE, IEs));
 decode_v1(<<5, Data:4/bytes, Next/binary>>, PrevInst, PrevId, IEs) ->
     Instance = v1_instance(5, PrevId, PrevInst),
-    IE = decode_v1_element(5, Instance, Data),
+    IE = decode_v1_element(Data, 5, Instance),
     decode_v1(Next, 5, Instance, put_ie(IE, IEs));
 decode_v1(<<8, Data:1/bytes, Next/binary>>, PrevInst, PrevId, IEs) ->
     Instance = v1_instance(8, PrevId, PrevInst),
-    IE = decode_v1_element(8, Instance, Data),
+    IE = decode_v1_element(Data, 8, Instance),
     decode_v1(Next, 8, Instance, put_ie(IE, IEs));
 decode_v1(<<9, Data:28/bytes, Next/binary>>, PrevInst, PrevId, IEs) ->
     Instance = v1_instance(9, PrevId, PrevInst),
-    IE = decode_v1_element(9, Instance, Data),
+    IE = decode_v1_element(Data, 9, Instance),
     decode_v1(Next, 9, Instance, put_ie(IE, IEs));
 decode_v1(<<11, Data:1/bytes, Next/binary>>, PrevInst, PrevId, IEs) ->
     Instance = v1_instance(11, PrevId, PrevInst),
-    IE = decode_v1_element(11, Instance, Data),
+    IE = decode_v1_element(Data, 11, Instance),
     decode_v1(Next, 11, Instance, put_ie(IE, IEs));
 decode_v1(<<12, Data:3/bytes, Next/binary>>, PrevInst, PrevId, IEs) ->
     Instance = v1_instance(12, PrevId, PrevInst),
-    IE = decode_v1_element(12, Instance, Data),
+    IE = decode_v1_element(Data, 12, Instance),
     decode_v1(Next, 12, Instance, put_ie(IE, IEs));
 decode_v1(<<13, Data:1/bytes, Next/binary>>, PrevInst, PrevId, IEs) ->
     Instance = v1_instance(13, PrevId, PrevInst),
-    IE = decode_v1_element(13, Instance, Data),
+    IE = decode_v1_element(Data, 13, Instance),
     decode_v1(Next, 13, Instance, put_ie(IE, IEs));
 decode_v1(<<14, Data:1/bytes, Next/binary>>, PrevInst, PrevId, IEs) ->
     Instance = v1_instance(14, PrevId, PrevInst),
-    IE = decode_v1_element(14, Instance, Data),
+    IE = decode_v1_element(Data, 14, Instance),
     decode_v1(Next, 14, Instance, put_ie(IE, IEs));
 decode_v1(<<15, Data:1/bytes, Next/binary>>, PrevInst, PrevId, IEs) ->
     Instance = v1_instance(15, PrevId, PrevInst),
-    IE = decode_v1_element(15, Instance, Data),
+    IE = decode_v1_element(Data, 15, Instance),
     decode_v1(Next, 15, Instance, put_ie(IE, IEs));
 decode_v1(<<16, Data:4/bytes, Next/binary>>, PrevInst, PrevId, IEs) ->
     Instance = v1_instance(16, PrevId, PrevInst),
-    IE = decode_v1_element(16, Instance, Data),
+    IE = decode_v1_element(Data, 16, Instance),
     decode_v1(Next, 16, Instance, put_ie(IE, IEs));
 decode_v1(<<17, Data:4/bytes, Next/binary>>, PrevInst, PrevId, IEs) ->
     Instance = v1_instance(17, PrevId, PrevInst),
-    IE = decode_v1_element(17, Instance, Data),
+    IE = decode_v1_element(Data, 17, Instance),
     decode_v1(Next, 17, Instance, put_ie(IE, IEs));
 decode_v1(<<18, Data:5/bytes, Next/binary>>, PrevInst, PrevId, IEs) ->
     Instance = v1_instance(18, PrevId, PrevInst),
-    IE = decode_v1_element(18, Instance, Data),
+    IE = decode_v1_element(Data, 18, Instance),
     decode_v1(Next, 18, Instance, put_ie(IE, IEs));
 decode_v1(<<19, Data:1/bytes, Next/binary>>, PrevInst, PrevId, IEs) ->
     Instance = v1_instance(19, PrevId, PrevInst),
-    IE = decode_v1_element(19, Instance, Data),
+    IE = decode_v1_element(Data, 19, Instance),
     decode_v1(Next, 19, Instance, put_ie(IE, IEs));
 decode_v1(<<20, Data:1/bytes, Next/binary>>, PrevInst, PrevId, IEs) ->
     Instance = v1_instance(20, PrevId, PrevInst),
-    IE = decode_v1_element(20, Instance, Data),
+    IE = decode_v1_element(Data, 20, Instance),
     decode_v1(Next, 20, Instance, put_ie(IE, IEs));
 decode_v1(<<21, Data:1/bytes, Next/binary>>, PrevInst, PrevId, IEs) ->
     Instance = v1_instance(21, PrevId, PrevInst),
-    IE = decode_v1_element(21, Instance, Data),
+    IE = decode_v1_element(Data, 21, Instance),
     decode_v1(Next, 21, Instance, put_ie(IE, IEs));
 decode_v1(<<22, Data:9/bytes, Next/binary>>, PrevInst, PrevId, IEs) ->
     Instance = v1_instance(22, PrevId, PrevInst),
-    IE = decode_v1_element(22, Instance, Data),
+    IE = decode_v1_element(Data, 22, Instance),
     decode_v1(Next, 22, Instance, put_ie(IE, IEs));
 decode_v1(<<23, Data:1/bytes, Next/binary>>, PrevInst, PrevId, IEs) ->
     Instance = v1_instance(23, PrevId, PrevInst),
-    IE = decode_v1_element(23, Instance, Data),
+    IE = decode_v1_element(Data, 23, Instance),
     decode_v1(Next, 23, Instance, put_ie(IE, IEs));
 decode_v1(<<24, Data:1/bytes, Next/binary>>, PrevInst, PrevId, IEs) ->
     Instance = v1_instance(24, PrevId, PrevInst),
-    IE = decode_v1_element(24, Instance, Data),
+    IE = decode_v1_element(Data, 24, Instance),
     decode_v1(Next, 24, Instance, put_ie(IE, IEs));
 decode_v1(<<25, Data:2/bytes, Next/binary>>, PrevInst, PrevId, IEs) ->
     Instance = v1_instance(25, PrevId, PrevInst),
-    IE = decode_v1_element(25, Instance, Data),
+    IE = decode_v1_element(Data, 25, Instance),
     decode_v1(Next, 25, Instance, put_ie(IE, IEs));
 decode_v1(<<26, Data:2/bytes, Next/binary>>, PrevInst, PrevId, IEs) ->
     Instance = v1_instance(26, PrevId, PrevInst),
-    IE = decode_v1_element(26, Instance, Data),
+    IE = decode_v1_element(Data, 26, Instance),
     decode_v1(Next, 26, Instance, put_ie(IE, IEs));
 decode_v1(<<27, Data:2/bytes, Next/binary>>, PrevInst, PrevId, IEs) ->
     Instance = v1_instance(27, PrevId, PrevInst),
-    IE = decode_v1_element(27, Instance, Data),
+    IE = decode_v1_element(Data, 27, Instance),
     decode_v1(Next, 27, Instance, put_ie(IE, IEs));
 decode_v1(<<28, Data:2/bytes, Next/binary>>, PrevInst, PrevId, IEs) ->
     Instance = v1_instance(28, PrevId, PrevInst),
-    IE = decode_v1_element(28, Instance, Data),
+    IE = decode_v1_element(Data, 28, Instance),
     decode_v1(Next, 28, Instance, put_ie(IE, IEs));
 decode_v1(<<29, Data:1/bytes, Next/binary>>, PrevInst, PrevId, IEs) ->
     Instance = v1_instance(29, PrevId, PrevInst),
-    IE = decode_v1_element(29, Instance, Data),
+    IE = decode_v1_element(Data, 29, Instance),
     decode_v1(Next, 29, Instance, put_ie(IE, IEs));
 decode_v1(<<127, Data:4/bytes, Next/binary>>, PrevInst, PrevId, IEs) ->
     Instance = v1_instance(127, PrevId, PrevInst),
-    IE = decode_v1_element(127, Instance, Data),
+    IE = decode_v1_element(Data, 127, Instance),
     decode_v1(Next, 127, Instance, put_ie(IE, IEs));
 decode_v1(<<Id, Length:16/integer, Rest/binary>>, PrevId, PrevInst, IEs) when Id > 127 ->
     <<Data:Length/binary, Next/binary>> = Rest,
     Instance = v1_instance(Id, PrevId, PrevInst),
-    IE = decode_v1_element(Id, Instance, Data),
+    IE = decode_v1_element(Data, Id, Instance),
     decode_v1(Next, Id, Instance, put_ie(IE, IEs));
 decode_v1(<<Id, Rest/binary>>, PrevId, PrevInst, IEs) ->
     Instance = v1_instance(Id, PrevId, PrevInst),
