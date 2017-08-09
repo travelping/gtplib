@@ -2,6 +2,38 @@
 %% -*- erlang -*-
 %%! -smp enable
 
+%% Copyright 2015, Travelping GmbH <info@travelping.com>
+%%
+%% This program is free software: you can redistribute it and/or modify
+%% it under the terms of the GNU Lesser General Public License as
+%% published by the Free Software Foundation, either version 3 of the
+%% License, or (at your option) any later version.
+%%
+%% This program is distributed in the hope that it will be useful,
+%% but WITHOUT ANY WARRANTY; without even the implied warranty of
+%% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+%% GNU Lesser General Public License for more details.
+%%
+%% You should have received a copy of the GNU Lesser General Public License
+%% along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+-define(LICENSE,
+	"%% Copyright 2015, Travelping GmbH <info@travelping.com>\n"
+	"%%\n"
+	"%% This program is free software: you can redistribute it and/or modify\n"
+	"%% it under the terms of the GNU Lesser General Public License as\n"
+	"%% published by the Free Software Foundation, either version 3 of the\n"
+	"%% License, or (at your option) any later version.\n"
+	"%%\n"
+	"%% This program is distributed in the hope that it will be useful,\n"
+	"%% but WITHOUT ANY WARRANTY; without even the implied warranty of\n"
+	"%% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the\n"
+	"%% GNU Lesser General Public License for more details.\n"
+	"%%\n"
+	"%% You should have received a copy of the GNU Lesser General Public License\n"
+	"%% along with this program. If not, see <http://www.gnu.org/licenses/>.\n\n").
+
+
 -mode(compile).
 
 ies() ->
@@ -744,7 +776,7 @@ main(_) ->
     MTypes = string:join(FwdFuns ++ RevFuns ++ ErrorFun, ";\n") ++ ".\n",
 
     Records = string:join([write_record(X) || X <- ies()], "\n"),
-    HrlRecs = io_lib:format("%% This file is auto-generated. DO NOT EDIT~n~n~s~n", [Records]),
+    HrlRecs = io_lib:format(?LICENSE "%% This file is auto-generated. DO NOT EDIT~n~n~s~n", [Records]),
     Enums = write_enums(ies()),
 
     CatchAnyDecoder = "decode_v1_element(Value, Tag, Instance) ->\n        {Tag, Instance, Value}",
@@ -770,7 +802,7 @@ main(_) ->
     EncFuns = string:join([write_encoder("encode_v1_element", X) || X <- ies()]
 			  ++ [CatchAnyEncoder] , ";\n\n"),
 
-    ErlDecls = io_lib:format("%% This file is auto-generated. DO NOT EDIT~n~n~s~n~s~n~s~n~s.~n~n~s~n~n~s.~n",
+    ErlDecls = io_lib:format(?LICENSE "%% This file is auto-generated. DO NOT EDIT~n~n~s~n~s~n~s~n~s.~n~n~s~n~n~s.~n",
 			     [MsgDescription, MTypes, Enums, Funs, MainDecodeSwitch, EncFuns]),
     file:write_file("include/gtp_packet_v1_gen.hrl", HrlRecs),
     file:write_file("src/gtp_packet_v1_gen.hrl", ErlDecls).
