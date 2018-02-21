@@ -582,7 +582,9 @@ indent(Atom, Extra) when is_atom(Atom) ->
     indent(atom_to_list(Atom), Extra);
 indent(List, Extra) ->
     Indent = length(lists:flatten(List)) + Extra,
-    lists:duplicate(Indent, " ").
+    Spaces = Indent rem 8,
+    Tabs = Indent div 8,
+    [lists:duplicate(Tabs, "\t"), lists:duplicate(Spaces, " ")].
 
 s2a(Name) when is_atom(Name) ->
     Name;
@@ -691,7 +693,7 @@ write_enums(IEs) ->
 
 write_record({_Id, Name, _Length, Fields})
   when is_list(Fields) ->
-    Indent = "        ",
+    Indent = "\t  ",
     RecordDef = string:join(collect(fun gen_record_def/1, [{"Instance", 0, integer} | Fields], []), [",\n", Indent]),
     io_lib:format("-record(~s, {~n~s~s~n}).~n", [s2a(Name), Indent, RecordDef]);
 write_record(_) ->
@@ -718,7 +720,7 @@ write_decoder(FunName, {Id, _Name, Length, Helper})
 
 write_encoder(FunName, {Id, Name, _Length, Fields})
   when is_list(Fields) ->
-    RecIdent = indent("encode_v1_element(#", 4),
+    RecIdent = indent("encode_v1_element(#", 2),
     RecAssign = string:join(["instance = Instance" |
 			     collect(fun gen_encoder_record_assign/1, Fields)], [",\n", RecIdent]),
     FunHead = io_lib:format("encode_v1_element(#~s{~n~s~s}) ->~n", [s2a(Name), RecIdent, RecAssign]),
@@ -750,7 +752,7 @@ main(_) ->
     HrlRecs = io_lib:format("%% This file is auto-generated. DO NOT EDIT~n~n~s~n", [Records]),
     Enums = write_enums(ies()),
 
-    CatchAnyDecoder = "decode_v1_element(Value, Tag, Instance) ->\n        {Tag, Instance, Value}",
+    CatchAnyDecoder = "decode_v1_element(Value, Tag, Instance) ->\n    {Tag, Instance, Value}",
 
     Funs = string:join([write_decoder("decode_v1_element", X) || X <- ies()] ++ [CatchAnyDecoder], ";\n\n"),
 
