@@ -4,6 +4,9 @@
 
 -mode(compile).
 
+-define(V1_TAG, <<"%% -include(\"gtp_packet_v1_gen.hrl\").">>).
+-define(V2_TAG, <<"%% -include(\"gtp_packet_v2_gen.hrl\").">>).
+
 ies() ->
     [
      {1, "v2 International Mobile Subscriber Identity",
@@ -597,7 +600,7 @@ main(_) ->
     MTypes = string:join(FwdFuns ++ RevFuns ++ ErrorFun, ";\n") ++ ".\n",
 
     Records = string:join([write_record(X) || X <- ies()], "\n"),
-    HrlRecs = io_lib:format("%% This file is auto-generated. DO NOT EDIT~n~n~s~n", [Records]),
+    HrlRecs = io_lib:format("~n~n~s", [Records]),
     Enums = write_enums(ies()),
 
     CatchAnyDecoder = "decode_v2_element(Value, Tag, Instance) ->\n    {Tag, Instance, Value}",
@@ -613,7 +616,14 @@ main(_) ->
     RecPrettyDefs = string:join([write_pretty_print("pretty_print_v2", X) || X <- ies()]
 				++ [CatchAnyPretty] , ";\n"),
 
-    ErlDecls = io_lib:format("%% This file is auto-generated. DO NOT EDIT~n~n~s~n~s~n~s~n~s.~n~n~s.~n~n~s.~n",
-			     [MsgDescription, MTypes, Enums, Funs, EncFuns, RecPrettyDefs]),
-    file:write_file("include/gtp_packet_v2_gen.hrl", HrlRecs),
-    file:write_file("src/gtp_packet_v2_gen.hrl", ErlDecls).
+    ErlDecls = io_lib:format("~n~n~s~n~s~n~s~n~s.~n~n~s.~n~n~s.~n",
+			     [MsgDescription, MTypes, Enums, Funs,
+			      EncFuns, RecPrettyDefs]),
+
+    {ok, HrlF0} = file:read_file("include/gtp_packet.hrl"),
+    [HrlHead, HrlV1, _] = binary:split(HrlF0, [?V1_TAG, ?V2_TAG], [global]),
+    file:write_file("include/gtp_packet.hrl", [HrlHead, ?V1_TAG, HrlV1, ?V2_TAG, HrlRecs]),
+
+    {ok, ErlF0} = file:read_file("src/gtp_packet.erl"),
+    [ErlHead, ErlV1, _] = binary:split(ErlF0, [?V1_TAG, ?V2_TAG], [global]),
+    file:write_file("src/gtp_packet.erl", [ErlHead, ?V1_TAG, ErlV1, ?V2_TAG, ErlDecls]).

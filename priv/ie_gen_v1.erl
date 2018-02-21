@@ -4,6 +4,9 @@
 
 -mode(compile).
 
+-define(V1_TAG, <<"%% -include(\"gtp_packet_v1_gen.hrl\").">>).
+-define(V2_TAG, <<"%% -include(\"gtp_packet_v2_gen.hrl\").">>).
+
 ies() ->
     [{1, "Cause", 1,
       [{"Value", 8, {enum, [{0, "Request IMSI"},
@@ -749,7 +752,7 @@ main(_) ->
     MTypes = string:join(FwdFuns ++ RevFuns ++ ErrorFun, ";\n") ++ ".\n",
 
     Records = string:join([write_record(X) || X <- ies()], "\n"),
-    HrlRecs = io_lib:format("%% This file is auto-generated. DO NOT EDIT~n~n~s~n", [Records]),
+    HrlRecs = io_lib:format("~n~n~s~n", [Records]),
     Enums = write_enums(ies()),
 
     CatchAnyDecoder = "decode_v1_element(Value, Tag, Instance) ->\n    {Tag, Instance, Value}",
@@ -779,10 +782,14 @@ main(_) ->
     RecPrettyDefs = string:join([write_pretty_print("pretty_print_v1", X) || X <- ies()]
 				++ [CatchAnyPretty] , ";\n"),
 
-    ErlDecls = io_lib:format("%% This file is auto-generated. DO NOT EDIT~n~n~s~n~s~n~s~n~s.~n~n~s~n~n~s.~n~n~s.~n",
-			     [MsgDescription, MTypes, Enums, Funs, MainDecodeSwitch,
-			      EncFuns, RecPrettyDefs]),
+    ErlDecls = io_lib:format("~n~n~s~n~s~n~s~n~s.~n~n~s~n~n~s.~n~n~s.~n",
+			     [MsgDescription, MTypes, Enums, Funs,
+			      MainDecodeSwitch, EncFuns, RecPrettyDefs]),
 
+    {ok, HrlF0} = file:read_file("include/gtp_packet.hrl"),
+    [HrlHead, _, HrlV2] = binary:split(HrlF0, [?V1_TAG, ?V2_TAG], [global]),
+    file:write_file("include/gtp_packet.hrl", [HrlHead, ?V1_TAG, HrlRecs, ?V2_TAG, HrlV2]),
 
-    file:write_file("include/gtp_packet_v1_gen.hrl", HrlRecs),
-    file:write_file("src/gtp_packet_v1_gen.hrl", ErlDecls).
+    {ok, ErlF0} = file:read_file("src/gtp_packet.erl"),
+    [ErlHead, _, ErlV2] = binary:split(ErlF0, [?V1_TAG, ?V2_TAG], [global]),
+    file:write_file("src/gtp_packet.erl", [ErlHead, ?V1_TAG, ErlDecls, ?V2_TAG, ErlV2]).
