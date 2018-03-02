@@ -281,7 +281,8 @@
 }).
 
 -record(v2_fully_qualified_domain_name, {
-        instance = 0
+        instance = 0,
+        fqdn
 }).
 
 -record(v2_transaction_identifier, {

@@ -425,7 +425,7 @@ decode_v2_element(<<>>, 51, Instance) ->
 
 decode_v2_element(<<M_apn/binary>>, 71, Instance) ->
     #v2_access_point_name{instance = Instance,
-                          apn = decode_apn(M_apn)};
+                          apn = decode_fqdn(M_apn)};
 
 decode_v2_element(<<M_uplink:32/integer,
                     M_downlink:32/integer,
@@ -655,8 +655,9 @@ decode_v2_element(<<>>, 134, Instance) ->
 decode_v2_element(<<>>, 135, Instance) ->
     #v2_node_type{instance = Instance};
 
-decode_v2_element(<<>>, 136, Instance) ->
-    #v2_fully_qualified_domain_name{instance = Instance};
+decode_v2_element(<<M_fqdn/binary>>, 136, Instance) ->
+    #v2_fully_qualified_domain_name{instance = Instance,
+                                    fqdn = decode_fqdn(M_fqdn)};
 
 decode_v2_element(<<>>, 137, Instance) ->
     #v2_transaction_identifier{instance = Instance};
@@ -837,7 +838,7 @@ encode_v2_element(#v2_stn_sr{
 encode_v2_element(#v2_access_point_name{
                        instance = Instance,
                        apn = M_apn}) ->
-    encode_v2_element(71, Instance, <<(encode_apn(M_apn))/binary>>);
+    encode_v2_element(71, Instance, <<(encode_fqdn(M_apn))/binary>>);
 
 encode_v2_element(#v2_aggregate_maximum_bit_rate{
                        instance = Instance,
@@ -1116,8 +1117,9 @@ encode_v2_element(#v2_node_type{
     encode_v2_element(135, Instance, <<>>);
 
 encode_v2_element(#v2_fully_qualified_domain_name{
-                       instance = Instance}) ->
-    encode_v2_element(136, Instance, <<>>);
+                       instance = Instance,
+                       fqdn = M_fqdn}) ->
+    encode_v2_element(136, Instance, <<(encode_fqdn(M_fqdn))/binary>>);
 
 encode_v2_element(#v2_transaction_identifier{
                        instance = Instance}) ->

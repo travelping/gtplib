@@ -194,7 +194,7 @@ ies() ->
      {130, "PDP Context", '_',
       []},
      {131, "Access Point Name", '_',
-      [{"APN", 0, {type, apn}}]},
+      [{"APN", 0, {type, fqdn}}]},
      {132, "Protocol Configuration Options", '_',
       %% TODO,  The content and the coding of the Protocol Configuration are
       %% defined in octet 3-z of the Protocol Configuration Options in
@@ -327,7 +327,7 @@ ies() ->
      {189, "RFSP Index", '_',
       []},
      {190, "Fully Qualified Domain Name", '_',
-      []},
+      [{"FQDN", 0, {type, fqdn}}]},
      {191, "Evolved Allocation/Retention Priority I", '_',
       []},
      {192, "Evolved Allocation/Retention Priority II", '_',

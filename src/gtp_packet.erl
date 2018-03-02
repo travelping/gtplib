@@ -12,7 +12,7 @@
 -compile(export_all).
 -compile([{parse_transform, cut},
 	  bin_opt_info]).
--compile({inline,[decode_tbcd/1, decode_apn/1,
+-compile({inline,[decode_tbcd/1, decode_fqdn/1,
 		  decode_v2_grouped/1]}).
 -include("gtp_packet.hrl").
 
@@ -223,8 +223,8 @@ decode_v1_uli(<<Type:8, MCCHi:8, MNC3:4, MCC3:4, MNCHi:8, LAC:16, Info:16, _/bin
 	_ -> ULI
     end.
 
-decode_apn(APN) ->
-    [ Part || <<Len:8, Part:Len/bytes>> <= APN ].
+decode_fqdn(FQDN) ->
+    [ Part || <<Len:8, Part:Len/bytes>> <= FQDN ].
 
 decode_isdn_address_string(<<>>) ->
     {isdn_address, 1, 1, 1, <<"000000000000000">>};
@@ -457,8 +457,8 @@ encode_v1_uli(#user_location_information{
 	   end,
     <<Type:8, MCC2:4, MCC1:4, MNC3:4, MCC3:4, MNC2:4, MNC1:4, LAC:16, Info:16>>.
 
-encode_apn(APN) ->
-    << <<(size(Part)):8, Part/binary>> || Part <- APN >>.
+encode_fqdn(FQDN) ->
+    << <<(size(Part)):8, Part/binary>> || Part <- FQDN >>.
 
 encode_isdn_address_string({isdn_address, Extension, Nature, Plan, Number}) ->
     <<Extension:1, Nature:3, Plan:4, (encode_tbcd(Number))/binary>>.

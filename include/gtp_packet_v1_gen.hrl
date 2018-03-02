@@ -436,7 +436,8 @@
 }).
 
 -record(fully_qualified_domain_name, {
-        instance = 0
+        instance = 0,
+        fqdn
 }).
 
 -record(evolved_allocation_retention_priority_i, {

@@ -581,7 +581,7 @@ decode_v1_element(<<>>, 130, Instance) ->
 
 decode_v1_element(<<M_apn/binary>>, 131, Instance) ->
     #access_point_name{instance = Instance,
-                       apn = decode_apn(M_apn)};
+                       apn = decode_fqdn(M_apn)};
 
 decode_v1_element(<<M_config/binary>>, 132, Instance) ->
     #protocol_configuration_options{instance = Instance,
@@ -778,8 +778,9 @@ decode_v1_element(<<>>, 188, Instance) ->
 decode_v1_element(<<>>, 189, Instance) ->
     #rfsp_index{instance = Instance};
 
-decode_v1_element(<<>>, 190, Instance) ->
-    #fully_qualified_domain_name{instance = Instance};
+decode_v1_element(<<M_fqdn/binary>>, 190, Instance) ->
+    #fully_qualified_domain_name{instance = Instance,
+                                 fqdn = decode_fqdn(M_fqdn)};
 
 decode_v1_element(<<>>, 191, Instance) ->
     #evolved_allocation_retention_priority_i{instance = Instance};
@@ -1256,7 +1257,7 @@ encode_v1_element(#pdp_context{
 encode_v1_element(#access_point_name{
                        instance = Instance,
                        apn = M_apn}) ->
-    encode_v1_element(131, Instance, <<(encode_apn(M_apn))/binary>>);
+    encode_v1_element(131, Instance, <<(encode_fqdn(M_apn))/binary>>);
 
 encode_v1_element(#protocol_configuration_options{
                        instance = Instance,
@@ -1506,8 +1507,9 @@ encode_v1_element(#rfsp_index{
     encode_v1_element(189, Instance, <<>>);
 
 encode_v1_element(#fully_qualified_domain_name{
-                       instance = Instance}) ->
-    encode_v1_element(190, Instance, <<>>);
+                       instance = Instance,
+                       fqdn = M_fqdn}) ->
+    encode_v1_element(190, Instance, <<(encode_fqdn(M_fqdn))/binary>>);
 
 encode_v1_element(#evolved_allocation_retention_priority_i{
                        instance = Instance}) ->
