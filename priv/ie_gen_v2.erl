@@ -583,6 +583,9 @@ write_encoder(FunName, {Id, Name, Helper})
     io_lib:format("encode_v2_element(#~s{instance = Instance} = IE) ->~n    ~s(~w, Instance, encode_~s(IE))",
 		  [s2a(Name), FunName, Id, Helper]).
 
+write_pretty_print(_, Def) ->
+    io_lib:format("?PRETTY_PRINT(pretty_print_v2, ~s)", [s2a(element(2, Def))]).
+
 main(_) ->
     MsgDescription = string:join([io_lib:format("msg_description_v2(~s) -> <<\"~s\">>", [s2a(X), X]) || {_, X} <- msgs()]
 				 ++ ["msg_description_v2(X) -> io_lib:format(\"~p\", [X])"], ";\n") ++ ".\n",
@@ -604,7 +607,11 @@ main(_) ->
     EncFuns = string:join([write_encoder("encode_v2_element", X) || X <- ies()]
 			  ++ [CatchAnyEncoder] , ";\n\n"),
 
-    ErlDecls = io_lib:format("%% This file is auto-generated. DO NOT EDIT~n~n~s~n~s~n~s~n~s.~n~n~s.~n",
-			     [MsgDescription, MTypes, Enums, Funs, EncFuns]),
+    CatchAnyPretty = "pretty_print_v2(_, _) ->\n    no",
+    RecPrettyDefs = string:join([write_pretty_print("pretty_print_v2", X) || X <- ies()]
+				++ [CatchAnyPretty] , ";\n"),
+
+    ErlDecls = io_lib:format("%% This file is auto-generated. DO NOT EDIT~n~n~s~n~s~n~s~n~s.~n~n~s.~n~n~s.~n",
+			     [MsgDescription, MTypes, Enums, Funs, EncFuns, RecPrettyDefs]),
     file:write_file("include/gtp_packet_v2_gen.hrl", HrlRecs),
     file:write_file("src/gtp_packet_v2_gen.hrl", ErlDecls).

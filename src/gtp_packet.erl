@@ -8,7 +8,8 @@
 
 -export([encode/1, encode_ies/1,
 	 decode/1, decode/2, decode_ies/1, decode_ies/2,
-	 msg_description/1, msg_description_v2/1]).
+	 msg_description/1, msg_description_v2/1,
+	 pretty_print/1]).
 -compile(export_all).
 -compile([{parse_transform, cut},
 	  bin_opt_info]).
@@ -64,6 +65,31 @@ encode_ies(#gtp{version = v1, type = Type, ie = IEs} = Msg) ->
     Msg#gtp{ie = encode_v1(Type, IEs)};
 encode_ies(#gtp{version = v2, ie = IEs} = Msg) ->
     Msg#gtp{ie = encode_v2(IEs)}.
+
+%%%===================================================================
+%%% Record formating
+%%%===================================================================
+
+-define(PRETTY_PRINT(F, R),
+	F(R, N) ->
+	       case record_info(size, R) - 1 of
+		   N -> record_info(fields, R);
+		   _ -> no
+	       end).
+
+pretty_print(Record) ->
+    io_lib_pretty:print(Record, fun pretty_print/2).
+
+pretty_print(gtp, N) ->
+    N = record_info(size, gtp) - 1,
+    record_info(fields, gtp);
+pretty_print(Record, N) ->
+    case pretty_print_v1(Record, N) of
+	no ->
+	    pretty_print_v2(Record, N);
+	RDef ->
+	    RDef
+    end.
 
 %%====================================================================
 %% Helpers
