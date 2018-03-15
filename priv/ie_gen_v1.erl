@@ -64,7 +64,7 @@ ies() ->
 			    {231, "Target access restricted for the subscriber"}]}}
       ]},
      {2, "International Mobile Subscriber Identity", 8,
-      [{"IMSI", 64, {type, tbcd}}]},
+      [{"IMSI", 64, {type, imsi}}]},
      {3, "Routeing Area Identity", 6, v1_rai},
      {4, "Temporary Logical Link Identity", 4,
       [{"TLLI", 4, bytes}]},
