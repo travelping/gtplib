@@ -1580,12 +1580,14 @@ encode_v1_element(#authentication_triplet{
 				     M_kc:8/bytes>>);
 
 encode_v1_element(#map_cause{
-		     instance = Instance}) ->
-    encode_v1_element(11, Instance, <<>>);
+		     instance = Instance,
+		     content = Content}) ->
+    encode_v1_element(11, Instance, <<Content:1/bytes>>);
 
 encode_v1_element(#p_tmsi_signature{
-		     instance = Instance}) ->
-    encode_v1_element(12, Instance, <<>>);
+		     instance = Instance,
+		     content = Content}) ->
+    encode_v1_element(12, Instance, <<Content:3/bytes>>);
 
 encode_v1_element(#ms_validated{
 		     instance = Instance,
@@ -1635,24 +1637,29 @@ encode_v1_element(#nsapi{
 				      M_nsapi:4>>);
 
 encode_v1_element(#ranap_cause{
-		     instance = Instance}) ->
-    encode_v1_element(21, Instance, <<>>);
+		     instance = Instance,
+		     content = Content}) ->
+    encode_v1_element(21, Instance, <<Content:1/bytes>>);
 
 encode_v1_element(#rab_context{
-		     instance = Instance}) ->
-    encode_v1_element(22, Instance, <<>>);
+		     instance = Instance,
+		     content = Content}) ->
+    encode_v1_element(22, Instance, <<Content:9/bytes>>);
 
 encode_v1_element(#radio_priority_sms{
-		     instance = Instance}) ->
-    encode_v1_element(23, Instance, <<>>);
+		     instance = Instance,
+		     content = Content}) ->
+    encode_v1_element(23, Instance, <<Content:1/bytes>>);
 
 encode_v1_element(#radio_priority{
-		     instance = Instance}) ->
-    encode_v1_element(24, Instance, <<>>);
+		     instance = Instance,
+		     content = Content}) ->
+    encode_v1_element(24, Instance, <<Content:1/bytes>>);
 
 encode_v1_element(#packet_flow_id{
-		     instance = Instance}) ->
-    encode_v1_element(25, Instance, <<>>);
+		     instance = Instance,
+		     content = Content}) ->
+    encode_v1_element(25, Instance, <<Content:2/bytes>>);
 
 encode_v1_element(#charging_characteristics{
 		     instance = Instance,
@@ -1660,16 +1667,19 @@ encode_v1_element(#charging_characteristics{
     encode_v1_element(26, Instance, <<M_value:2/bytes>>);
 
 encode_v1_element(#trace_reference{
-		     instance = Instance}) ->
-    encode_v1_element(27, Instance, <<>>);
+		     instance = Instance,
+		     content = Content}) ->
+    encode_v1_element(27, Instance, <<Content:2/bytes>>);
 
 encode_v1_element(#trace_type{
-		     instance = Instance}) ->
-    encode_v1_element(28, Instance, <<>>);
+		     instance = Instance,
+		     content = Content}) ->
+    encode_v1_element(28, Instance, <<Content:2/bytes>>);
 
 encode_v1_element(#ms_not_reachable_reason{
-		     instance = Instance}) ->
-    encode_v1_element(29, Instance, <<>>);
+		     instance = Instance,
+		     content = Content}) ->
+    encode_v1_element(29, Instance, <<Content:1/bytes>>);
 
 encode_v1_element(#charging_id{
 		     instance = Instance,
