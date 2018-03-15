@@ -123,11 +123,13 @@
 }).
 
 -record(map_cause, {
-	  instance = 0
+	  instance = 0,
+	  content = <<0>>
 }).
 
 -record(p_tmsi_signature, {
-	  instance = 0
+	  instance = 0,
+	  content = <<0,0,0>>
 }).
 
 -record(ms_validated, {
@@ -172,23 +174,28 @@
 }).
 
 -record(ranap_cause, {
-	  instance = 0
+	  instance = 0,
+	  content = <<0>>
 }).
 
 -record(rab_context, {
-	  instance = 0
+	  instance = 0,
+	  content = <<0,0,0,0,0,0,0,0,0>>
 }).
 
 -record(radio_priority_sms, {
-	  instance = 0
+	  instance = 0,
+	  content = <<0>>
 }).
 
 -record(radio_priority, {
-	  instance = 0
+	  instance = 0,
+	  content = <<0>>
 }).
 
 -record(packet_flow_id, {
-	  instance = 0
+	  instance = 0,
+	  content = <<0,0>>
 }).
 
 -record(charging_characteristics, {
@@ -197,15 +204,18 @@
 }).
 
 -record(trace_reference, {
-	  instance = 0
+	  instance = 0,
+	  content = <<0,0>>
 }).
 
 -record(trace_type, {
-	  instance = 0
+	  instance = 0,
+	  content = <<0,0>>
 }).
 
 -record(ms_not_reachable_reason, {
-	  instance = 0
+	  instance = 0,
+	  content = <<0>>
 }).
 
 -record(charging_id, {

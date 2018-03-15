@@ -694,11 +694,24 @@ write_enums(IEs) ->
     {_, Str} = lists:unzip(E),
     string:join(Str, "\n").
 
+write_record(Name, FieldDefs) ->
+    Indent = "\t  ",
+    RecordDef = string:join(FieldDefs, [",\n", Indent]),
+    io_lib:format("-record(~s, {~n~s~s~n}).~n", [s2a(Name), Indent, RecordDef]).
+
+write_record({_Id, Name, Length, []})
+  when is_integer(Length) ->
+    FieldDefs =
+	collect(
+	  fun gen_record_def/1, [{"Instance", 0, integer},
+				 {"Content", Length, bytes}], []),
+    write_record(Name, FieldDefs);
 write_record({_Id, Name, _Length, Fields})
   when is_list(Fields) ->
-    Indent = "\t  ",
-    RecordDef = string:join(collect(fun gen_record_def/1, [{"Instance", 0, integer} | Fields], []), [",\n", Indent]),
-    io_lib:format("-record(~s, {~n~s~s~n}).~n", [s2a(Name), Indent, RecordDef]);
+    FieldDefs =
+	collect(
+	  fun gen_record_def/1, [{"Instance", 0, integer} | Fields], []),
+    write_record(Name, FieldDefs);
 write_record(_) ->
     [].
 
@@ -721,16 +734,26 @@ write_decoder(FunName, {Id, _Name, Length, Helper})
     io_lib:format("~s(<<Data/binary>>, ~w, Instance) ->~n    decode_~s(Data, Instance)",
 		  [FunName, Id, Helper]).
 
-write_encoder(FunName, {Id, Name, _Length, Fields})
-  when is_list(Fields) ->
+write_rec_encoder(FunName, Id, Name, RecordAssigns, FieldAssigns) ->
     RecIdent = indent("encode_v1_element(#", 2),
-    RecAssign = string:join(["instance = Instance" |
-			     collect(fun gen_encoder_record_assign/1, Fields)], [",\n", RecIdent]),
-    FunHead = io_lib:format("encode_v1_element(#~s{~n~s~s}) ->~n", [s2a(Name), RecIdent, RecAssign]),
+    RecAssign = string:join(["instance = Instance" | RecordAssigns], [",\n", RecIdent]),
+    FunHead = io_lib:format("encode_v1_element(#~s{~n~s~s}) ->~n",
+			    [s2a(Name), RecIdent, RecAssign]),
     DecHead = io_lib:format("    ~s(~w, Instance, ", [FunName, Id]),
     BinIndent = indent(DecHead, 2),
-    BinAssign = string:join(collect(fun(X) -> gen_encoder_bin(X) end, Fields), [",\n", BinIndent]),
-    io_lib:format("~s~s<<~s>>)", [FunHead, DecHead, BinAssign]);
+    BinAssign = string:join(FieldAssigns, [",\n", BinIndent]),
+    io_lib:format("~s~s<<~s>>)", [FunHead, DecHead, BinAssign]).
+
+write_encoder(FunName, {Id, Name, Length, []})
+  when is_integer(Length) ->
+    RecordAssigns = ["content = Content"],
+    FieldAssigns = [io_lib:format("Content:~w/bytes", [Length])],
+    write_rec_encoder(FunName, Id, Name, RecordAssigns, FieldAssigns);
+write_encoder(FunName, {Id, Name, _Length, Fields})
+  when is_list(Fields) ->
+    RecordAssigns = collect(fun gen_encoder_record_assign/1, Fields),
+    FieldAssigns = collect(fun(X) -> gen_encoder_bin(X) end, Fields),
+    write_rec_encoder(FunName, Id, Name, RecordAssigns, FieldAssigns);
 write_encoder(FunName, {Id, Name, Helper})
   when is_atom(Helper) ->
     io_lib:format("encode_v1_element(#~s{instance = Instance} = IE) ->~n    ~s(~w, Instance, encode_~s(IE))",
