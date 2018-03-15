@@ -455,6 +455,13 @@ encode_tbcd(<<D:8>>, BCD) ->
 encode_tbcd(<<H:8, L:8, Next/binary>>, BCD) ->
     encode_tbcd(Next, <<BCD/binary, (string_to_tbcd(L)):4, (string_to_tbcd(H)):4>>).
 
+decode_imsi(Bin) ->
+    decode_tbcd(Bin).
+
+encode_imsi(IMSI) ->
+    << B:64/bits, _/binary>> = << (encode_tbcd(IMSI))/binary, -1:64 >>,
+    B.
+
 encode_v1_rai(#routeing_area_identity{
 		 mcc = MCC,
 		 mnc = MNC,
@@ -876,7 +883,7 @@ decode_v1_element(<<M_value:8/integer>>, 1, Instance) ->
 
 decode_v1_element(<<M_imsi:64/bits>>, 2, Instance) ->
     #international_mobile_subscriber_identity{instance = Instance,
-					      imsi = decode_tbcd(M_imsi)};
+					      imsi = decode_imsi(M_imsi)};
 
 decode_v1_element(<<Data/binary>>, 3, Instance) ->
     decode_v1_rai(Data, Instance);
@@ -1549,7 +1556,7 @@ encode_v1_element(#cause{
 encode_v1_element(#international_mobile_subscriber_identity{
 		     instance = Instance,
 		     imsi = M_imsi}) ->
-    encode_v1_element(2, Instance, <<(encode_tbcd(M_imsi)):64/bits>>);
+    encode_v1_element(2, Instance, <<(encode_imsi(M_imsi)):64/bits>>);
 
 encode_v1_element(#routeing_area_identity{instance = Instance} = IE) ->
     encode_v1_element(3, Instance, encode_v1_rai(IE));
