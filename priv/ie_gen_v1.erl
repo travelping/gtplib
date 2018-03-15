@@ -470,9 +470,9 @@ gen_record_def({Value, _}) when is_integer(Value); is_atom(Value) ->
 gen_record_def({Name, {flags, _}}) ->
     [io_lib:format("~s = []", [s2a(Name)])];
 gen_record_def({Name, _, {enum, [{_,H}|_]}}) ->
-    [io_lib:format("~s = ~w", [s2a(Name), H])];
+    [io_lib:format("~s = ~s", [s2a(Name), s2a(H)])];
 gen_record_def({Name, _, {enum, [H|_]}}) ->
-    [io_lib:format("~s = ~w", [s2a(Name), H])];
+    [io_lib:format("~s = ~s", [s2a(Name), s2a(H)])];
 gen_record_def({Name, _, integer}) ->
     [io_lib:format("~s = 0", [s2a(Name)])];
 gen_record_def({Name, boolean}) ->

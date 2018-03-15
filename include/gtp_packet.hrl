@@ -91,7 +91,7 @@
 
 -record(cause, {
 	  instance = 0,
-	  value = [82,101,113,117,101,115,116,32,73,77,83,73]
+	  value = request_imsi
 }).
 
 -record(international_mobile_subscriber_identity, {
@@ -647,7 +647,7 @@
 
 -record(v2_cause, {
 	  instance = 0,
-	  v2_cause = [82,101,115,101,114,118,101,100],
+	  v2_cause = reserved,
 	  pce = 0,
 	  bce = 0,
 	  cs = 0
@@ -705,7 +705,7 @@
 
 -record(v2_pdn_address_allocation, {
 	  instance = 0,
-	  type = [73,80,118,52],
+	  type = ipv4,
 	  address = <<>>
 }).
 
@@ -785,7 +785,7 @@
 
 -record(v2_pdn_type, {
 	  instance = 0,
-	  pdn_type = [73,80,118,52]
+	  pdn_type = ipv4
 }).
 
 -record(v2_procedure_transaction_id, {
