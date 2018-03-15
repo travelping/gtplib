@@ -37,6 +37,36 @@
 		  end
 	  end)())).
 
+
+%%%===================================================================
+%%% API
+%%%===================================================================
+
+suite() ->
+	[{timetrap,{seconds,30}}].
+
+init_per_suite(Config) ->
+    ct_property_test:init_per_suite(Config).
+
+end_per_suite(_Config) ->
+    ok.
+
+all() ->
+	[test_v1_invalid_msg,
+	 test_v2_invalid_msg,
+	 encode_decode,
+	 test_v1_ignore_spare_bits,
+	 test_g_pdu,
+	 test_v2_pco_vendor_ext,
+	 partial_decode,
+	 partial_encode,
+	 msg_enc_dec].
+
+
+%%%===================================================================
+%%% Tests
+%%%===================================================================
+
 %% hexstr2bin from otp/lib/crypto/test/crypto_SUITE.erl
 hexstr2bin(S) ->
     list_to_binary(hexstr2list(S)).
@@ -197,14 +227,6 @@ g_pdu() ->
 get_msg(Version, Name) ->
     proplists:get_value({Version, Name}, test_messages()).
 
-%%--------------------------------------------------------------------
-%% @spec suite() -> Info
-%% Info = [tuple()]
-%% @end
-%%--------------------------------------------------------------------
-suite() ->
-	[{timetrap,{seconds,30}}].
-
 msg_test({{Version, Name}, Msg}) ->
     ct:pal("Test version and message: ~s, ~s", [Version, Name]),
     P = gtp_packet:decode(Msg),
@@ -295,12 +317,7 @@ partial_encode(_Config) ->
     ?match(_ when is_binary(Msg12), Msg12),
     ok.
 
-all() ->
-	[test_v1_invalid_msg,
-	 test_v2_invalid_msg,
-	 encode_decode,
-	 test_v1_ignore_spare_bits,
-	 test_g_pdu,
-	 test_v2_pco_vendor_ext,
-	 partial_decode,
-	 partial_encode].
+msg_enc_dec() ->
+    [{doc, "Check that Message encoding/decoding matches"}].
+msg_enc_dec(Config) ->
+    ct_property_test:quickcheck(gtplib_prop:enc_dec_prop(Config), Config).
