@@ -1846,7 +1846,16 @@ gen_v2_source_identification() ->
 
 gen_v2_change_reporting_action() ->
     #v2_change_reporting_action{
-       instance = instance()
+       instance = instance(),
+       action = oneof([stop_reporting,
+		       start_reporting_cgi_sai,
+		       start_reporting_rai,
+		       start_reporting_tai,
+		       start_reporting_ecgi,
+		       start_reporting_cgi_sai_and_rai,
+		       start_reporting_tai_and_ecgi,
+		       start_reporting_macro_enodeb_id_and_extended_macro_enodeb_id,
+		       start_reporting_tai__macro_enodeb_id_and_extended_macro_enodeb_id])
       }.
 
 gen_v2_fully_qualified_pdn_connection_set_identifier() ->

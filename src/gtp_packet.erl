@@ -2549,6 +2549,26 @@ message_type_v2(235) -> mbms_session_stop_request;
 message_type_v2(236) -> mbms_session_stop_response;
 message_type_v2(Type) -> error(badarg, [Type]).
 
+enum_v2_action(stop_reporting) -> 0;
+enum_v2_action(start_reporting_cgi_sai) -> 1;
+enum_v2_action(start_reporting_rai) -> 2;
+enum_v2_action(start_reporting_tai) -> 3;
+enum_v2_action(start_reporting_ecgi) -> 4;
+enum_v2_action(start_reporting_cgi_sai_and_rai) -> 5;
+enum_v2_action(start_reporting_tai_and_ecgi) -> 6;
+enum_v2_action(start_reporting_macro_enodeb_id_and_extended_macro_enodeb_id) -> 7;
+enum_v2_action(start_reporting_tai__macro_enodeb_id_and_extended_macro_enodeb_id) -> 8;
+enum_v2_action(0) -> stop_reporting;
+enum_v2_action(1) -> start_reporting_cgi_sai;
+enum_v2_action(2) -> start_reporting_rai;
+enum_v2_action(3) -> start_reporting_tai;
+enum_v2_action(4) -> start_reporting_ecgi;
+enum_v2_action(5) -> start_reporting_cgi_sai_and_rai;
+enum_v2_action(6) -> start_reporting_tai_and_ecgi;
+enum_v2_action(7) -> start_reporting_macro_enodeb_id_and_extended_macro_enodeb_id;
+enum_v2_action(8) -> start_reporting_tai__macro_enodeb_id_and_extended_macro_enodeb_id;
+enum_v2_action(X) when is_integer(X) -> X.
+
 enum_v2_pdn_type(ipv4) -> 1;
 enum_v2_pdn_type(ipv6) -> 2;
 enum_v2_pdn_type(ipv4v6) -> 3;
@@ -2954,8 +2974,10 @@ decode_v2_element(<<_:6,
 decode_v2_element(<<>>, 129, Instance) ->
     #v2_source_identification{instance = Instance};
 
-decode_v2_element(<<>>, 131, Instance) ->
-    #v2_change_reporting_action{instance = Instance};
+decode_v2_element(<<M_action:8/integer,
+		    _/binary>>, 131, Instance) ->
+    #v2_change_reporting_action{instance = Instance,
+				action = enum_v2_action(M_action)};
 
 decode_v2_element(<<>>, 132, Instance) ->
     #v2_fully_qualified_pdn_connection_set_identifier{instance = Instance};
@@ -3411,8 +3433,9 @@ encode_v2_element(#v2_source_identification{
     encode_v2_element(129, Instance, <<>>);
 
 encode_v2_element(#v2_change_reporting_action{
-		     instance = Instance}) ->
-    encode_v2_element(131, Instance, <<>>);
+		     instance = Instance,
+		     action = M_action}) ->
+    encode_v2_element(131, Instance, <<(enum_v2_action(M_action)):8/integer>>);
 
 encode_v2_element(#v2_fully_qualified_pdn_connection_set_identifier{
 		     instance = Instance}) ->

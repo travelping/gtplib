@@ -911,7 +911,8 @@
 }).
 
 -record(v2_change_reporting_action, {
-	  instance = 0
+	  instance = 0,
+	  action = stop_reporting
 }).
 
 -record(v2_fully_qualified_pdn_connection_set_identifier, {
