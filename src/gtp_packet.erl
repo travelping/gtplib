@@ -116,8 +116,7 @@ decode_header(<<1:3, 1:1, _:1, E:1, S:1, PN:1, Type:8, Length:16, TEI:32/integer
 	 n_pdu = NPDU, ext_hdr = ExtHdr, ie = IEs};
 
 decode_header(<<1:3, 1:1, _:1, 0:1, 0:1, 0:1, Type:8, Length:16, TEI:32/integer,
-		Data0/binary>>) ->
-    <<IEs:Length/bytes, _Next/binary>> = Data0,
+		IEs:Length/bytes, _Next/binary>>) ->
     #gtp{version = v1, type = message_type_v1(Type), tei = TEI, ie = IEs};
 
 decode_header(<<2:3, 0:1, T:1, _Spare0:3, Type:8, Length:16,
