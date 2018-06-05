@@ -782,7 +782,8 @@
 }).
 
 -record(v2_charging_characteristics, {
-	  instance = 0
+	  instance = 0,
+	  value = <<0,0>>
 }).
 
 -record(v2_trace_information, {

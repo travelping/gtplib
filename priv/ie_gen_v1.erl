@@ -114,8 +114,7 @@ ies() ->
      {25, "Packet Flow Id", 2,
       []},
      {26, "Charging Characteristics", 2,
-      [{"Value", 2, bytes}]},                              %% TODO,The Charging Characteristics is defined
-                                                            %% in 3GPP TS 32.251 [18] and 3GPP TS 32.298 [34]
+      [{"Value", 2, bytes}]},
      {27, "Trace Reference", 2,
       []},
      {28, "Trace Type", 2,

@@ -2868,8 +2868,9 @@ decode_v2_element(<<M_id:4/bytes>>, 94, Instance) ->
     #v2_charging_id{instance = Instance,
 		    id = M_id};
 
-decode_v2_element(<<>>, 95, Instance) ->
-    #v2_charging_characteristics{instance = Instance};
+decode_v2_element(<<M_value:2/bytes>>, 95, Instance) ->
+    #v2_charging_characteristics{instance = Instance,
+				 value = M_value};
 
 decode_v2_element(<<>>, 96, Instance) ->
     #v2_trace_information{instance = Instance};
@@ -3300,8 +3301,9 @@ encode_v2_element(#v2_charging_id{
     encode_v2_element(94, Instance, <<M_id:4/bytes>>);
 
 encode_v2_element(#v2_charging_characteristics{
-		     instance = Instance}) ->
-    encode_v2_element(95, Instance, <<>>);
+		     instance = Instance,
+		     value = M_value}) ->
+    encode_v2_element(95, Instance, <<M_value:2/bytes>>);
 
 encode_v2_element(#v2_trace_information{
 		     instance = Instance}) ->
