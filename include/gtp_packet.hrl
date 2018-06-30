@@ -63,6 +63,14 @@
 	  rac = 0
 	 }).
 
+-record(data_record_packet, {
+	  instance = 0,
+	  format,
+	  application,
+	  version,
+	  records = []
+	 }).
+
 -record(v2_user_location_information, {
 	  instance = 0,
 	  cgi,
@@ -216,6 +224,11 @@
 -record(ms_not_reachable_reason, {
 	  instance = 0,
 	  content = <<0>>
+}).
+
+-record(packet_transfer_command, {
+	  instance = 0,
+	  command = send_data_record_packet
 }).
 
 -record(charging_id, {
@@ -640,8 +653,30 @@
 	  instance = 0
 }).
 
+-record(sequence_numbers_of_released_packets, {
+	  instance = 0,
+	  sequence_numbers
+}).
+
+-record(sequence_numbers_of_cancelled_packets, {
+	  instance = 0,
+	  sequence_numbers
+}).
+
 -record(charging_gateway_address, {
-	  instance = 0
+	  instance = 0,
+	  address = <<>>
+}).
+
+
+-record(requests_responded, {
+	  instance = 0,
+	  sequence_numbers
+}).
+
+-record(address_of_recommended_node, {
+	  instance = 0,
+	  address = <<>>
 }).
 
 -record(private_extension, {
