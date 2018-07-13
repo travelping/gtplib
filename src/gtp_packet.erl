@@ -47,7 +47,12 @@ decode_ies(#gtp{ie = IEs} = Msg, #{ies := map})
 decode_ies(#gtp{ie = IEs} = Msg, #{ies := Format} = Opts)
   when not is_binary(IEs) orelse (Format /= map andalso Format /= binary) ->
     error(badargs, [Msg, Opts]);
-decode_ies(#gtp{version = v1, type = Type, ie = IEs} = Msg, #{ies := map}) ->
+decode_ies(#gtp{version = Version, type = Type, ie = IEs} = Msg, #{ies := map})
+  when Version =:= v1;
+       Version =:= prime_v0;
+       Version =:= prime_v0s;
+       Version =:= prime_v1;
+       Version =:= prime_v2 ->
     Msg#gtp{ie = decode_v1(Type, IEs)};
 decode_ies(#gtp{version = v2, ie = IEs} = Msg, #{ies := map}) ->
     Msg#gtp{ie = decode_v2(IEs)};
