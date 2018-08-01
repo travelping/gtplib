@@ -12,10 +12,6 @@ Erlang netlink wrapper for talking the Linux kernel GTP-U module
 BUILDING
 --------
 
-Using tetrapak:
-
-    # tetrapak build check
-
 Using rebar:
 
     # rebar3 compile

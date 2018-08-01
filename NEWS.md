@@ -3,10 +3,13 @@ gtplib
 
 Erlang library for encoding and decoding GTPv1 and GTPv2 frames.
 
-Version 1.3.0 - xx Jul 2018
+Version 1.3.0 - 01 Aug 2018
 ---------------------------
 
-* support GTP' version 0 to 2
+* add support for GTP' version 0 to 2
+* support Erlang OTP 20.1 through 21.0
+* drop support for OTP 19.x and 20.0
+* removed tetrapak support
 
 Version 1.2.0 - 21 Jul 2017
 ---------------------------
