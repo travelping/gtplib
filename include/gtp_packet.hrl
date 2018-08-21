@@ -35,13 +35,14 @@
 -define('PCO-APN-Rate-Control',				16#16).
 
 -record(gtp, {
-	  version	:: 'undefined' | 'v1' | 'v2',
-	  type,
-	  tei		:: 0..16#ffffffff,
-	  seq_no	:: 0..16#ffff,
-	  n_pdu		:: 0..16#ff,
+	  version	:: 'undefined' | 'v1' | 'v2' |
+			   'prime_v0' | 'prime_v0s' | 'prime_v1' | 'prime_v2',
+	  type		:: atom(),
+	  tei		:: 0..16#ffffffff | undefined,
+	  seq_no	:: 0..16#ffffff | undefined,
+	  n_pdu		:: 0..16#ff | undefined,
 	  ext_hdr = []	:: [term()],
-	  ie		:: [term()]
+	  ie		:: [term()] | map() | binary()
 	 }).
 
 -record(routeing_area_identity, {
