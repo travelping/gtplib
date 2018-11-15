@@ -1447,8 +1447,15 @@ decode_v1_element(<<M_fqdn/binary>>, 190, Instance) ->
     #fully_qualified_domain_name{instance = Instance,
 				 fqdn = decode_fqdn(M_fqdn)};
 
-decode_v1_element(<<>>, 191, Instance) ->
-    #evolved_allocation_retention_priority_i{instance = Instance};
+decode_v1_element(<<_:1,
+		    M_pci:1/integer,
+		    M_pl:4/integer,
+		    _:1,
+		    M_pvi:1/integer>>, 191, Instance) ->
+    #evolved_allocation_retention_priority_i{instance = Instance,
+					     pci = M_pci,
+					     pl = M_pl,
+					     pvi = M_pvi};
 
 decode_v1_element(<<>>, 192, Instance) ->
     #evolved_allocation_retention_priority_ii{instance = Instance};
@@ -1477,8 +1484,11 @@ decode_v1_element(<<>>, 196, Instance) ->
 decode_v1_element(<<>>, 197, Instance) ->
     #csg_membership_indication{instance = Instance};
 
-decode_v1_element(<<>>, 198, Instance) ->
-    #aggregate_maximum_bit_rate{instance = Instance};
+decode_v1_element(<<M_uplink:32/integer,
+		    M_downlink:32/integer>>, 198, Instance) ->
+    #aggregate_maximum_bit_rate{instance = Instance,
+				uplink = M_uplink,
+				downlink = M_downlink};
 
 decode_v1_element(<<>>, 199, Instance) ->
     #ue_network_capability{instance = Instance};
@@ -2216,8 +2226,15 @@ encode_v1_element(#fully_qualified_domain_name{
     encode_v1_element(190, Instance, <<(encode_fqdn(M_fqdn))/binary>>);
 
 encode_v1_element(#evolved_allocation_retention_priority_i{
-		     instance = Instance}) ->
-    encode_v1_element(191, Instance, <<>>);
+		     instance = Instance,
+		     pci = M_pci,
+		     pl = M_pl,
+		     pvi = M_pvi}) ->
+    encode_v1_element(191, Instance, <<0:1,
+				       M_pci:1,
+				       M_pl:4,
+				       0:1,
+				       M_pvi:1>>);
 
 encode_v1_element(#evolved_allocation_retention_priority_ii{
 		     instance = Instance}) ->
@@ -2252,8 +2269,11 @@ encode_v1_element(#csg_membership_indication{
     encode_v1_element(197, Instance, <<>>);
 
 encode_v1_element(#aggregate_maximum_bit_rate{
-		     instance = Instance}) ->
-    encode_v1_element(198, Instance, <<>>);
+		     instance = Instance,
+		     uplink = M_uplink,
+		     downlink = M_downlink}) ->
+    encode_v1_element(198, Instance, <<M_uplink:32,
+				       M_downlink:32>>);
 
 encode_v1_element(#ue_network_capability{
 		     instance = Instance}) ->

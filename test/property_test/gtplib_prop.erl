@@ -1358,7 +1358,10 @@ gen_fully_qualified_domain_name() ->
 
 gen_evolved_allocation_retention_priority_i() ->
     #evolved_allocation_retention_priority_i{
-       instance = instance()
+       instance = instance(),
+       pci = oneof([0, 1]),
+       pl = integer(0, 15),
+       pvi = oneof([0, 1])
       }.
 
 gen_evolved_allocation_retention_priority_ii() ->
@@ -1395,7 +1398,9 @@ gen_csg_membership_indication() ->
 
 gen_aggregate_maximum_bit_rate() ->
     #aggregate_maximum_bit_rate{
-       instance = instance()
+       instance = instance(),
+       uplink = uint32(),
+       downlink = uint32()
       }.
 
 gen_ue_network_capability() ->

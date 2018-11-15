@@ -554,7 +554,10 @@
 }).
 
 -record(evolved_allocation_retention_priority_i, {
-	  instance = 0
+	  instance = 0,
+	  pci = 0,
+	  pl = 0,
+	  pvi = 0
 }).
 
 -record(evolved_allocation_retention_priority_ii, {
@@ -583,7 +586,9 @@
 }).
 
 -record(aggregate_maximum_bit_rate, {
-	  instance = 0
+	  instance = 0,
+	  uplink = 0,
+	  downlink = 0
 }).
 
 -record(ue_network_capability, {
