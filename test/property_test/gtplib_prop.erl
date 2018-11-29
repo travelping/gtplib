@@ -58,7 +58,7 @@ enc_dec_prop(_Config) ->
     numtests(1000,
 	     ?FORALL(Msg, msg_gen(),
 		     begin
-			 ct:pal("Msg: ~p", [Msg]),
+			 %% ct:pal("Msg: ~p", [Msg]),
 			 Enc = gtp_packet:encode(Msg),
 			 ?equal(Enc, gtp_packet:encode(gtp_packet:decode(Enc)))
 		     end)).
@@ -433,7 +433,7 @@ v1_simple_ie() ->
        %% gen_mm_context_umts_and_used_cipher(),
        gen_pdp_context(),
        gen_access_point_name(),
-       %% gen_protocol_configuration_options(),
+       gen_protocol_configuration_options(),
        gen_gsn_address(),
        gen_ms_international_pstn_isdn_number(),
        gen_quality_of_service_profile(),
@@ -533,7 +533,7 @@ v2_simple_ie() ->
      gen_v2_mobile_equipment_identity(),
      gen_v2_msisdn(),
      gen_v2_indication(),
-     %% gen_v2_protocol_configuration_options(),
+     gen_v2_protocol_configuration_options(),
      gen_v2_pdn_address_allocation(),
      gen_v2_bearer_level_quality_of_service(),
      gen_v2_flow_quality_of_service(),
@@ -660,7 +660,7 @@ prime_ie() ->
       ?LET(I, integer(1,10), vector(I, prime_simple_ie()))).
 
 put_ie(IE, IEs) ->
-    ct:pal("IE: ~p", [IE]),
+    %% ct:pal("IE: ~p", [IE]),
     Key = {element(1, IE), element(2, IE)},
     IEs#{Key => IE}.
 
@@ -1049,11 +1049,24 @@ gen_access_point_name() ->
        apn = apn()
       }.
 
+gen_random_list_of_pco() ->
+    list(oneof(
+	   [{ipcp,'CP-Configure-Request',0,
+	     [{ms_dns1,<<0,0,0,0>>},{ms_dns2,<<0,0,0,0>>}]},
+	    {13, <<>>},
+	    {65280, <<19,1,132>>},
+	    {12, <<>>},
+	    {10, <<>>},
+	    {16, <<>>},
+	    {13, ip4_address()},
+	    {ipcp,'CP-Configure-Nak',0,
+	     [{ms_dns1, ip4_address()},{ms_dns2, ip4_address()}]},
+	    {5,<<2>>}])).
+
 gen_protocol_configuration_options() ->
-    %% TODO: proper generator...
     #protocol_configuration_options{
        instance = instance(),
-       config = []
+       config = {0, gen_random_list_of_pco()}
       }.
 
 gen_gsn_address() ->
@@ -1691,10 +1704,9 @@ gen_v2_indication() ->
       }.
 
 gen_v2_protocol_configuration_options() ->
-    %% TODO: proper generator...
     #v2_protocol_configuration_options{
        instance = instance(),
-       config = []
+       config = {0, gen_random_list_of_pco()}
       }.
 
 gen_v2_pdn_address_allocation() ->
