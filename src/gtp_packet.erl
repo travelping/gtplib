@@ -2973,7 +2973,7 @@ decode_v2_element(<<M_ip/binary>>, 74, Instance) ->
 
 decode_v2_element(<<M_mei/binary>>, 75, Instance) ->
     #v2_mobile_equipment_identity{instance = Instance,
-				  mei = M_mei};
+				  mei = decode_tbcd(M_mei)};
 
 decode_v2_element(<<M_msisdn/binary>>, 76, Instance) ->
     #v2_msisdn{instance = Instance,
@@ -3391,7 +3391,7 @@ encode_v2_element(#v2_ip_address{
 encode_v2_element(#v2_mobile_equipment_identity{
 		     instance = Instance,
 		     mei = M_mei}) ->
-    encode_v2_element(75, Instance, <<M_mei/binary>>);
+    encode_v2_element(75, Instance, <<(encode_tbcd(M_mei))/binary>>);
 
 encode_v2_element(#v2_msisdn{
 		     instance = Instance,

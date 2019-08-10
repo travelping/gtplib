@@ -736,7 +736,7 @@
 
 -record(v2_mobile_equipment_identity, {
 	  instance = 0,
-	  mei = <<>>
+	  mei
 }).
 
 -record(v2_msisdn, {
