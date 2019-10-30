@@ -1,7 +1,12 @@
 gtplib
 ======
 
-Erlang library for encoding and decoding GTPv1 and GTPv2 frames.
+Erlang library for encoding and decoding GTPv1, GTPv2 and GTP' frames.
+
+Version 1.3.1 - 30 Oct 2019
+---------------------------
+
+* rename GTP' enum that duplicate GTPv1 enum
 
 Version 1.3.0 - 01 Aug 2018
 ---------------------------
