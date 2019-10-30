@@ -3,5 +3,4 @@ _build/
 *.so
 *.o
 .arcconfig
-tetrapak/.local.cache
 *~
