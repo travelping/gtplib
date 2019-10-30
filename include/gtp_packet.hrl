@@ -35,13 +35,14 @@
 -define('PCO-APN-Rate-Control',				16#16).
 
 -record(gtp, {
-	  version	:: 'undefined' | 'v1' | 'v2',
-	  type,
-	  tei		:: 0..16#ffffffff,
-	  seq_no	:: 0..16#ffff,
-	  n_pdu		:: 0..16#ff,
+	  version	:: 'undefined' | 'v1' | 'v2' |
+			   'prime_v0' | 'prime_v0s' | 'prime_v1' | 'prime_v2',
+	  type		:: atom(),
+	  tei		:: 0..16#ffffffff | undefined,
+	  seq_no	:: 0..16#ffffff | undefined,
+	  n_pdu		:: 0..16#ff | undefined,
 	  ext_hdr = []	:: [term()],
-	  ie		:: [term()]
+	  ie		:: [term()] | map() | binary()
 	 }).
 
 -record(routeing_area_identity, {
@@ -61,6 +62,14 @@
 	  ci = 0,
 	  sac = 0,
 	  rac = 0
+	 }).
+
+-record(data_record_packet, {
+	  instance = 0,
+	  format,
+	  application,
+	  version,
+	  records = []
 	 }).
 
 -record(v2_user_location_information, {
@@ -216,6 +225,11 @@
 -record(ms_not_reachable_reason, {
 	  instance = 0,
 	  content = <<0>>
+}).
+
+-record(packet_transfer_command, {
+	  instance = 0,
+	  command = send_data_record_packet
 }).
 
 -record(charging_id, {
@@ -540,7 +554,10 @@
 }).
 
 -record(evolved_allocation_retention_priority_i, {
-	  instance = 0
+	  instance = 0,
+	  pci = 0,
+	  pl = 0,
+	  pvi = 0
 }).
 
 -record(evolved_allocation_retention_priority_ii, {
@@ -569,7 +586,9 @@
 }).
 
 -record(aggregate_maximum_bit_rate, {
-	  instance = 0
+	  instance = 0,
+	  uplink = 0,
+	  downlink = 0
 }).
 
 -record(ue_network_capability, {
@@ -640,8 +659,30 @@
 	  instance = 0
 }).
 
+-record(sequence_numbers_of_released_packets, {
+	  instance = 0,
+	  sequence_numbers
+}).
+
+-record(sequence_numbers_of_cancelled_packets, {
+	  instance = 0,
+	  sequence_numbers
+}).
+
 -record(charging_gateway_address, {
-	  instance = 0
+	  instance = 0,
+	  address = <<>>
+}).
+
+
+-record(requests_responded, {
+	  instance = 0,
+	  sequence_numbers
+}).
+
+-record(address_of_recommended_node, {
+	  instance = 0,
+	  address = <<>>
 }).
 
 -record(private_extension, {
@@ -695,7 +736,7 @@
 
 -record(v2_mobile_equipment_identity, {
 	  instance = 0,
-	  mei = <<>>
+	  mei
 }).
 
 -record(v2_msisdn, {

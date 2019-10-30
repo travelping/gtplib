@@ -105,7 +105,7 @@ ies() ->
      {74, "v2 IP Address",
       [{"IP", 0, binary}]},
      {75, "v2 Mobile Equipment Identity",
-      [{"MEI", 0, binary}]},
+      [{"MEI", 0, {type, tbcd}}]},
      {76, "v2 MSISDN",
       [{"MSISDN", 0, {type, tbcd}}]},
      {77, "v2 Indication",

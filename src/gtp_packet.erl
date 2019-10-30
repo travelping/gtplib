@@ -2,7 +2,11 @@
 %% License, v. 2.0. If a copy of the MPL was not distributed with this
 %% file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-%% Copyright 2015, Travelping GmbH <info@travelping.com>
+%% Copyright 2015-2018, Travelping GmbH <info@travelping.com>
+
+%% Note: GTP v0 is only supported for GTP'.
+%%       GTP Version 0 is defined in ETSI TS 101.347 (GSM 09.60)
+%%       GTP' Version 0 is defined in ETSI TS 101.393 (GSM 12.15)
 
 -module(gtp_packet).
 
@@ -43,12 +47,18 @@ decode_ies(#gtp{ie = IEs} = Msg, #{ies := map})
 decode_ies(#gtp{ie = IEs} = Msg, #{ies := Format} = Opts)
   when not is_binary(IEs) orelse (Format /= map andalso Format /= binary) ->
     error(badargs, [Msg, Opts]);
-decode_ies(#gtp{version = v1, type = Type, ie = IEs} = Msg, #{ies := map}) ->
+decode_ies(#gtp{version = Version, type = Type, ie = IEs} = Msg, #{ies := map})
+  when Version =:= v1;
+       Version =:= prime_v0;
+       Version =:= prime_v0s;
+       Version =:= prime_v1;
+       Version =:= prime_v2 ->
     Msg#gtp{ie = decode_v1(Type, IEs)};
 decode_ies(#gtp{version = v2, ie = IEs} = Msg, #{ies := map}) ->
     Msg#gtp{ie = decode_v2(IEs)};
 decode_ies(Msg, _) ->
     Msg.
+
 
 encode(#gtp{version = v1, type = Type, tei = TEI, seq_no = SeqNo,
 	    n_pdu = NPDU, ext_hdr = ExtHdr, ie = IEs}) ->
@@ -57,6 +67,22 @@ encode(#gtp{version = v1, type = Type, tei = TEI, seq_no = SeqNo,
     Data = encode_v1(Type, IEs),
     <<Flags/binary, (message_type_v1(Type)):8, (size(HdrOpt) + size(Data)):16, TEI:32, HdrOpt/binary, Data/binary>>;
 
+
+encode(#gtp{version = Version, type = Type, seq_no = SeqNo, ie = IEs})
+  when Version =:= prime_v0 ->
+    {V, LFN} = prime_version_enc(Version),
+    FlowLabel = 0,
+    Data = encode_v1(Type, IEs),
+    <<V:3, 0:1, 7:3, LFN:1, (message_type_v1(Type)):8, (size(Data)):16, SeqNo:16,
+      FlowLabel:16, 16#ff:8, 16#ffffff:24, 0:64, Data/binary>>;
+
+encode(#gtp{version = Version, type = Type, seq_no = SeqNo, ie = IEs})
+  when Version =:= prime_v0s;
+       Version =:= prime_v1;
+       Version =:= prime_v2  ->
+    {V, LFN} = prime_version_enc(Version),
+    Data = encode_v1(Type, IEs),
+    <<V:3, 0:1, 7:3, LFN:1, (message_type_v1(Type)):8, (size(Data)):16, SeqNo:16, Data/binary>>;
 
 encode(#gtp{version = v2, type = Type, tei = TEI, seq_no = SeqNo, ie = IEs}) ->
     encode_v2_msg(message_type_v2(Type), 0, TEI, SeqNo, encode_v2(IEs)).
@@ -95,6 +121,7 @@ pretty_print(Record, N) ->
 %% Helpers
 %%====================================================================
 
+%% GTP v1
 decode_header(<<1:3, 1:1, _:1, E:1, S:1, PN:1, Type:8, Length:16, TEI:32/integer,
 		SeqNo0:16, NPDU0:8, ExtHdrType:8, Data0/binary>>)
   when E == 1; S == 1; PN == 1 ->
@@ -119,6 +146,17 @@ decode_header(<<1:3, 1:1, _:1, 0:1, 0:1, 0:1, Type:8, Length:16, TEI:32/integer,
 		IEs:Length/bytes, _Next/binary>>) ->
     #gtp{version = v1, type = message_type_v1(Type), tei = TEI, ie = IEs};
 
+%% GTP' (prime)
+decode_header(<<0:3, 0:1, _:3, 0:1, Type:8, Length:16, SeqNo:16,
+		_FlowLabel:16, _PDU:8, _Spare:3/bytes, _TID:64,
+		IEs:Length/bytes, _Next/binary>>) ->
+    #gtp{version = prime_v0, type = message_type_v1(Type), seq_no = SeqNo, ie = IEs};
+decode_header(<<Version:3, 0:1, _:3, _:1, Type:8, Length:16, SeqNo:16,
+		IEs:Length/bytes, _Next/binary>>) ->
+    #gtp{version = prime_version(Version), type = message_type_v1(Type),
+	 seq_no = SeqNo, ie = IEs};
+
+%% GTP v2
 decode_header(<<2:3, 0:1, T:1, _Spare0:3, Type:8, Length:16,
 		Data:Length/bytes, _Next/binary>>) ->
     decode_v2_msg(Data, T, Type);
@@ -206,6 +244,18 @@ decode_exthdr_type(Container, 2#10000001) ->
 decode_exthdr_type(Data, Type) ->
     {Type, Data}.
 
+prime_version(0) ->
+    prime_v0s;
+prime_version(1) ->
+    prime_v1;
+prime_version(2) ->
+    prime_v2.
+
+prime_version_enc(prime_v0)  -> {0, 0};
+prime_version_enc(prime_v0s) -> {0, 1};
+prime_version_enc(prime_v1)  -> {1, 0};
+prime_version_enc(prime_v2)  -> {2, 0}.
+
 decode_tbcd(Bin) ->
     decode_tbcd(Bin, <<>>).
 
@@ -271,8 +321,27 @@ decode_protocol_opts(<<Id:16, Length:8, Data:Length/bytes, Next/binary>>, Protoc
   when Protocol == 0, Id >= 16#8000, Id < 16#FF00 ->
     Opt = decode_protocol_ppp_opt(Id, Data),
     decode_protocol_opts(Next, Protocol, [Opt | Opts]);
-decode_protocol_opts(<<Id:16, Length:8, Data:Length/bytes, Next/binary>>, _Protocol, Opts) ->
-    decode_protocol_opts(Next, -1, [{Id, Data} | Opts]).
+decode_protocol_opts(<<Id:16, Length:8, Data:Length/bytes, Next/binary>>, Protocol, Opts) ->
+    decode_protocol_opts(Next, Protocol, [{Id, Data} | Opts]).
+
+decode_array_of_seq_no(Array) ->
+    [X || <<X:16/integer>> <= Array].
+
+decode_data_records(_Rest, 0, Records) ->
+    lists:reverse(Records);
+decode_data_records(<<Size:16, Data:Size/bytes, Next/binary>>, Cnt, Records)
+  when Cnt /= 0->
+    decode_data_records(Next, Cnt - 1, [Data | Records]).
+
+decode_data_record_packet(<<NumOfRecs:8, Format:8, App:4, Release:4,
+			    Version:8, Rest/binary>>, Instance) ->
+    Records = decode_data_records(Rest, NumOfRecs, []),
+    #data_record_packet{
+       instance = Instance,
+       format = Format,
+       application = App,
+       version = {Release, Version - 1},
+       records = Records}.
 
 decode_v1(g_pdu, Data) ->
     %% G-PDU
@@ -508,13 +577,24 @@ encode_protocol_config_opts({Protocol, Opts}) ->
 
 encode_protocol_opts(_Protocol, [], Opts) ->
     Opts;
-encode_protocol_opts(_Protocol, [{Id, Data} | T], Opts)
+encode_protocol_opts(Protocol, [{Id, Data} | T], Opts)
   when Id < 16#8000; Id >= 16#FF00 ->
-    encode_protocol_opts(-1, T, <<Opts/binary, Id:16, (size(Data)):8, Data/binary>>);
+    encode_protocol_opts(Protocol, T, <<Opts/binary, Id:16, (size(Data)):8, Data/binary>>);
 encode_protocol_opts(Protocol, [Opt | T], Opts)
   when Protocol == 0 ->
     {Id, Data} = encode_protocol_ppp_opt(Opt),
     encode_protocol_opts(Protocol, T, <<Opts/binary, Id:16, (size(Data)):8, Data/binary>>).
+
+encode_array_of_seq_no(Array) ->
+    << <<X:16>> || X <- Array>>.
+
+encode_data_record_packet(#data_record_packet{
+			     format = Format,
+			     application = App,
+			     version = {Release, Version},
+			     records = Records}) ->
+    BinRecs = << <<(size(R)):16, R/binary>> || R <- Records >>,
+    << (length(Records)):8, Format:8, App:4, Release:4, (Version + 1):8, BinRecs/binary >>.
 
 encode_v2_indication_flags(Flags) ->
     pad_to(5, << <<(bool2int(lists:member(F, Flags))):1>> || F <- ?V2_INDICATION_FLAGS>>).
@@ -756,6 +836,16 @@ message_type_v1(254) -> end_marker;
 message_type_v1(255) -> g_pdu;
 message_type_v1(Type) -> error(badarg, [Type]).
 
+enum_command(send_data_record_packet) -> 1;
+enum_command(send_possibly_duplicated_data_record_packet) -> 2;
+enum_command(cancel_data_record_packet) -> 3;
+enum_command(release_data_record_packet) -> 4;
+enum_command(1) -> send_data_record_packet;
+enum_command(2) -> send_possibly_duplicated_data_record_packet;
+enum_command(3) -> cancel_data_record_packet;
+enum_command(4) -> release_data_record_packet;
+enum_command(X) when is_integer(X) -> X.
+
 enum_validated(no) -> 0;
 enum_validated(yes) -> 1;
 enum_validated(0) -> no;
@@ -778,9 +868,15 @@ enum_value(reactivation_requested) -> 6;
 enum_value(pdp_address_inactivity_timer_expires) -> 7;
 enum_value(network_failure) -> 8;
 enum_value(qos_parameter_mismatch) -> 9;
+enum_value(system_failure) -> 59;
+enum_value(the_transmit_buffers_are_becoming_full) -> 60;
+enum_value(the_receive_buffers_are_becoming_full) -> 61;
+enum_value(another_node_is_about_to_go_down) -> 62;
+enum_value(this_node_is_about_to_go_down) -> 63;
 enum_value(request_accepted) -> 128;
 enum_value(new_pdp_type_due_to_network_preference) -> 129;
 enum_value(new_pdp_type_due_to_single_address_bearer_only) -> 130;
+enum_value(cdr_decoding_error) -> 177;
 enum_value(non_existent) -> 192;
 enum_value(invalid_message_format) -> 193;
 enum_value(imsi_imei_not_known) -> 194;
@@ -821,6 +917,10 @@ enum_value(collision_with_network_initiated_request) -> 228;
 enum_value(apn_congestion) -> 229;
 enum_value(bearer_handling_not_supported) -> 230;
 enum_value(target_access_restricted_for_the_subscriber) -> 231;
+enum_value(request_related_to_possibly_duplicated_packets_already_fulfilled) -> 252;
+enum_value(request_already_fulfilled) -> 253;
+enum_value(sequence_numbers_of_released_cancelled_packets_ie_incorrect) -> 254;
+enum_value(request_not_fulfilled) -> 255;
 enum_value(0) -> request_imsi;
 enum_value(1) -> request_imei;
 enum_value(2) -> request_imsi_and_imei;
@@ -831,9 +931,15 @@ enum_value(6) -> reactivation_requested;
 enum_value(7) -> pdp_address_inactivity_timer_expires;
 enum_value(8) -> network_failure;
 enum_value(9) -> qos_parameter_mismatch;
+enum_value(59) -> system_failure;
+enum_value(60) -> the_transmit_buffers_are_becoming_full;
+enum_value(61) -> the_receive_buffers_are_becoming_full;
+enum_value(62) -> another_node_is_about_to_go_down;
+enum_value(63) -> this_node_is_about_to_go_down;
 enum_value(128) -> request_accepted;
 enum_value(129) -> new_pdp_type_due_to_network_preference;
 enum_value(130) -> new_pdp_type_due_to_single_address_bearer_only;
+enum_value(177) -> cdr_decoding_error;
 enum_value(192) -> non_existent;
 enum_value(193) -> invalid_message_format;
 enum_value(194) -> imsi_imei_not_known;
@@ -874,6 +980,10 @@ enum_value(228) -> collision_with_network_initiated_request;
 enum_value(229) -> apn_congestion;
 enum_value(230) -> bearer_handling_not_supported;
 enum_value(231) -> target_access_restricted_for_the_subscriber;
+enum_value(252) -> request_related_to_possibly_duplicated_packets_already_fulfilled;
+enum_value(253) -> request_already_fulfilled;
+enum_value(254) -> sequence_numbers_of_released_cancelled_packets_ie_incorrect;
+enum_value(255) -> request_not_fulfilled;
 enum_value(X) when is_integer(X) -> X.
 
 decode_v1_element(<<M_value:8/integer>>, 1, Instance) ->
@@ -980,6 +1090,10 @@ decode_v1_element(<<>>, 28, Instance) ->
 
 decode_v1_element(<<>>, 29, Instance) ->
     #ms_not_reachable_reason{instance = Instance};
+
+decode_v1_element(<<M_command:8/integer>>, 126, Instance) ->
+    #packet_transfer_command{instance = Instance,
+			     command = enum_command(M_command)};
 
 decode_v1_element(<<M_id:4/bytes>>, 127, Instance) ->
     #charging_id{instance = Instance,
@@ -1333,8 +1447,15 @@ decode_v1_element(<<M_fqdn/binary>>, 190, Instance) ->
     #fully_qualified_domain_name{instance = Instance,
 				 fqdn = decode_fqdn(M_fqdn)};
 
-decode_v1_element(<<>>, 191, Instance) ->
-    #evolved_allocation_retention_priority_i{instance = Instance};
+decode_v1_element(<<_:1,
+		    M_pci:1/integer,
+		    M_pl:4/integer,
+		    _:1,
+		    M_pvi:1/integer>>, 191, Instance) ->
+    #evolved_allocation_retention_priority_i{instance = Instance,
+					     pci = M_pci,
+					     pl = M_pl,
+					     pvi = M_pvi};
 
 decode_v1_element(<<>>, 192, Instance) ->
     #evolved_allocation_retention_priority_ii{instance = Instance};
@@ -1363,8 +1484,11 @@ decode_v1_element(<<>>, 196, Instance) ->
 decode_v1_element(<<>>, 197, Instance) ->
     #csg_membership_indication{instance = Instance};
 
-decode_v1_element(<<>>, 198, Instance) ->
-    #aggregate_maximum_bit_rate{instance = Instance};
+decode_v1_element(<<M_uplink:32/integer,
+		    M_downlink:32/integer>>, 198, Instance) ->
+    #aggregate_maximum_bit_rate{instance = Instance,
+				uplink = M_uplink,
+				downlink = M_downlink};
 
 decode_v1_element(<<>>, 199, Instance) ->
     #ue_network_capability{instance = Instance};
@@ -1417,8 +1541,28 @@ decode_v1_element(<<>>, 215, Instance) ->
 decode_v1_element(<<>>, 216, Instance) ->
     #cn_operator_selection_entity{instance = Instance};
 
-decode_v1_element(<<>>, 251, Instance) ->
-    #charging_gateway_address{instance = Instance};
+decode_v1_element(<<M_sequence_numbers/binary>>, 249, Instance) ->
+    #sequence_numbers_of_released_packets{instance = Instance,
+					  sequence_numbers = decode_array_of_seq_no(M_sequence_numbers)};
+
+decode_v1_element(<<M_sequence_numbers/binary>>, 250, Instance) ->
+    #sequence_numbers_of_cancelled_packets{instance = Instance,
+					   sequence_numbers = decode_array_of_seq_no(M_sequence_numbers)};
+
+decode_v1_element(<<M_address/binary>>, 251, Instance) ->
+    #charging_gateway_address{instance = Instance,
+			      address = M_address};
+
+decode_v1_element(<<Data/binary>>, 252, Instance) ->
+    decode_data_record_packet(Data, Instance);
+
+decode_v1_element(<<M_sequence_numbers/binary>>, 253, Instance) ->
+    #requests_responded{instance = Instance,
+			sequence_numbers = decode_array_of_seq_no(M_sequence_numbers)};
+
+decode_v1_element(<<M_address/binary>>, 254, Instance) ->
+    #address_of_recommended_node{instance = Instance,
+				 address = M_address};
 
 decode_v1_element(<<>>, 255, Instance) ->
     #private_extension{instance = Instance};
@@ -1532,6 +1676,10 @@ decode_v1(<<29, Data:1/bytes, Next/binary>>, PrevInst, PrevId, IEs) ->
     Instance = v1_instance(29, PrevId, PrevInst),
     IE = decode_v1_element(Data, 29, Instance),
     decode_v1(Next, 29, Instance, put_ie(IE, IEs));
+decode_v1(<<126, Data:1/bytes, Next/binary>>, PrevInst, PrevId, IEs) ->
+    Instance = v1_instance(126, PrevId, PrevInst),
+    IE = decode_v1_element(Data, 126, Instance),
+    decode_v1(Next, 126, Instance, put_ie(IE, IEs));
 decode_v1(<<127, Data:4/bytes, Next/binary>>, PrevInst, PrevId, IEs) ->
     Instance = v1_instance(127, PrevId, PrevInst),
     IE = decode_v1_element(Data, 127, Instance),
@@ -1686,6 +1834,11 @@ encode_v1_element(#ms_not_reachable_reason{
 		     instance = Instance,
 		     content = Content}) ->
     encode_v1_element(29, Instance, <<Content:1/bytes>>);
+
+encode_v1_element(#packet_transfer_command{
+		     instance = Instance,
+		     command = M_command}) ->
+    encode_v1_element(126, Instance, <<(enum_command(M_command)):8/integer>>);
 
 encode_v1_element(#charging_id{
 		     instance = Instance,
@@ -2073,8 +2226,15 @@ encode_v1_element(#fully_qualified_domain_name{
     encode_v1_element(190, Instance, <<(encode_fqdn(M_fqdn))/binary>>);
 
 encode_v1_element(#evolved_allocation_retention_priority_i{
-		     instance = Instance}) ->
-    encode_v1_element(191, Instance, <<>>);
+		     instance = Instance,
+		     pci = M_pci,
+		     pl = M_pl,
+		     pvi = M_pvi}) ->
+    encode_v1_element(191, Instance, <<0:1,
+				       M_pci:1,
+				       M_pl:4,
+				       0:1,
+				       M_pvi:1>>);
 
 encode_v1_element(#evolved_allocation_retention_priority_ii{
 		     instance = Instance}) ->
@@ -2109,8 +2269,11 @@ encode_v1_element(#csg_membership_indication{
     encode_v1_element(197, Instance, <<>>);
 
 encode_v1_element(#aggregate_maximum_bit_rate{
-		     instance = Instance}) ->
-    encode_v1_element(198, Instance, <<>>);
+		     instance = Instance,
+		     uplink = M_uplink,
+		     downlink = M_downlink}) ->
+    encode_v1_element(198, Instance, <<M_uplink:32,
+				       M_downlink:32>>);
 
 encode_v1_element(#ue_network_capability{
 		     instance = Instance}) ->
@@ -2180,9 +2343,33 @@ encode_v1_element(#cn_operator_selection_entity{
 		     instance = Instance}) ->
     encode_v1_element(216, Instance, <<>>);
 
+encode_v1_element(#sequence_numbers_of_released_packets{
+		     instance = Instance,
+		     sequence_numbers = M_sequence_numbers}) ->
+    encode_v1_element(249, Instance, <<(encode_array_of_seq_no(M_sequence_numbers))/binary>>);
+
+encode_v1_element(#sequence_numbers_of_cancelled_packets{
+		     instance = Instance,
+		     sequence_numbers = M_sequence_numbers}) ->
+    encode_v1_element(250, Instance, <<(encode_array_of_seq_no(M_sequence_numbers))/binary>>);
+
 encode_v1_element(#charging_gateway_address{
-		     instance = Instance}) ->
-    encode_v1_element(251, Instance, <<>>);
+		     instance = Instance,
+		     address = M_address}) ->
+    encode_v1_element(251, Instance, <<M_address/binary>>);
+
+encode_v1_element(#data_record_packet{instance = Instance} = IE) ->
+    encode_v1_element(252, Instance, encode_data_record_packet(IE));
+
+encode_v1_element(#requests_responded{
+		     instance = Instance,
+		     sequence_numbers = M_sequence_numbers}) ->
+    encode_v1_element(253, Instance, <<(encode_array_of_seq_no(M_sequence_numbers))/binary>>);
+
+encode_v1_element(#address_of_recommended_node{
+		     instance = Instance,
+		     address = M_address}) ->
+    encode_v1_element(254, Instance, <<M_address/binary>>);
 
 encode_v1_element(#private_extension{
 		     instance = Instance}) ->
@@ -2217,6 +2404,7 @@ encode_v1_element({Tag, Instance, Value}) when is_integer(Tag), is_integer(Insta
 ?PRETTY_PRINT(pretty_print_v1, trace_reference);
 ?PRETTY_PRINT(pretty_print_v1, trace_type);
 ?PRETTY_PRINT(pretty_print_v1, ms_not_reachable_reason);
+?PRETTY_PRINT(pretty_print_v1, packet_transfer_command);
 ?PRETTY_PRINT(pretty_print_v1, charging_id);
 ?PRETTY_PRINT(pretty_print_v1, end_user_address);
 ?PRETTY_PRINT(pretty_print_v1, mm_context_gsm);
@@ -2308,7 +2496,12 @@ encode_v1_element({Tag, Instance, Value}) when is_integer(Tag), is_integer(Insta
 ?PRETTY_PRINT(pretty_print_v1, uli_timestamp);
 ?PRETTY_PRINT(pretty_print_v1, local_home_network_id_with_nsapi);
 ?PRETTY_PRINT(pretty_print_v1, cn_operator_selection_entity);
+?PRETTY_PRINT(pretty_print_v1, sequence_numbers_of_released_packets);
+?PRETTY_PRINT(pretty_print_v1, sequence_numbers_of_cancelled_packets);
 ?PRETTY_PRINT(pretty_print_v1, charging_gateway_address);
+?PRETTY_PRINT(pretty_print_v1, data_record_packet);
+?PRETTY_PRINT(pretty_print_v1, requests_responded);
+?PRETTY_PRINT(pretty_print_v1, address_of_recommended_node);
 ?PRETTY_PRINT(pretty_print_v1, private_extension);
 pretty_print_v1(_, _) ->
     no.
@@ -2780,7 +2973,7 @@ decode_v2_element(<<M_ip/binary>>, 74, Instance) ->
 
 decode_v2_element(<<M_mei/binary>>, 75, Instance) ->
     #v2_mobile_equipment_identity{instance = Instance,
-				  mei = M_mei};
+				  mei = decode_tbcd(M_mei)};
 
 decode_v2_element(<<M_msisdn/binary>>, 76, Instance) ->
     #v2_msisdn{instance = Instance,
@@ -3198,7 +3391,7 @@ encode_v2_element(#v2_ip_address{
 encode_v2_element(#v2_mobile_equipment_identity{
 		     instance = Instance,
 		     mei = M_mei}) ->
-    encode_v2_element(75, Instance, <<M_mei/binary>>);
+    encode_v2_element(75, Instance, <<(encode_tbcd(M_mei))/binary>>);
 
 encode_v2_element(#v2_msisdn{
 		     instance = Instance,

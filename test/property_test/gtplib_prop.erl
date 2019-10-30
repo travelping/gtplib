@@ -58,7 +58,7 @@ enc_dec_prop(_Config) ->
     numtests(1000,
 	     ?FORALL(Msg, msg_gen(),
 		     begin
-			 ct:pal("Msg: ~p", [Msg]),
+			 %% ct:pal("Msg: ~p", [Msg]),
 			 Enc = gtp_packet:encode(Msg),
 			 ?equal(Enc, gtp_packet:encode(gtp_packet:decode(Enc)))
 		     end)).
@@ -197,6 +197,9 @@ instance() ->
 tei() ->
     uint32().
 
+uint16_array() ->
+    ?LET(I, integer(1,10), vector(I, uint16())).
+
 binstr_number(Min, Max) ->
     ?LET(X,
 	 ?LET(I, integer(Min,Max), vector(I, integer($0, $9))), list_to_binary(X)).
@@ -228,6 +231,12 @@ msg_gen() ->
 	  tei = integer(0,16#ffffffff),
 	  seq_no = integer(0,16#ffff),
 	  ie = v2_ie()
+	 },
+       #gtp{
+	  version = oneof([prime_v0, prime_v0s, prime_v1, prime_v2]),
+	  type = prime_msg_type(),
+	  seq_no = integer(0,16#ffff),
+	  ie = prime_ie()
 	 }
       ]).
 
@@ -236,10 +245,6 @@ v1_msg_type() ->
 	   echo_request,
 	   echo_response,
 	   version_not_supported,
-	   node_alive_request,
-	   node_alive_response,
-	   redirection_request,
-	   redirection_response,
 	   create_pdp_context_request,
 	   create_pdp_context_response,
 	   update_pdp_context_request,
@@ -295,7 +300,17 @@ v1_msg_type() ->
 	   mbms_session_update_request,
 	   mbms_session_update_response,
 	   ms_info_change_notification_request,
-	   ms_info_change_notification_response,
+	   ms_info_change_notification_response
+	  ]).
+
+prime_msg_type() ->
+    oneof([
+	   version_not_supported,
+	   node_alive_request,
+	   node_alive_response,
+	   redirection_request,
+	   redirection_response,
+	   error_indication,
 	   data_record_transfer_request,
 	   data_record_transfer_response
 	  ]).
@@ -418,7 +433,7 @@ v1_simple_ie() ->
        %% gen_mm_context_umts_and_used_cipher(),
        gen_pdp_context(),
        gen_access_point_name(),
-       %% gen_protocol_configuration_options(),
+       gen_protocol_configuration_options(),
        gen_gsn_address(),
        gen_ms_international_pstn_isdn_number(),
        gen_quality_of_service_profile(),
@@ -518,7 +533,7 @@ v2_simple_ie() ->
      gen_v2_mobile_equipment_identity(),
      gen_v2_msisdn(),
      gen_v2_indication(),
-     %% gen_v2_protocol_configuration_options(),
+     gen_v2_protocol_configuration_options(),
      gen_v2_pdn_address_allocation(),
      gen_v2_bearer_level_quality_of_service(),
      gen_v2_flow_quality_of_service(),
@@ -618,6 +633,20 @@ v2_simple_ie() ->
      gen_v2_wlan_offloadability_indication(),
      gen_v2_private_extension()].
 
+prime_simple_ie() ->
+    oneof(
+      [
+       gen_cause(),
+       gen_packet_transfer_command(),
+       gen_charging_id(),
+       gen_sequence_numbers_of_released_packets(),
+       gen_sequence_numbers_of_cancelled_packets(),
+       gen_charging_gateway_address(),
+       gen_data_record_packet(),
+       gen_requests_responded(),
+       gen_address_of_recommended_node(),
+       gen_private_extension()]).
+
 v1_ie() ->
     ie_map(
       ?LET(I, integer(1,10), vector(I, v1_simple_ie()))).
@@ -626,8 +655,12 @@ v2_ie() ->
     ie_map(
       ?LET(I, integer(1,10), vector(I, oneof(v2_simple_ie() ++ v2_grouped_ie())))).
 
+prime_ie() ->
+    ie_map(
+      ?LET(I, integer(1,10), vector(I, prime_simple_ie()))).
+
 put_ie(IE, IEs) ->
-    ct:pal("IE: ~p", [IE]),
+    %% ct:pal("IE: ~p", [IE]),
     Key = {element(1, IE), element(2, IE)},
     IEs#{Key => IE}.
 
@@ -721,9 +754,15 @@ gen_cause() ->
 	      pdp_address_inactivity_timer_expires,
 	      network_failure,
 	      qos_parameter_mismatch,
+	      system_failure,
+	      the_transmit_buffers_are_becoming_full,
+	      the_receive_buffers_are_becoming_full,
+	      another_node_is_about_to_go_down,
+	      this_node_is_about_to_go_down,
 	      request_accepted,
 	      new_pdp_type_due_to_network_preference,
 	      new_pdp_type_due_to_single_address_bearer_only,
+	      cdr_decoding_error,
 	      non_existent,
 	      invalid_message_format,
 	      imsi_imei_not_known,
@@ -763,7 +802,11 @@ gen_cause() ->
 	      collision_with_network_initiated_request,
 	      apn_congestion,
 	      bearer_handling_not_supported,
-	      target_access_restricted_for_the_subscriber])
+	      target_access_restricted_for_the_subscriber,
+	      request_related_to_possibly_duplicated_packets_already_fulfilled,
+	      request_already_fulfilled,
+	      sequence_numbers_of_released_cancelled_packets_ie_incorrect,
+	      request_not_fulfilled])
       }.
 
 gen_international_mobile_subscriber_identity() ->
@@ -904,6 +947,15 @@ gen_ms_not_reachable_reason() ->
        instance = instance()
       }.
 
+gen_packet_transfer_command() ->
+    #packet_transfer_command{
+       instance = instance(),
+       command = oneof([send_data_record_packet,
+			send_possibly_duplicated_data_record_packet,
+			cancel_data_record_packet,
+			release_data_record_packet])
+      }.
+
 gen_charging_id() ->
     #charging_id{
        instance = instance(),
@@ -997,11 +1049,24 @@ gen_access_point_name() ->
        apn = apn()
       }.
 
+gen_random_list_of_pco() ->
+    list(oneof(
+	   [{ipcp,'CP-Configure-Request',0,
+	     [{ms_dns1,<<0,0,0,0>>},{ms_dns2,<<0,0,0,0>>}]},
+	    {13, <<>>},
+	    {65280, <<19,1,132>>},
+	    {12, <<>>},
+	    {10, <<>>},
+	    {16, <<>>},
+	    {13, ip4_address()},
+	    {ipcp,'CP-Configure-Nak',0,
+	     [{ms_dns1, ip4_address()},{ms_dns2, ip4_address()}]},
+	    {5,<<2>>}])).
+
 gen_protocol_configuration_options() ->
-    %% TODO: proper generator...
     #protocol_configuration_options{
        instance = instance(),
-       config = []
+       config = {0, gen_random_list_of_pco()}
       }.
 
 gen_gsn_address() ->
@@ -1306,7 +1371,10 @@ gen_fully_qualified_domain_name() ->
 
 gen_evolved_allocation_retention_priority_i() ->
     #evolved_allocation_retention_priority_i{
-       instance = instance()
+       instance = instance(),
+       pci = oneof([0, 1]),
+       pl = integer(0, 15),
+       pvi = oneof([0, 1])
       }.
 
 gen_evolved_allocation_retention_priority_ii() ->
@@ -1343,7 +1411,9 @@ gen_csg_membership_indication() ->
 
 gen_aggregate_maximum_bit_rate() ->
     #aggregate_maximum_bit_rate{
-       instance = instance()
+       instance = instance(),
+       uplink = uint32(),
+       downlink = uint32()
       }.
 
 gen_ue_network_capability() ->
@@ -1431,10 +1501,55 @@ gen_cn_operator_selection_entity() ->
        instance = instance()
       }.
 
+gen_sequence_numbers_of_released_packets() ->
+    #sequence_numbers_of_released_packets{
+       instance = instance(),
+       sequence_numbers = uint16_array()
+      }.
+
+gen_sequence_numbers_of_cancelled_packets() ->
+    #sequence_numbers_of_cancelled_packets{
+       instance = instance(),
+       sequence_numbers = uint16_array()
+      }.
+
 gen_charging_gateway_address() ->
     #charging_gateway_address{
-       instance = instance()
+       instance = instance(),
+       address = oneof([ip4_address(), ip6_address()])
       }.
+
+gen_data_record_packet() ->
+    #data_record_packet{
+       instance = instance(),
+       format = integer(1, 3),
+       application = integer(1, 7),
+       version = {integer(0, 7), integer(0,9)},
+       records =
+	   ?LET(I, integer(1,10), vector(I, binary()))
+      }.
+
+gen_requests_responded() ->
+    #requests_responded{
+       instance = instance(),
+       sequence_numbers = uint16_array()
+      }.
+
+gen_address_of_recommended_node() ->
+    #address_of_recommended_node{
+       instance = instance(),
+       address = oneof([ip4_address(), ip6_address()])
+      }.
+
+
+
+
+
+
+
+
+
+
 
 gen_private_extension() ->
     #private_extension{
@@ -1589,10 +1704,9 @@ gen_v2_indication() ->
       }.
 
 gen_v2_protocol_configuration_options() ->
-    %% TODO: proper generator...
     #v2_protocol_configuration_options{
        instance = instance(),
-       config = []
+       config = {0, gen_random_list_of_pco()}
       }.
 
 gen_v2_pdn_address_allocation() ->

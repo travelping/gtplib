@@ -1,4 +1,5 @@
 ebin/
+_build/
 *.so
 *.o
 .arcconfig
