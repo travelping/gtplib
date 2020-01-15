@@ -7,7 +7,7 @@
 -define(V1_TAG, <<"%% -include(\"gtp_packet_v1_gen.hrl\").">>).
 -define(V2_TAG, <<"%% -include(\"gtp_packet_v2_gen.hrl\").">>).
 
-ies() ->
+raw_ies() ->
     [
      {1, "v2 International Mobile Subscriber Identity",
       [{"IMSI", 0, {type, tbcd}}]},
@@ -344,108 +344,148 @@ msgs() ->
      {236, "MBMS Session Stop Response"}
     ].
 
-gen_record_def({Value, _}) when is_integer(Value); is_atom(Value) ->
+-type flag() :: any().
+-type enum() :: any().
+-type array_def() :: any().
+-type field_type() ::
+    {flags, [flag()]} |
+    {enum, [enum()]} |
+    integer |
+    bits |
+    bytes |
+    binary |
+    length_binary |
+    {array, array_def()} |
+    tuple().
+
+-record(ie, {id, name, type, min_field_count, fields}).
+-record(field, {name, len, type}).
+
+-define('Instance', #field{name = "Instance", type = integer}).
+
+ies() ->
+    FieldF = fun({Name, Len, Type}, F) when is_integer(Len) ->
+		     [#field{name = Name, len = Len, type = Type} | F];
+		({Name, Type}, F) when is_list(Name), is_atom(Type) ->
+		     [#field{name = Name, len = 0, type = {type, Type}} | F];
+		({'_', Len}, F) when is_integer(Len) ->
+		     [#field{len = Len, type = '_'} | F]
+	     end,
+    SpecF = fun(Fields, IE) when is_list(Fields) ->
+		    IE#ie{fields = lists:foldr(FieldF, [], Fields)};
+	      (Helper, IE) when is_atom(Helper) ->
+		    IE#ie{type = Helper}
+	   end,
+    lists:map(
+      fun ({Id, Name, Spec}) ->
+	      SpecF(Spec, #ie{id = Id, name = Name});
+	  ({Id, Name, MinLen, Spec}) ->
+	      SpecF(Spec, #ie{id = Id, name = Name, min_field_count = MinLen})
+      end, raw_ies()).
+
+%% gen_record_def({Value, _}) when is_integer(Value); is_atom(Value) ->
+
+%% gen_record_def(#field{len = undefined}) ->
+%%     [];
+gen_record_def(#field{type = '_'}) ->
     [];
-gen_record_def({Name, {flags, _}}) ->
+gen_record_def(#field{name = Name, type = {flags, _}}) ->
     [io_lib:format("~s = []", [s2a(Name)])];
-gen_record_def({Name, _, {enum, [{_,H}|_]}}) ->
+gen_record_def(#field{name = Name, type = {enum, [{_,H}|_]}}) ->
     [io_lib:format("~s = ~s", [s2a(Name), s2a(H)])];
-gen_record_def({Name, _, {enum, [H|_]}}) ->
+gen_record_def(#field{name = Name, type = {enum, [H|_]}}) ->
     [io_lib:format("~s = ~s", [s2a(Name), s2a(H)])];
-gen_record_def({Name, _, integer}) ->
+gen_record_def(#field{name = Name, type = integer}) ->
     [io_lib:format("~s = 0", [s2a(Name)])];
-gen_record_def({Name, Size, bits}) ->
+gen_record_def(#field{name = Name, len = Size, type = bits}) ->
     [io_lib:format("~s = ~w", [s2a(Name), <<0:Size>>])];
-gen_record_def({Name, Size, bytes}) ->
+gen_record_def(#field{name = Name, len = Size, type = bytes}) ->
     [io_lib:format("~s = ~w", [s2a(Name), <<0:(Size * 8)>>])];
-gen_record_def({Name, _, binary}) ->
+gen_record_def(#field{name = Name, type = binary}) ->
     [io_lib:format("~s = <<>>", [s2a(Name)])];
-gen_record_def({Name, _, length_binary}) ->
+gen_record_def(#field{name = Name, type = length_binary}) ->
     [io_lib:format("~s = <<>>", [s2a(Name)])];
-gen_record_def({Name, _, {array, _}}) ->
+gen_record_def(#field{name = Name, type = {array, _}}) ->
     [io_lib:format("~s = []", [s2a(Name)])];
-gen_record_def(Tuple) ->
-    Name = element(1, Tuple),
+gen_record_def(#field{name = Name}) ->
     [s2a(Name)].
 
-gen_decoder_header_match({'_', 0}) ->
+gen_decoder_header_match(#field{type = '_', len = 0}) ->
     ["_/binary"];
-gen_decoder_header_match({'_', Size}) ->
+gen_decoder_header_match(#field{type = '_', len = Size}) ->
     [io_lib:format("_:~w", [Size])];
-gen_decoder_header_match({Value, Size}) when is_integer(Value); is_atom(Value) ->
-    [io_lib:format("~w:~w", [Value, Size])];
-gen_decoder_header_match({Name, {flags, Flags}}) ->
+%% gen_decoder_header_match(#field{Value, Size}) when is_integer(Value); is_atom(Value) ->
+%%     [io_lib:format("~w:~w", [Value, Size])];
+gen_decoder_header_match(#field{name = Name, type = {flags, Flags}}) ->
     [io_lib:format("M_~s_~s:1", [s2a(Name), s2a(Flag)]) || Flag <- Flags];
-gen_decoder_header_match({Name, Size, {enum, _Enum}}) ->
+gen_decoder_header_match(#field{name = Name, len = Size, type = {enum, _Enum}}) ->
     [io_lib:format("M_~s:~w/integer", [s2a(Name), Size])];
-gen_decoder_header_match({Name, _Fun}) ->
-    [io_lib:format("M_~s/binary", [s2a(Name)])];
-gen_decoder_header_match({Name, _Len, {array, Multi}}) when is_list(Multi) ->
+gen_decoder_header_match(#field{name = Name, type = {array, Multi}}) when is_list(Multi) ->
     {stop, [io_lib:format("M_~s_Rest/binary", [s2a(Name)])]};
-gen_decoder_header_match({Name, Len, {array, _Multi}}) ->
+gen_decoder_header_match(#field{name = Name, len = Len, type = {array, _Multi}}) ->
     {stop, [io_lib:format("M_~s_len:~w/integer, M_~s_Rest/binary", [s2a(Name), Len, s2a(Name)])]};
-gen_decoder_header_match({Name, Len, length_binary}) ->
+gen_decoder_header_match(#field{name = Name, len = Len, type = length_binary}) ->
     [io_lib:format("M_~s_len:~w/integer, M_~s:M_~s_len/bytes", [s2a(Name), Len, s2a(Name), s2a(Name)])];
-gen_decoder_header_match({Name, 0, {type, _TypeName}}) ->
+gen_decoder_header_match(#field{name = Name, len = 0, type = {type, _}}) ->
     [io_lib:format("M_~s/binary", [s2a(Name)])];
-gen_decoder_header_match({Name, 0, Type}) ->
-    [io_lib:format("M_~s/~w", [s2a(Name), Type])];
-gen_decoder_header_match({Name, Size, {type, _TypeName}}) ->
+gen_decoder_header_match(#field{name = Name, len = Size, type = {type, _}}) ->
     [io_lib:format("M_~s:~w/bits", [s2a(Name), Size])];
-gen_decoder_header_match({Name, Size, Type}) ->
+gen_decoder_header_match(#field{name = Name, len = 0, type = Type}) ->
+    [io_lib:format("M_~s/~w", [s2a(Name), Type])];
+gen_decoder_header_match(#field{name = Name, len = Size, type = Type}) ->
     [io_lib:format("M_~s:~w/~s", [s2a(Name), Size, Type])].
 
-gen_decoder_record_assign({Value, _}) when is_integer(Value); is_atom(Value) ->
+%% gen_decoder_record_assign(#field{Value, _}) when is_integer(Value); is_atom(Value) ->
+%%     [];
+gen_decoder_record_assign(#field{type = '_'}) ->
     [];
-gen_decoder_record_assign({Name, {flags, Flags}}) ->
+gen_decoder_record_assign(#field{name = Name, type = {flags, Flags}}) ->
     F = [io_lib:format("[ '~s' || M_~s_~s =/= 0 ]", [X, s2a(Name), s2a(X)]) || X <- Flags],
     [io_lib:format("~s = ~s", [s2a(Name), string:join(F, " ++ ")])];
-gen_decoder_record_assign({Name, _Size, {enum, _Enum}}) ->
+gen_decoder_record_assign(#field{name = Name, type = {enum, _Enum}}) ->
     [io_lib:format("~s = enum_v2_~s(M_~s)", [s2a(Name), s2a(Name), s2a(Name)])];
-gen_decoder_record_assign({Name, Fun}) ->
-    [io_lib:format("~s = decode_~s(M_~s)", [s2a(Name), Fun, s2a(Name)])];
-gen_decoder_record_assign({Name, Size, {array, Multi}}) when is_list(Multi) ->
+gen_decoder_record_assign(#field{name = Name, len = Size, type = {array, Multi}}) when is_list(Multi) ->
     [io_lib:format("~s = [X || <<X:~w/bytes>> <= M_~s]", [s2a(Name), Size, s2a(Name)])];
-gen_decoder_record_assign({Name, _Size, {array, Multi}}) ->
+gen_decoder_record_assign(#field{name = Name, type = {array, Multi}}) ->
     [io_lib:format("~s = [X || <<X:~w/bytes>> <= M_~s]", [s2a(Name), Multi, s2a(Name)])];
-gen_decoder_record_assign({Name, _Size, {type, TypeName}}) ->
+gen_decoder_record_assign(#field{name = Name, type = {type, TypeName}}) ->
     [io_lib:format("~s = decode_~s(M_~s)", [s2a(Name), TypeName, s2a(Name)])];
-gen_decoder_record_assign({Name, _Size, _Type}) ->
+
+gen_decoder_record_assign(#field{name = Name}) ->
     [io_lib:format("~s = M_~s", [s2a(Name), s2a(Name)])].
 
-gen_encoder_record_assign({Value, _}) when is_integer(Value); is_atom(Value) ->
+%% gen_encoder_record_assign({Value, _}) when is_integer(Value); is_atom(Value) ->
+%%     [];
+gen_encoder_record_assign(#field{type = '_'}) ->
     [];
-gen_encoder_record_assign(Tuple) ->
-    Name = element(1, Tuple),
+gen_encoder_record_assign(#field{name = Name}) ->
     [io_lib:format("~s = M_~s", [s2a(Name), s2a(Name)])].
 
-gen_encoder_bin({'_', 0}) ->
+gen_encoder_bin(#field{type = '_', len = 0}) ->
     [];
-gen_encoder_bin({'_', Size}) ->
+gen_encoder_bin(#field{type = '_', len = Size}) ->
     [io_lib:format("0:~w", [Size])];
-gen_encoder_bin({Value, Size}) when is_integer(Value); is_atom(Value) ->
-    [io_lib:format("~w:~w", [Value, Size])];
-gen_encoder_bin({Name, {flags, Flags}}) ->
+%% gen_encoder_bin(#field{Value, Size}) when is_integer(Value); is_atom(Value) ->
+%%     [io_lib:format("~w:~w", [Value, Size])];
+gen_encoder_bin(#field{name = Name, type = {flags, Flags}}) ->
     [io_lib:format("(encode_v2_flag('~s', M_~s)):1", [Flag, s2a(Name)]) || Flag <- Flags];
-gen_encoder_bin({Name, Size, {enum, _Enum}}) ->
+gen_encoder_bin(#field{name = Name, len = Size, type = {enum, _Enum}}) ->
     [io_lib:format("(enum_v2_~s(M_~s)):~w/integer", [s2a(Name), s2a(Name), Size])];
-gen_encoder_bin({Name, Fun}) ->
-    [io_lib:format("(encode_~s(M_~s))/binary", [Fun, s2a(Name)])];
-gen_encoder_bin({Name, Len, {array, _Multi}}) ->
+gen_encoder_bin(#field{name = Name, len = Len, type = {array, _Multi}}) ->
     [io_lib:format("(length(M_~s)):~w/integer, (<< <<X/binary>> || X <- M_~s>>)/binary", [s2a(Name), Len, s2a(Name)])];
-gen_encoder_bin({Name, 0, {type, TypeName}}) ->
+gen_encoder_bin(#field{name = Name, len = 0, type = {type, TypeName}}) ->
     [io_lib:format("(encode_~s(M_~s))/binary", [TypeName, s2a(Name)])];
-gen_encoder_bin({Name, Size, {type, TypeName}}) ->
+gen_encoder_bin(#field{name = Name, len = Size, type = {type, TypeName}}) ->
     [io_lib:format("(encode_~s(M_~s)):~w/bits", [TypeName, s2a(Name), Size])];
-gen_encoder_bin({Name, Len, length_binary}) ->
+gen_encoder_bin(#field{name = Name, len = Len, type = length_binary}) ->
     [io_lib:format("(byte_size(M_~s)):~w/integer, M_~s/binary", [s2a(Name), Len, s2a(Name)])];
-gen_encoder_bin({Name, 0, Type}) ->
+gen_encoder_bin(#field{name = Name, len = 0, type = Type}) ->
     [io_lib:format("M_~s/~w", [s2a(Name), Type])];
-gen_encoder_bin({Name, Size, bytes}) ->
+gen_encoder_bin(#field{name = Name, len = Size, type = bytes}) ->
     [io_lib:format("M_~s:~w/bytes", [s2a(Name), Size])];
-gen_encoder_bin({Name, Size, bits}) ->
+gen_encoder_bin(#field{name = Name, len = Size, type = bits}) ->
     [io_lib:format("M_~s:~w/bits", [s2a(Name), Size])];
-gen_encoder_bin({Name, Size, _Type}) ->
+gen_encoder_bin(#field{name = Name, len = Size}) ->
     [io_lib:format("M_~s:~w", [s2a(Name), Size])].
 
 indent(Atom, Extra) when is_atom(Atom) ->
@@ -542,7 +582,7 @@ collect_late_assign(Fields = [H | T], Acc) ->
     end.
 
 
-collect_enum({Name, _, {enum, Enum}}, Acc) ->
+collect_enum(#field{name = Name, type = {enum, Enum}}, Acc) ->
     {FwdFuns, RevFuns} = gen_enum(Name, Enum, 0, {[], []}),
     Wildcard = io_lib:format("enum_v2_~s(X) when is_integer(X) -> X", [s2a(Name)]),
     S = string:join(FwdFuns ++ RevFuns ++ [Wildcard], ";\n") ++ ".\n",
@@ -550,8 +590,7 @@ collect_enum({Name, _, {enum, Enum}}, Acc) ->
 collect_enum(_, Acc) ->
     Acc.
 
-collect_enums({_, _, Fields}, AccIn)
-  when is_list(Fields) ->
+collect_enums(#ie{type = undefined, fields = Fields}, AccIn) ->
     lists:foldr(fun(X, Acc) -> collect_enum(X, Acc) end, AccIn, Fields);
 collect_enums(_, AccIn) ->
     AccIn.
@@ -561,16 +600,14 @@ write_enums(IEs) ->
     {_, Str} = lists:unzip(E),
     string:join(Str, "\n").
 
-write_record({_Id, Name, Fields})
-  when is_list(Fields) ->
+write_record(#ie{name = Name, type = undefined, fields = Fields}) ->
     Indent = "\t  ",
-    RecordDef = string:join(collect(fun gen_record_def/1, [{"Instance", 0, integer} | Fields], []), [",\n", Indent]),
+    RecordDef = string:join(collect(fun gen_record_def/1, [?'Instance' | Fields], []), [",\n", Indent]),
     io_lib:format("-record(~s, {~n~s~s~n}).~n", [s2a(Name), Indent, RecordDef]);
 write_record(_) ->
     [].
 
-write_decoder(FunName, {Id, Name, Fields})
-  when is_list(Fields) ->
+write_decoder(FunName, #ie{id = Id, type = undefined, name = Name, fields = Fields}) ->
     MatchIdent = indent(FunName, 3),
     Match = string:join(collect(fun gen_decoder_header_match/1, Fields), [",\n", MatchIdent]),
     Body = build_late_assign(Fields),
@@ -580,13 +617,11 @@ write_decoder(FunName, {Id, Name, Fields})
     io_lib:format("~s(<<~s>>, ~w, Instance) ->~n~s    #~s{~s}",
 		  [FunName, Match, Id, Body, s2a(Name), RecAssign]);
 
-write_decoder(FunName, {Id, _Name, Helper})
-  when is_atom(Helper) ->
+write_decoder(FunName, #ie{id = Id, type = Helper}) ->
     io_lib:format("~s(<<Data/binary>>, ~w, Instance) ->~n    decode_~s(Data, Instance)",
 		  [FunName, Id, Helper]).
 
-write_encoder(FunName, {Id, Name, Fields})
-  when is_list(Fields) ->
+write_encoder(FunName, #ie{id = Id, name = Name, type = undefined, fields = Fields}) ->
     RecIdent = indent("encode_v2_element(#", 2),
     RecAssign = string:join(["instance = Instance" |
 			     collect(fun gen_encoder_record_assign/1, Fields)], [",\n", RecIdent]),
@@ -595,15 +630,16 @@ write_encoder(FunName, {Id, Name, Fields})
     BinIndent = indent(DecHead, 2),
     BinAssign = string:join(collect(fun gen_encoder_bin/1, Fields), [",\n", BinIndent]),
     io_lib:format("~s~s<<~s>>)", [FunHead, DecHead, BinAssign]);
-write_encoder(FunName, {Id, Name, Helper})
-  when is_atom(Helper) ->
+write_encoder(FunName, #ie{id = Id, name = Name, type = Helper}) ->
     io_lib:format("encode_v2_element(#~s{instance = Instance} = IE) ->~n    ~s(~w, Instance, encode_~s(IE))",
 		  [s2a(Name), FunName, Id, Helper]).
 
-write_pretty_print(_, Def) ->
-    io_lib:format("?PRETTY_PRINT(pretty_print_v2, ~s)", [s2a(element(2, Def))]).
+write_pretty_print(_, #ie{name = Name}) ->
+    io_lib:format("?PRETTY_PRINT(pretty_print_v2, ~s)", [s2a(Name)]).
 
 main(_) ->
+    IEs = ies(),
+
     MsgDescription = string:join([io_lib:format("msg_description_v2(~s) -> <<\"~s\">>", [s2a(X), X]) || {_, X} <- msgs()]
 				 ++ ["msg_description_v2(X) -> io_lib:format(\"~p\", [X])"], ";\n") ++ ".\n",
 
@@ -611,21 +647,21 @@ main(_) ->
     ErrorFun = ["message_type_v2(Type) -> error(badarg, [Type])"],
     MTypes = string:join(FwdFuns ++ RevFuns ++ ErrorFun, ";\n") ++ ".\n",
 
-    Records = string:join([write_record(X) || X <- ies()], "\n"),
+    Records = string:join([write_record(X) || X <- IEs], "\n"),
     HrlRecs = io_lib:format("~n~n~s", [Records]),
-    Enums = write_enums(ies()),
+    Enums = write_enums(IEs),
 
     CatchAnyDecoder = "decode_v2_element(Value, Tag, Instance) ->\n    {Tag, Instance, Value}",
 
-    Funs = string:join([write_decoder("decode_v2_element", X) || X <- ies()] ++ [CatchAnyDecoder], ";\n\n"),
+    Funs = string:join([write_decoder("decode_v2_element", X) || X <- IEs] ++ [CatchAnyDecoder], ";\n\n"),
 
 
     CatchAnyEncoder = "encode_v2_element({Tag, Instance, Value}) when is_integer(Tag), is_integer(Instance), is_binary(Value) ->\n    encode_v2_element(Tag, Instance, Value)",
-    EncFuns = string:join([write_encoder("encode_v2_element", X) || X <- ies()]
+    EncFuns = string:join([write_encoder("encode_v2_element", X) || X <- IEs]
 			  ++ [CatchAnyEncoder] , ";\n\n"),
 
     CatchAnyPretty = "pretty_print_v2(_, _) ->\n    no",
-    RecPrettyDefs = string:join([write_pretty_print("pretty_print_v2", X) || X <- ies()]
+    RecPrettyDefs = string:join([write_pretty_print("pretty_print_v2", X) || X <- IEs]
 				++ [CatchAnyPretty] , ";\n"),
 
     ErlDecls = io_lib:format("~n~n~s~n~s~n~s~n~s.~n~n~s.~n~n~s.~n",
