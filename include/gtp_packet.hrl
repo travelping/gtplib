@@ -701,7 +701,8 @@
 	  v2_cause = reserved,
 	  pce = 0,
 	  bce = 0,
-	  cs = 0
+	  cs = 0,
+	  offending_ie
 }).
 
 -record(v2_recovery, {

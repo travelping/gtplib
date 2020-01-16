@@ -11,7 +11,7 @@ raw_ies() ->
     [
      {1, "v2 International Mobile Subscriber Identity",
       [{"IMSI", 0, {type, tbcd}}]},
-     {2, "v2 Cause",
+     {2, "v2 Cause", 5,
       [{"v2 Cause", 8, {enum, [{1, "Reserved"},
 			       {2, "Local Detach"},
 			       {3, "Complete Detach"},
@@ -82,11 +82,21 @@ raw_ies() ->
 			       {116, "Multiple PDN connections for a given APN not allowed"},
 			       {117, "Target access restricted for the subscriber"},
 			       {119, "MME/SGSN refuses due to VPLMN Policy"},
-			       {120, "GTP-C Entity Congestion"}]}},
+			       {120, "GTP-C Entity Congestion"},
+			       {121, "Late Overlapping Request"},
+			       {122, "Timed out Request"},
+			       {123, "UE is temporarily not reachable due to power saving"},
+			       {124, "Relocation failure due to NAS message redirection"},
+			       {125, "UE not authorised by OCS or external AAA Server"},
+			       {126, "Multiple accesses to a PDN connection not allowed"},
+			       {127, "Request rejected due to UE capability"},
+			       {128, "S1-U Path Failure"},
+			       {129, "5GC not allowed"}]}},
        {'_', 5},
        {"PCE", 1, integer},
        {"BCE", 1, integer},
        {"CS", 1, integer},
+       {"offending IE", 4, bytes},
        {'_', 0}]},
      {3, "v2 Recovery",
       [{"Restart counter", 8, integer},
@@ -359,24 +369,34 @@ msgs() ->
     tuple().
 
 -record(ie, {id, name, type, min_field_count, fields}).
--record(field, {name, len, type, spec}).
+-record(field, {name, len, optional, type, spec}).
 
 -define('Instance', #field{name = 'instance', type = integer}).
+-define('WildCard', #field{type = '_', len = 0}).
+-define('DecoderFunName', "decode_v2_element").
+-define('EncoderFunName', "encode_v2_element").
 
 ies() ->
     TypeFF = fun(Type, F)         when is_atom(Type) -> F#field{type = Type};
 		({type, Type}, F) when is_atom(Type) -> F#field{type = helper, spec = Type};
 		({Type, Spec}, F) when is_atom(Type) -> F#field{type = Type, spec = Spec}
 	     end,
-    FieldF = fun({Name, Len, Type}, F) when is_integer(Len) ->
-		     [TypeFF(Type, #field{name = s2a(Name), len = Len}) | F];
-		({Name, Type}, F) when is_list(Name), is_atom(Type) ->
-		     [#field{name = s2a(Name), len = 0, type = helper, spec = Type} | F];
-		({'_', Len}, F) when is_integer(Len) ->
-		     [#field{len = Len, type = '_'} | F]
+    FieldF = fun({Name, Len, Type}, Optional, F) when is_integer(Len) ->
+		     [TypeFF(Type, #field{name = s2a(Name), len = Len,
+					  optional = Optional}) | F];
+		({Name, Type}, Optional, F) when is_list(Name), is_atom(Type) ->
+		     [#field{name = s2a(Name), len = 0, optional = Optional,
+			     type = helper, spec = Type} | F];
+		({'_', Len}, Optional, F) when is_integer(Len) ->
+		     [#field{len = Len, optional = Optional, type = '_'} | F]
 	     end,
-    SpecF = fun(Fields, IE) when is_list(Fields) ->
-		    IE#ie{fields = lists:foldr(FieldF, [], Fields)};
+    SpecF = fun(Fields, #ie{min_field_count = MinLen} = IE) when is_list(Fields) ->
+		    {FieldDef, _} =
+			lists:foldl(
+			  fun(Field, {F, Cnt}) ->
+				  {FieldF(Field, Cnt >= MinLen, F), Cnt + 1} end,
+			  {[], 0}, Fields),
+		    IE#ie{fields = lists:reverse(FieldDef)};
 	      (Helper, IE) when is_atom(Helper) ->
 		    IE#ie{type = Helper}
 	   end,
@@ -393,6 +413,8 @@ ies() ->
 %%     [];
 gen_record_def(#field{type = '_'}) ->
     [];
+gen_record_def(#field{name = Name, optional = true}) ->
+    [to_string(Name)];
 gen_record_def(#field{name = Name, type = flags}) ->
     [io_lib:format("~s = []", [Name])];
 gen_record_def(#field{name = Name, type = enum, spec = [{_,H}|_]}) ->
@@ -412,7 +434,7 @@ gen_record_def(#field{name = Name, type = length_binary}) ->
 gen_record_def(#field{name = Name, type = array}) ->
     [io_lib:format("~s = []", [Name])];
 gen_record_def(#field{name = Name}) ->
-    [Name].
+    [to_string(Name)].
 
 gen_decoder_header_match(#field{type = '_', len = 0}) ->
     ["_/binary"];
@@ -464,6 +486,8 @@ gen_decoder_record_assign(#field{name = Name}) ->
 %%     [];
 gen_encoder_record_assign(#field{type = '_'}) ->
     [];
+gen_encoder_record_assign(#field{name = Name, type = undefined}) ->
+    [io_lib:format("~s = undefined", [Name])];
 gen_encoder_record_assign(#field{name = Name}) ->
     [io_lib:format("~s = M_~s", [Name, Name])].
 
@@ -474,6 +498,8 @@ gen_encoder_bin(#field{type = '_', len = Size}) ->
 
 %% gen_encoder_bin(#field{Value, Size}) when is_integer(Value); is_atom(Value) ->
 %%     [io_lib:format("~w:~w", [Value, Size])];
+gen_encoder_bin(#field{type = undefined}) ->
+    [];
 gen_encoder_bin(#field{name = Name, type = flags, spec = Flags}) ->
     [io_lib:format("(encode_v2_flag('~s', M_~s)):1", [Flag, Name]) || Flag <- Flags];
 gen_encoder_bin(#field{name = Name, len = Size, type = enum}) ->
@@ -504,14 +530,19 @@ indent(List, Extra) ->
 s2a(Name) when is_atom(Name) ->
     Name;
 s2a(Name) ->
-    lists:map(fun(32) -> $_;
-		 ($/) -> $_;
-		 ($-) -> $_;
-		 ($.) -> $_;
-		 ($,) -> $_;
-		 (C)  -> C
-	      end,
-	      string:to_lower(Name)).
+    S = lists:map(fun(32) -> $_;
+		     ($/) -> $_;
+		     ($-) -> $_;
+		     ($.) -> $_;
+		     ($,) -> $_;
+		     (C)  -> C
+		  end,
+		  string:to_lower(Name)),
+    list_to_atom(S).
+
+to_string(S) when is_list(S)   -> S;
+to_string(A) when is_atom(A)   -> atom_to_list(A);
+to_string(B) when is_binary(B) -> binary_to_list(B).
 
 append([], Acc) ->
     Acc;
@@ -534,8 +565,8 @@ collect(Fun, Fields) ->
     collect(Fun, Fields, []).
 
 gen_enum(Name, Value, Cnt, Next, {FwdFuns, RevFuns}) ->
-    Fwd = io_lib:format("enum_v2_~s(~s) -> ~w", [Name, s2a(Value), Cnt]),
-    Rev = io_lib:format("enum_v2_~s(~w) -> ~s", [Name, Cnt, s2a(Value)]),
+    Fwd = io_lib:format("enum_v2_~s(~p) -> ~w", [Name, s2a(Value), Cnt]),
+    Rev = io_lib:format("enum_v2_~s(~w) -> ~p", [Name, Cnt, s2a(Value)]),
     gen_enum(Name, Next, Cnt + 1, {[Fwd|FwdFuns], [Rev|RevFuns]}).
 
 gen_enum(_, [], _, {FwdFuns, RevFuns}) ->
@@ -612,32 +643,64 @@ write_record(#ie{name = Name, type = undefined, fields = Fields}) ->
 write_record(_) ->
     [].
 
-write_decoder(FunName, #ie{id = Id, type = undefined, name = Name, fields = Fields}) ->
-    MatchIdent = indent(FunName, 3),
+write_decoder(#ie{min_field_count = Min, fields = Fields} = IE, Fns)
+  when is_integer(Min), length(Fields) > Min ->
+    SubIE = IE#ie{min_field_count = undefined},
+    lists:foldl(
+      fun (Len, FnsSub) ->
+	      {H,T} = lists:split(Len, Fields),
+	      case T of
+		  [] -> FnsSub;
+		  _ ->
+		      write_decoder(SubIE#ie{fields = H ++ [?WildCard]}, FnsSub)
+	      end
+      end, Fns, lists:seq(Min, length(Fields)));
+
+write_decoder(#ie{id = Id, type = undefined, name = Name, fields = Fields}, Fns) ->
+    MatchIdent = indent(?DecoderFunName, 3),
     Match = string:join(collect(fun gen_decoder_header_match/1, Fields), [",\n", MatchIdent]),
     Body = build_late_assign(Fields),
     RecIdent = indent(Name, 6),
     RecAssign = string:join(["instance = Instance" |
 			     collect(fun gen_decoder_record_assign/1, Fields)], [",\n", RecIdent]),
-    io_lib:format("~s(<<~s>>, ~w, Instance) ->~n~s    #~s{~s}",
-		  [FunName, Match, Id, Body, Name, RecAssign]);
+    F = io_lib:format("~s(<<~s>>, ~w, Instance) ->~n~s    #~s{~s}",
+		      [?DecoderFunName, Match, Id, Body, Name, RecAssign]),
+    [F | Fns];
 
-write_decoder(FunName, #ie{id = Id, type = Helper}) ->
-    io_lib:format("~s(<<Data/binary>>, ~w, Instance) ->~n    decode_~s(Data, Instance)",
-		  [FunName, Id, Helper]).
+write_decoder(#ie{id = Id, type = Helper}, Fns) ->
+    F = io_lib:format("~s(<<Data/binary>>, ~w, Instance) ->~n    decode_~s(Data, Instance)",
+		      [?DecoderFunName, Id, Helper]),
+    [F | Fns].
 
-write_encoder(FunName, #ie{id = Id, name = Name, type = undefined, fields = Fields}) ->
+write_encoder(#ie{min_field_count = Min, fields = Fields} = IE, Fns)
+  when is_integer(Min), length(Fields) > Min ->
+    SubIE = IE#ie{min_field_count = undefined},
+    lists:foldl(
+      fun (Len, FnsSub) ->
+	      {H,T} = lists:split(Len, Fields),
+	      case T of
+		  [] ->
+		      write_encoder(SubIE#ie{fields = H}, FnsSub);
+		  [#field{type = '_'}|_] -> FnsSub;
+		  [M|_] ->
+		      write_encoder(SubIE#ie{fields = H ++ [M#field{type = undefined}]}, FnsSub)
+	      end
+      end, Fns, lists:seq(length(Fields), Min, -1));
+
+write_encoder(#ie{id = Id, name = Name, type = undefined, fields = Fields}, Fns) ->
     RecIdent = indent("encode_v2_element(#", 2),
     RecAssign = string:join(["instance = Instance" |
 			     collect(fun gen_encoder_record_assign/1, Fields)], [",\n", RecIdent]),
     FunHead = io_lib:format("encode_v2_element(#~s{~n~s~s}) ->~n", [Name, RecIdent, RecAssign]),
-    DecHead = io_lib:format("    ~s(~w, Instance, ", [FunName, Id]),
+    DecHead = io_lib:format("    ~s(~w, Instance, ", [?EncoderFunName, Id]),
     BinIndent = indent(DecHead, 2),
     BinAssign = string:join(collect(fun gen_encoder_bin/1, Fields), [",\n", BinIndent]),
-    io_lib:format("~s~s<<~s>>)", [FunHead, DecHead, BinAssign]);
-write_encoder(FunName, #ie{id = Id, name = Name, type = Helper}) ->
-    io_lib:format("encode_v2_element(#~s{instance = Instance} = IE) ->~n    ~s(~w, Instance, encode_~s(IE))",
-		  [Name, FunName, Id, Helper]).
+    F = io_lib:format("~s~s<<~s>>)", [FunHead, DecHead, BinAssign]),
+    [F | Fns];
+write_encoder(#ie{id = Id, name = Name, type = Helper}, Fns) ->
+    F = io_lib:format("encode_v2_element(#~s{instance = Instance} = IE) ->~n    ~s(~w, Instance, encode_~s(IE))",
+		      [Name, ?EncoderFunName, Id, Helper]),
+    [F | Fns].
 
 write_pretty_print(_, #ie{name = Name}) ->
     io_lib:format("?PRETTY_PRINT(pretty_print_v2, ~s)", [Name]).
@@ -656,14 +719,14 @@ main(_) ->
     HrlRecs = io_lib:format("~n~n~s", [Records]),
     Enums = write_enums(IEs),
 
-    CatchAnyDecoder = "decode_v2_element(Value, Tag, Instance) ->\n    {Tag, Instance, Value}",
+    CatchAnyDecoder = ?DecoderFunName ++ "(Value, Tag, Instance) ->\n    {Tag, Instance, Value}",
 
-    Funs = string:join([write_decoder("decode_v2_element", X) || X <- IEs] ++ [CatchAnyDecoder], ";\n\n"),
+    DecoderFns = lists:foldr(fun write_decoder/2, [CatchAnyDecoder], IEs),
+    Funs = string:join(DecoderFns, ";\n\n"),
 
-
-    CatchAnyEncoder = "encode_v2_element({Tag, Instance, Value}) when is_integer(Tag), is_integer(Instance), is_binary(Value) ->\n    encode_v2_element(Tag, Instance, Value)",
-    EncFuns = string:join([write_encoder("encode_v2_element", X) || X <- IEs]
-			  ++ [CatchAnyEncoder] , ";\n\n"),
+    CatchAnyEncoder = ?EncoderFunName ++ "({Tag, Instance, Value}) when is_integer(Tag), is_integer(Instance), is_binary(Value) ->\n    encode_v2_element(Tag, Instance, Value)",
+    EncoderFns = lists:foldr(fun write_encoder/2, [CatchAnyEncoder], IEs),
+    EncFuns = string:join(EncoderFns, ";\n\n"),
 
     CatchAnyPretty = "pretty_print_v2(_, _) ->\n    no",
     RecPrettyDefs = string:join([write_pretty_print("pretty_print_v2", X) || X <- IEs]

@@ -2853,6 +2853,15 @@ enum_v2_v2_cause(multiple_pdn_connections_for_a_given_apn_not_allowed) -> 116;
 enum_v2_v2_cause(target_access_restricted_for_the_subscriber) -> 117;
 enum_v2_v2_cause(mme_sgsn_refuses_due_to_vplmn_policy) -> 119;
 enum_v2_v2_cause(gtp_c_entity_congestion) -> 120;
+enum_v2_v2_cause(late_overlapping_request) -> 121;
+enum_v2_v2_cause(timed_out_request) -> 122;
+enum_v2_v2_cause(ue_is_temporarily_not_reachable_due_to_power_saving) -> 123;
+enum_v2_v2_cause(relocation_failure_due_to_nas_message_redirection) -> 124;
+enum_v2_v2_cause(ue_not_authorised_by_ocs_or_external_aaa_server) -> 125;
+enum_v2_v2_cause(multiple_accesses_to_a_pdn_connection_not_allowed) -> 126;
+enum_v2_v2_cause(request_rejected_due_to_ue_capability) -> 127;
+enum_v2_v2_cause(s1_u_path_failure) -> 128;
+enum_v2_v2_cause('5gc_not_allowed') -> 129;
 enum_v2_v2_cause(1) -> reserved;
 enum_v2_v2_cause(2) -> local_detach;
 enum_v2_v2_cause(3) -> complete_detach;
@@ -2924,11 +2933,34 @@ enum_v2_v2_cause(116) -> multiple_pdn_connections_for_a_given_apn_not_allowed;
 enum_v2_v2_cause(117) -> target_access_restricted_for_the_subscriber;
 enum_v2_v2_cause(119) -> mme_sgsn_refuses_due_to_vplmn_policy;
 enum_v2_v2_cause(120) -> gtp_c_entity_congestion;
+enum_v2_v2_cause(121) -> late_overlapping_request;
+enum_v2_v2_cause(122) -> timed_out_request;
+enum_v2_v2_cause(123) -> ue_is_temporarily_not_reachable_due_to_power_saving;
+enum_v2_v2_cause(124) -> relocation_failure_due_to_nas_message_redirection;
+enum_v2_v2_cause(125) -> ue_not_authorised_by_ocs_or_external_aaa_server;
+enum_v2_v2_cause(126) -> multiple_accesses_to_a_pdn_connection_not_allowed;
+enum_v2_v2_cause(127) -> request_rejected_due_to_ue_capability;
+enum_v2_v2_cause(128) -> s1_u_path_failure;
+enum_v2_v2_cause(129) -> '5gc_not_allowed';
 enum_v2_v2_cause(X) when is_integer(X) -> X.
 
 decode_v2_element(<<M_imsi/binary>>, 1, Instance) ->
     #v2_international_mobile_subscriber_identity{instance = Instance,
 						 imsi = decode_tbcd(M_imsi)};
+
+decode_v2_element(<<M_v2_cause:8/integer,
+		    _:5,
+		    M_pce:1/integer,
+		    M_bce:1/integer,
+		    M_cs:1/integer,
+		    M_offending_ie:4/bytes,
+		    _/binary>>, 2, Instance) ->
+    #v2_cause{instance = Instance,
+	      v2_cause = enum_v2_v2_cause(M_v2_cause),
+	      pce = M_pce,
+	      bce = M_bce,
+	      cs = M_cs,
+	      offending_ie = M_offending_ie};
 
 decode_v2_element(<<M_v2_cause:8/integer,
 		    _:5,
@@ -3349,17 +3381,32 @@ encode_v2_element(#v2_cause{
 		     v2_cause = M_v2_cause,
 		     pce = M_pce,
 		     bce = M_bce,
-		     cs = M_cs}) ->
+		     cs = M_cs,
+		     offending_ie = undefined}) ->
     encode_v2_element(2, Instance, <<(enum_v2_v2_cause(M_v2_cause)):8/integer,
 				     0:5,
-				     M_pce:1,
-				     M_bce:1,
-				     M_cs:1>>);
+				     M_pce:1/integer,
+				     M_bce:1/integer,
+				     M_cs:1/integer>>);
+
+encode_v2_element(#v2_cause{
+		     instance = Instance,
+		     v2_cause = M_v2_cause,
+		     pce = M_pce,
+		     bce = M_bce,
+		     cs = M_cs,
+		     offending_ie = M_offending_ie}) ->
+    encode_v2_element(2, Instance, <<(enum_v2_v2_cause(M_v2_cause)):8/integer,
+				     0:5,
+				     M_pce:1/integer,
+				     M_bce:1/integer,
+				     M_cs:1/integer,
+				     M_offending_ie:4/bytes>>);
 
 encode_v2_element(#v2_recovery{
 		     instance = Instance,
 		     restart_counter = M_restart_counter}) ->
-    encode_v2_element(3, Instance, <<M_restart_counter:8>>);
+    encode_v2_element(3, Instance, <<M_restart_counter:8/integer>>);
 
 encode_v2_element(#v2_stn_sr{
 		     instance = Instance}) ->
@@ -3374,14 +3421,14 @@ encode_v2_element(#v2_aggregate_maximum_bit_rate{
 		     instance = Instance,
 		     uplink = M_uplink,
 		     downlink = M_downlink}) ->
-    encode_v2_element(72, Instance, <<M_uplink:32,
-				      M_downlink:32>>);
+    encode_v2_element(72, Instance, <<M_uplink:32/integer,
+				      M_downlink:32/integer>>);
 
 encode_v2_element(#v2_eps_bearer_id{
 		     instance = Instance,
 		     eps_bearer_id = M_eps_bearer_id}) ->
     encode_v2_element(73, Instance, <<0:4,
-				      M_eps_bearer_id:4>>);
+				      M_eps_bearer_id:4/integer>>);
 
 encode_v2_element(#v2_ip_address{
 		     instance = Instance,
@@ -3427,15 +3474,15 @@ encode_v2_element(#v2_bearer_level_quality_of_service{
 		     guaranteed_bit_rate_for_uplink = M_guaranteed_bit_rate_for_uplink,
 		     guaranteed_bit_rate_for_downlink = M_guaranteed_bit_rate_for_downlink}) ->
     encode_v2_element(80, Instance, <<0:1,
-				      M_pci:1,
-				      M_pl:4,
+				      M_pci:1/integer,
+				      M_pl:4/integer,
 				      0:1,
-				      M_pvi:1,
-				      M_label:8,
-				      M_maximum_bit_rate_for_uplink:40,
-				      M_maximum_bit_rate_for_downlink:40,
-				      M_guaranteed_bit_rate_for_uplink:40,
-				      M_guaranteed_bit_rate_for_downlink:40>>);
+				      M_pvi:1/integer,
+				      M_label:8/integer,
+				      M_maximum_bit_rate_for_uplink:40/integer,
+				      M_maximum_bit_rate_for_downlink:40/integer,
+				      M_guaranteed_bit_rate_for_uplink:40/integer,
+				      M_guaranteed_bit_rate_for_downlink:40/integer>>);
 
 encode_v2_element(#v2_flow_quality_of_service{
 		     instance = Instance}) ->
@@ -3444,7 +3491,7 @@ encode_v2_element(#v2_flow_quality_of_service{
 encode_v2_element(#v2_rat_type{
 		     instance = Instance,
 		     rat_type = M_rat_type}) ->
-    encode_v2_element(82, Instance, <<M_rat_type:8>>);
+    encode_v2_element(82, Instance, <<M_rat_type:8/integer>>);
 
 encode_v2_element(#v2_serving_network{instance = Instance} = IE) ->
     encode_v2_element(83, Instance, encode_v2_mccmnc(IE));
@@ -3564,9 +3611,9 @@ encode_v2_element(#v2_ue_time_zone{
 		     instance = Instance,
 		     timezone = M_timezone,
 		     dst = M_dst}) ->
-    encode_v2_element(114, Instance, <<M_timezone:8,
+    encode_v2_element(114, Instance, <<M_timezone:8/integer,
 				       0:6,
-				       M_dst:2>>);
+				       M_dst:2/integer>>);
 
 encode_v2_element(#v2_trace_reference{
 		     instance = Instance}) ->
@@ -3615,13 +3662,13 @@ encode_v2_element(#v2_udp_source_port_number{
 encode_v2_element(#v2_apn_restriction{
 		     instance = Instance,
 		     restriction_type_value = M_restriction_type_value}) ->
-    encode_v2_element(127, Instance, <<M_restriction_type_value:8>>);
+    encode_v2_element(127, Instance, <<M_restriction_type_value:8/integer>>);
 
 encode_v2_element(#v2_selection_mode{
 		     instance = Instance,
 		     mode = M_mode}) ->
     encode_v2_element(128, Instance, <<0:6,
-				       M_mode:2>>);
+				       M_mode:2/integer>>);
 
 encode_v2_element(#v2_source_identification{
 		     instance = Instance}) ->
