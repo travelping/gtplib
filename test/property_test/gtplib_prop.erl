@@ -1638,10 +1638,20 @@ gen_v2_cause() ->
 		  multiple_pdn_connections_for_a_given_apn_not_allowed,
 		  target_access_restricted_for_the_subscriber,
 		  mme_sgsn_refuses_due_to_vplmn_policy,
-		  gtp_c_entity_congestion]),
+		  gtp_c_entity_congestion,
+		  late_overlapping_request,
+		  timed_out_request,
+		  ue_is_temporarily_not_reachable_due_to_power_saving,
+		  relocation_failure_due_to_nas_message_redirection,
+		  ue_not_authorised_by_ocs_or_external_aaa_server,
+		  multiple_accesses_to_a_pdn_connection_not_allowed,
+		  request_rejected_due_to_ue_capability,
+		  s1_u_path_failure,
+		  '5gc_not_allowed']),
        pce = oneof([0,1]),
        bce = oneof([0,1]),
-       cs = oneof([0,1])
+       cs = oneof([0,1]),
+       offending_ie = oneof([undefined, binary(4)])
       }.
 
 gen_v2_recovery() ->
