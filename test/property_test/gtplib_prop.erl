@@ -131,6 +131,21 @@ gen_pcap(Cnt) ->
 %%% Internal functions
 %%%===================================================================
 
+%% from the proper manual
+list_no_dupls(T) ->
+    ?LET(L, list(T), remove_duplicates(L)).
+
+%% better versions of remove_duplicates/1 exist ...
+remove_duplicates([]) -> [];
+remove_duplicates([A|T]) ->
+    case lists:member(A, T) of
+	true -> remove_duplicates(T);
+	false -> [A|remove_duplicates(T)]
+    end.
+
+flags(Flags) ->
+    list_no_dupls(oneof(Flags)).
+
 flag() ->
     oneof([0,1]).
 
@@ -153,16 +168,19 @@ mcc() ->
     ?LET(I, integer(1,999), integer_to_binary(I)).
 
 mcc_label() ->
-    ?LET(I, mcc(), list_to_binary(io_lib:format("mcc~3..0s", [I]))).
+    ?LET(M, mcc(), list_to_binary(io_lib:format("mcc~3..0s", [M]))).
 
 mnc() ->
-    ?LET(I, integer(1,999), integer_to_binary(I)).
+    ?LET(M, integer(1,999), integer_to_binary(M)).
 
 mnc_label() ->
-    ?LET(I, mnc(), list_to_binary(io_lib:format("mnc~3..0s", [I]))).
+    ?LET(M, mnc(), list_to_binary(io_lib:format("mnc~3..0s", [M]))).
 
 apn() ->
     ?LET(L, [dns_name(), mnc_label(), mcc_label(), <<"gprs">>], lists:flatten(L)).
+
+uint4() ->
+    integer(0,16#0f).
 
 uint8() ->
     integer(0,16#ff).
@@ -192,7 +210,7 @@ ip46_address() ->
     binary(20).
 
 instance() ->
-    integer(0,15).
+    uint4().
 
 tei() ->
     uint32().
@@ -203,6 +221,9 @@ uint16_array() ->
 binstr_number(Min, Max) ->
     ?LET(X,
 	 ?LET(I, integer(Min,Max), vector(I, integer($0, $9))), list_to_binary(X)).
+
+binary(Min, Max) ->
+    ?LET(I, integer(Min,Max), binary(I)).
 
 imsi() ->
     binstr_number(7,15).
@@ -519,7 +540,10 @@ v1_simple_ie() ->
        gen_private_extension()]).
 
 v2_grouped_ie() ->
-    [gen_v2_bearer_context()].
+    [gen_v2_bearer_context(),
+     gen_v2_pdn_connection(),
+     gen_v2_overload_control_information(),
+     gen_v2_load_control_information()].
 
 v2_simple_ie() ->
     [gen_v2_international_mobile_subscriber_identity(),
@@ -540,6 +564,8 @@ v2_simple_ie() ->
      gen_v2_rat_type(),
      gen_v2_eps_bearer_level_traffic_flow_template(),
      gen_v2_traffic_aggregation_description(),
+     gen_v2_user_location_information(),
+     gen_v2_fully_qualified_tunnel_endpoint_identifier(),
      gen_v2_tmsi(),
      gen_v2_global_cn_id(),
      gen_v2_s103_pdn_data_forwarding_info(),
@@ -557,7 +583,6 @@ v2_simple_ie() ->
      gen_v2_mm_context_4(),
      gen_v2_mm_context_5(),
      gen_v2_mm_context_6(),
-     gen_v2_pdn_connection(),
      gen_v2_pdu_numbers(),
      gen_v2_p_tmsi(),
      gen_v2_p_tmsi_signature(),
@@ -570,8 +595,8 @@ v2_simple_ie() ->
      gen_v2_f_cause(),
      gen_v2_plmn_id(),
      gen_v2_target_identification(),
-     gen_v2_packet_flow_id_(),
-     gen_v2_rab_context_(),
+     gen_v2_packet_flow_id(),
+     gen_v2_rab_context(),
      gen_v2_source_rnc_pdcp_context_info(),
      gen_v2_udp_source_port_number(),
      gen_v2_apn_restriction(),
@@ -625,8 +650,6 @@ v2_simple_ie() ->
      gen_v2_presence_reporting_area_action(),
      gen_v2_presence_reporting_area_information(),
      gen_v2_twan_identifier_timestamp(),
-     gen_v2_overload_control_information(),
-     gen_v2_load_control_information(),
      gen_v2_metric(),
      gen_v2_sequence_number(),
      gen_v2_apn_and_relative_capacity(),
@@ -711,26 +734,6 @@ gen_user_location_information() ->
 	  lac = uint16(),
 	  rac = integer(0,255)
 	 }]).
-
-%% gen_v2_user_location_information() ->
-%%     #v2_user_location_information{
-%%        instance = instance(),
-%%        cgi,
-%%        sai,
-%%        rai,
-%%        tai,
-%%        ecgi,
-%%        lai
-%%       }.
-
-%% gen_v2_fully_qualified_tunnel_endpoint_identifier() ->
-%%     #v2_fully_qualified_tunnel_endpoint_identifier{
-%%        instance = instance(),
-%%        interface_type,
-%%        key,
-%%        ipv4 = ip4_address(),
-%%        ipv6 = ip6_address()
-%%       }.
 
 %% gen_v2_serving_network() ->
 %%     #v2_serving_network{
@@ -898,7 +901,7 @@ gen_teardown_ind() ->
 gen_nsapi() ->
     #nsapi{
        instance = instance(),
-       nsapi = integer(0,15)
+       nsapi = uint4()
       }.
 
 gen_ranap_cause() ->
@@ -965,7 +968,7 @@ gen_charging_id() ->
 gen_end_user_address() ->
     #end_user_address{
        instance = instance(),
-       pdp_type_organization = integer(0,15),
+       pdp_type_organization = uint4(),
        pdp_type_number = integer(0,255),
        pdp_address = binary()
       }.
@@ -974,7 +977,7 @@ gen_end_user_address() ->
 gen_mm_context_gsm() ->
     #mm_context_gsm{
        instance = instance(),
-       cksn = integer(0,15),
+       cksn = uint4(),
        no_of_vectors = integer(0,7),
        used_cipher = integer(0,7),
        kc = binary(8),
@@ -990,7 +993,7 @@ gen_mm_context_gsm() ->
 gen_mm_context_umts() ->
     #mm_context_umts{
        instance = instance(),
-       ksi = integer(0,15),
+       ksi = uint4(),
        no_of_vectors = 0,
        ck = binary(16),
        ik = binary(16),
@@ -1007,7 +1010,7 @@ gen_mm_context_umts() ->
 gen_mm_context_gsm_and_umts() ->
     #mm_context_gsm_and_umts{
        instance = instance(),
-       cksn = integer(0,15),
+       cksn = uint4(),
        no_of_vectors = 0,
        used_cipher = integer(0,7),
        kc = binary(8),
@@ -1024,7 +1027,7 @@ gen_mm_context_gsm_and_umts() ->
 gen_mm_context_umts_and_used_cipher() ->
     #mm_context_umts_and_used_cipher{
        instance = instance(),
-       ksi = integer(0,15),
+       ksi = uint4(),
        no_of_vectors = 0,
        used_cipher = integer(0,7),
        ck = binary(16),
@@ -1152,15 +1155,15 @@ gen_common_flags() ->
     #common_flags{
        instance = instance(),
        flags =
-	   list(oneof(
-		  ['Dual Address Bearer Flag',
-		   'Upgrade QoS Supported',
-		   'NRSN',
-		   'No QoS negotiation',
-		   'MBMS Counting Information',
-		   'RAN Procedures Ready',
-		   'MBMS Service Type',
-		   'Prohibit Payload Compression']))
+	   flags(
+	     ['Dual Address Bearer Flag',
+	      'Upgrade QoS Supported',
+	      'NRSN',
+	      'No QoS negotiation',
+	      'MBMS Counting Information',
+	      'RAN Procedures Ready',
+	      'MBMS Service Type',
+	      'Prohibit Payload Compression'])
       }.
 
 gen_apn_restriction() ->
@@ -1373,7 +1376,7 @@ gen_evolved_allocation_retention_priority_i() ->
     #evolved_allocation_retention_priority_i{
        instance = instance(),
        pci = oneof([0, 1]),
-       pl = integer(0, 15),
+       pl = uint4(),
        pvi = oneof([0, 1])
       }.
 
@@ -1386,7 +1389,7 @@ gen_extended_common_flags() ->
     #extended_common_flags{
        instance = instance(),
        flags =
-	   list(oneof(['CCRSI', 'CPSR', 'RetLoc', 'VB', 'PCRI', 'BDWI', 'UASI']))
+	   flags(['CCRSI', 'CPSR', 'RetLoc', 'VB', 'PCRI', 'BDWI', 'UASI'])
       }.
 
 gen_user_csg_information() ->
@@ -1681,7 +1684,7 @@ gen_v2_aggregate_maximum_bit_rate() ->
 gen_v2_eps_bearer_id() ->
     #v2_eps_bearer_id{
        instance = instance(),
-       eps_bearer_id = integer(0,15)
+       eps_bearer_id = uint4()
       }.
 
 gen_v2_ip_address() ->
@@ -1706,11 +1709,14 @@ gen_v2_indication() ->
     #v2_indication{
        instance = instance(),
        flags =
-	   list(oneof(['DAF', 'DTF', 'HI', 'DFI', 'OI', 'ISRSI', 'ISRAI', 'SGWCI',
-		       'SQCI', 'UIMSI', 'CFSI', 'CRSI', 'P', 'PT', 'SI', 'MSV',
-		       'RetLoc', 'PBIC', 'SRNI', 'S6AF', 'S4AF', 'MBMDT', 'ISRAU', 'CCRSI',
-		       'CPRAI', 'ARRL', 'PPOF', 'PPON/PPEI', 'PPSI', 'CSFBI', 'CLII', 'CPSR',
-		       'PSCI', 'PCRI', 'AOSI', 'AOPI']))
+	   flags(
+	     ['DAF', 'DTF', 'HI', 'DFI', 'OI', 'ISRSI', 'ISRAI', 'SGWCI',
+	      'SQCI', 'UIMSI', 'CFSI', 'CRSI', 'P', 'PT', 'SI', 'MSV',
+	      'RetLoc', 'PBIC', 'SRNI', 'S6AF', 'S4AF', 'MBMDT', 'ISRAU', 'CCRSI',
+	      'CPRAI', 'ARRL', 'PPOF', 'PPON/PPEI', 'PPSI', 'CSFBI', 'CLII', 'CPSR',
+	      'NSI', 'UASI', 'DTCI', 'BDWI', 'PSCI', 'PCRI', 'AOSI', 'AOPI',
+	      'ROAAI', 'EPCOSI', 'CPOPCI', 'PMTSMI', 'S11TF', 'PNSI', 'UNACCSI', 'WPMSI',
+	      '5GSNN26', 'REPREFI', '5GSIWK', 'EEVRSI', 'LTEMUI', 'LTEMPI', 'ENBCRSI', 'TSPCMI'])
       }.
 
 gen_v2_protocol_configuration_options() ->
@@ -1741,7 +1747,7 @@ gen_v2_bearer_level_quality_of_service() ->
     #v2_bearer_level_quality_of_service{
        instance = instance(),
        pci = oneof([0, 1]),
-       pl = integer(0,15),
+       pl = uint4(),
        pvi = oneof([0, 1]),
        label = uint8(),
        maximum_bit_rate_for_uplink = uint40(),
@@ -1752,7 +1758,12 @@ gen_v2_bearer_level_quality_of_service() ->
 
 gen_v2_flow_quality_of_service() ->
     #v2_flow_quality_of_service{
-       instance = instance()
+       instance = instance(),
+       label = uint8(),
+       maximum_bit_rate_for_uplink = uint40(),
+       maximum_bit_rate_for_downlink = uint40(),
+       guaranteed_bit_rate_for_uplink = uint40(),
+       guaranteed_bit_rate_for_downlink = uint40()
       }.
 
 gen_v2_rat_type() ->
@@ -1763,27 +1774,69 @@ gen_v2_rat_type() ->
 
 gen_v2_eps_bearer_level_traffic_flow_template() ->
     #v2_eps_bearer_level_traffic_flow_template{
-       instance = instance()
+       instance = instance(),
+       value = binary()
       }.
 
 gen_v2_traffic_aggregation_description() ->
     #v2_traffic_aggregation_description{
-       instance = instance()
+       instance = instance(),
+       value = binary()
       }.
+
+gen_v2_user_location_information() ->
+    #v2_user_location_information{
+       instance = instance(),
+       cgi = oneof([undefined, binary(7)]),
+       sai = oneof([undefined, binary(7)]),
+       rai = oneof([undefined, binary(7)]),
+       tai = oneof([undefined, binary(5)]),
+       ecgi = oneof([undefined, binary(7)]),
+       lai = oneof([undefined, binary(5)]),
+       macro_enb = oneof([undefined, binary(6)]),
+       ext_macro_enb = oneof([undefined, binary(6)])
+      }.
+
+gen_v2_fully_qualified_tunnel_endpoint_identifier() ->
+    oneof(
+      [#v2_fully_qualified_tunnel_endpoint_identifier{
+	  instance = instance(),
+	  interface_type = uint8(),
+	  key = uint32(),
+	  ipv4 = ip4_address()
+	 },
+       #v2_fully_qualified_tunnel_endpoint_identifier{
+	  instance = instance(),
+	  interface_type = uint8(),
+	  key = uint32(),
+	  ipv6 = ip6_address()
+	 },
+       #v2_fully_qualified_tunnel_endpoint_identifier{
+	  instance = instance(),
+	  interface_type = uint8(),
+	  key = uint32(),
+	  ipv4 = ip4_address(),
+	  ipv6 = ip6_address()
+	 }]).
 
 gen_v2_tmsi() ->
     #v2_tmsi{
-       instance = instance()
+       instance = instance(),
+       value = uint32()
       }.
 
 gen_v2_global_cn_id() ->
     #v2_global_cn_id{
-       instance = instance()
+       instance = instance(),
+       value = binary(7)
       }.
 
 gen_v2_s103_pdn_data_forwarding_info() ->
     #v2_s103_pdn_data_forwarding_info{
-       instance = instance()
+       instance = instance(),
+       hsgw_address = oneof([ip4_address(),ip6_address()]),
+       gre_key = uint32(),
+       eps_bearer_id = list(uint8())
       }.
 
 gen_v2_s1_u_data_forwarding_info() ->
@@ -1793,7 +1846,8 @@ gen_v2_s1_u_data_forwarding_info() ->
 
 gen_v2_delay_value() ->
     #v2_delay_value{
-       instance = instance()
+       instance = instance(),
+       delay = uint8()
       }.
 
 gen_v2_bearer_context() ->
@@ -1815,12 +1869,22 @@ gen_v2_charging_characteristics() ->
 
 gen_v2_trace_information() ->
     #v2_trace_information{
-       instance = instance()
+       instance = instance(),
+       mcc = mcc(),
+       mnc = mnc(),
+       trace_id = uint32(),
+       triggering_events = binary(9),
+       list_of_ne_types = uint16(),
+       session_trace_depth = uint8(),
+       list_of_interfaces = binary(12),
+       ip_address_of_trace_collection_entity =
+	   oneof([ip4_address(), ip6_address()])
       }.
 
 gen_v2_bearer_flags() ->
     #v2_bearer_flags{
-       instance = instance()
+       instance = instance(),
+       flags = flags(['ASI', 'Vind', 'VB', 'PCC'])
       }.
 
 gen_v2_pdn_type() ->
@@ -1831,7 +1895,8 @@ gen_v2_pdn_type() ->
 
 gen_v2_procedure_transaction_id() ->
     #v2_procedure_transaction_id{
-       instance = instance()
+       instance = instance(),
+       pti = uint8()
       }.
 
 gen_v2_mm_context_1() ->
@@ -1866,89 +1931,128 @@ gen_v2_mm_context_6() ->
 
 gen_v2_pdn_connection() ->
     #v2_pdn_connection{
-       instance = instance()
+       instance = instance(),
+       group = v2_ie_group()
       }.
 
 gen_v2_pdu_numbers() ->
     #v2_pdu_numbers{
-       instance = instance()
+       instance = instance(),
+       nsapi = uint4(),
+       dl_gtp_u_sequence_number = uint16(),
+       ul_gtp_u_sequence_number = uint16(),
+       send_n_pdu_number = uint16(),
+       receive_n_pdu_number = uint16()
       }.
 
 gen_v2_p_tmsi() ->
     #v2_p_tmsi{
-       instance = instance()
+       instance = instance(),
+       value = binary()
       }.
 
 gen_v2_p_tmsi_signature() ->
     #v2_p_tmsi_signature{
-       instance = instance()
+       instance = instance(),
+       value = binary()
       }.
 
 gen_v2_hop_counter() ->
     #v2_hop_counter{
-       instance = instance()
+       instance = instance(),
+       hop_counter = uint8()
       }.
 
 gen_v2_ue_time_zone() ->
     #v2_ue_time_zone{
        instance = instance(),
        timezone = uint8(),
-       dst = integer(0, 3)
+       dst = integer(0,3)
       }.
 
 gen_v2_trace_reference() ->
     #v2_trace_reference{
-       instance = instance()
+       instance = instance(),
+       mcc = mcc(),
+       mnc = mnc(),
+       id = uint24()
       }.
 
 gen_v2_complete_request_message() ->
     #v2_complete_request_message{
-       instance = instance()
+       instance = instance(),
+       type = uint8(),
+       message = binary()
       }.
 
 gen_v2_guti() ->
     #v2_guti{
-       instance = instance()
+       instance = instance(),
+       mcc = mcc(),
+       mnc = mnc(),
+       group_id = uint16(),
+       code = uint24(),
+       m_tmsi = binary()
       }.
 
 gen_v2_f_container() ->
     #v2_f_container{
-       instance = instance()
+       instance = instance(),
+       type = uint4(),
+       data = binary()
       }.
 
 gen_v2_f_cause() ->
     #v2_f_cause{
-       instance = instance()
+       instance = instance(),
+       type = uint4(),
+       data = binary()
       }.
 
 gen_v2_plmn_id() ->
     #v2_plmn_id{
-       instance = instance()
+       instance = instance(),
+       id = binary(3)
       }.
 
 gen_v2_target_identification() ->
     #v2_target_identification{
-       instance = instance()
+       instance = instance(),
+       type = uint8(),
+       data = binary()
       }.
 
-gen_v2_packet_flow_id_() ->
-    #v2_packet_flow_id_{
-       instance = instance()
+gen_v2_packet_flow_id() ->
+    #v2_packet_flow_id{
+       instance = instance(),
+       ebi = uint4(),
+       flow_id = binary()
       }.
 
-gen_v2_rab_context_() ->
-    #v2_rab_context_{
-       instance = instance()
+gen_v2_rab_context() ->
+    #v2_rab_context{
+       instance = instance(),
+       ulpsi = flag(),
+       dlpsi = flag(),
+       ulgsi = flag(),
+       dlgsi = flag(),
+       nsapi = uint4(),
+       dl_gtp_u_sequence_number = uint16(),
+       ul_gtp_u_sequence_number = uint16(),
+       dl_pdcp_number = uint16(),
+       ul_pdcp_number = uint16()
       }.
 
 gen_v2_source_rnc_pdcp_context_info() ->
     #v2_source_rnc_pdcp_context_info{
-       instance = instance()
+       instance = instance(),
+       rrc_container = binary()
       }.
 
 gen_v2_udp_source_port_number() ->
     #v2_udp_source_port_number{
-       instance = instance()
+       instance = instance(),
+       port = uint16()
       }.
 
 gen_v2_apn_restriction() ->
@@ -1965,7 +2069,10 @@ gen_v2_selection_mode() ->
 
 gen_v2_source_identification() ->
     #v2_source_identification{
-       instance = instance()
+       instance = instance(),
+       target_cell_id = binary(8),
+       source_type = uint8(),
+       source_id = binary()
       }.
 
 gen_v2_change_reporting_action() ->
@@ -1983,23 +2090,42 @@ gen_v2_change_reporting_action() ->
       }.
 
 gen_v2_fully_qualified_pdn_connection_set_identifier() ->
-    #v2_fully_qualified_pdn_connection_set_identifier{
-       instance = instance()
-      }.
+    oneof([
+	   #v2_fully_qualified_pdn_connection_set_identifier{
+	      instance = instance(),
+	      node_id_type = 0,
+	      node_id = ip4_address(),
+	      csids = ?LET(I, integer(0,15), vector(I, uint16()))
+	     },
+	   #v2_fully_qualified_pdn_connection_set_identifier{
+	      instance = instance(),
+	      node_id_type = 1,
+	      node_id = ip6_address(),
+	      csids = ?LET(I, integer(0,15), vector(I, uint16()))
+	     },
+	   #v2_fully_qualified_pdn_connection_set_identifier{
+	      instance = instance(),
+	      node_id_type = 2,
+	      node_id = {integer(0,999), integer(0,999), integer(0,16#0fff)},
+	      csids = ?LET(I, integer(0,15), vector(I, uint16()))
+	     }]).
 
 gen_v2_channel_needed() ->
     #v2_channel_needed{
-       instance = instance()
+       instance = instance(),
+       value = binary()
       }.
 
 gen_v2_emlpp_priority() ->
     #v2_emlpp_priority{
-       instance = instance()
+       instance = instance(),
+       value = binary()
       }.
 
 gen_v2_node_type() ->
     #v2_node_type{
-       instance = instance()
+       instance = instance(),
+       node_type = uint8()
       }.
 
 gen_v2_fully_qualified_domain_name() ->
@@ -2010,7 +2136,8 @@ gen_v2_fully_qualified_domain_name() ->
 
 gen_v2_transaction_identifier() ->
     #v2_transaction_identifier{
-       instance = instance()
+       instance = instance(),
+       value = binary()
       }.
 
 gen_v2_mbms_session_duration() ->
@@ -2045,47 +2172,62 @@ gen_v2_mbms_distribution_acknowledge() ->
 
 gen_v2_rfsp_index() ->
     #v2_rfsp_index{
-       instance = instance()
+       instance = instance(),
+       value = uint16()
       }.
 
 gen_v2_user_csg_information() ->
     #v2_user_csg_information{
-       instance = instance()
+       instance = instance(),
+       mcc = mcc(),
+       mnc = mnc(),
+       csg_id = bitstring(27),
+       access_mode = integer(0,3),
+       lcsg = boolean(),
+       cmi = flag()
       }.
 
 gen_v2_csg_information_reporting_action() ->
     #v2_csg_information_reporting_action{
-       instance = instance()
+       instance = instance(),
+       actions = flags(['UCIUHC', 'UCISHC', 'UCICSG'])
       }.
 
 gen_v2_csg_id() ->
     #v2_csg_id{
-       instance = instance()
+       instance = instance(),
+       id = bitstring(27)
       }.
 
 gen_v2_csg_membership_indication() ->
     #v2_csg_membership_indication{
-       instance = instance()
+       instance = instance(),
+       cmi = flag()
       }.
 
 gen_v2_service_indicator() ->
     #v2_service_indicator{
-       instance = instance()
+       instance = instance(),
+       value = uint8()
       }.
 
 gen_v2_detach_type() ->
     #v2_detach_type{
-       instance = instance()
+       instance = instance(),
+       value = uint8()
       }.
 
 gen_v2_local_distiguished_name() ->
     #v2_local_distiguished_name{
-       instance = instance()
+       instance = instance(),
+       value = binary(1, 400)
       }.
 
 gen_v2_node_features() ->
     #v2_node_features{
-       instance = instance()
+       instance = instance(),
+       features =
+	   flags(['ETH', 'S1UN', 'CIOT', 'NTSR', 'MABR', 'PRN'])
       }.
 
 gen_v2_mbms_time_to_data_transfer() ->
@@ -2095,22 +2237,31 @@ gen_v2_mbms_time_to_data_transfer() ->
 
 gen_v2_throttling() ->
     #v2_throttling{
-       instance = instance()
+       instance = instance(),
+       unit = integer(0,7),
+       value = integer(0,31),
+       factor = uint8()
       }.
 
 gen_v2_allocation_retention_priority() ->
     #v2_allocation_retention_priority{
-       instance = instance()
+       instance = instance(),
+       pci = boolean(),
+       pl = uint4(),
+       pvi = boolean()
       }.
 
 gen_v2_epc_timer() ->
     #v2_epc_timer{
-       instance = instance()
+       instance = instance(),
+       unit = integer(0,7),
+       value = integer(0,31)
       }.
 
 gen_v2_signalling_priority_indication() ->
     #v2_signalling_priority_indication{
-       instance = instance()
+       instance = instance(),
+       indication = flags(['LAPI'])
       }.
 
 gen_v2_temporary_mobile_group_identity() ->
@@ -2120,12 +2271,17 @@ gen_v2_temporary_mobile_group_identity() ->
 
 gen_v2_additional_mm_context_for_srvcc() ->
     #v2_additional_mm_context_for_srvcc{
-       instance = instance()
+       instance = instance(),
+       classmark_2 = binary(),
+       classmark_3 = binary(),
+       codec_list = binary()
+
       }.
 
 gen_v2_additional_flags_for_srvcc() ->
     #v2_additional_flags_for_srvcc{
-       instance = instance()
+       instance = instance(),
+       flags = flags(['VF', 'ICS'])
       }.
 
 gen_v2_mdt_configuration() ->
@@ -2135,7 +2291,8 @@ gen_v2_mdt_configuration() ->
 
 gen_v2_additional_protocol_configuration_options() ->
     #v2_additional_protocol_configuration_options{
-       instance = instance()
+       instance = instance(),
+       config = {0, gen_random_list_of_pco()}
       }.
 
 gen_v2_absolute_time_of_mbms_data_transfer() ->
@@ -2145,32 +2302,58 @@ gen_v2_absolute_time_of_mbms_data_transfer() ->
 
 gen_v2_henb_information_reporting_() ->
     #v2_henb_information_reporting_{
-       instance = instance()
+       instance = instance(),
+       flags = flags(['FTI'])
       }.
 
 gen_v2_ipv4_configuration_parameters() ->
     #v2_ipv4_configuration_parameters{
-       instance = instance()
+       instance = instance(),
+       prefix_length = integer(0,32),
+       default_route = ip4_address()
       }.
 
 gen_v2_change_to_report_flags_() ->
     #v2_change_to_report_flags_{
-       instance = instance()
-      }.
+       instance = instance(),
+       flags = flags(['TZCR', 'SNCR'])
+     }.
 
 gen_v2_action_indication() ->
     #v2_action_indication{
-       instance = instance()
+       instance = instance(),
+       indication = integer(0,7)
       }.
 
 gen_v2_twan_identifier() ->
-    #v2_twan_identifier{
-       instance = instance()
-      }.
+    oneof(
+      [#v2_twan_identifier{
+	  instance = instance(),
+	  ssid = binary(),
+	  bssid = oneof([undefined, binary(6)]),
+	  civic_address = oneof([undefined, binary()]),
+	  plmn_id = oneof([undefined, {mcc(), mnc()}]),
+	  operator_name = oneof([undefined, binary()]),
+	  relay_identity_type = undefined,
+	  relay_identity = undefined,
+	  circuit_id = undefined
+	 },
+       #v2_twan_identifier{
+	  instance = instance(),
+	  ssid = binary(),
+	  bssid = oneof([undefined, binary(6)]),
+	  civic_address = oneof([undefined, binary()]),
+	  plmn_id = oneof([undefined, {mcc(), mnc()}]),
+	  operator_name = oneof([undefined, binary()]),
+	  relay_identity_type = uint8(),
+	  relay_identity = binary(),
+	  circuit_id = binary()
+	 }]).
 
 gen_v2_uli_timestamp() ->
     #v2_uli_timestamp{
-       instance = instance()
+       instance = instance(),
+       timestamp = uint32()
       }.
 
 gen_v2_mbms_flags() ->
@@ -2180,27 +2363,35 @@ gen_v2_mbms_flags() ->
 
 gen_v2_ran_nas_cause() ->
     #v2_ran_nas_cause{
-       instance = instance()
-      }.
+       instance = instance(),
+       protocol = uint4(),
+       type = uint4(),
+       cause = binary()
+     }.
 
 gen_v2_cn_operator_selection_entity() ->
     #v2_cn_operator_selection_entity{
-       instance = instance()
+       instance = instance(),
+       entity = integer(0,3)
       }.
 
 gen_v2_trusted_wlan_mode_indication() ->
     #v2_trusted_wlan_mode_indication{
-       instance = instance()
+       instance = instance(),
+       indication = flags(['MCM', 'SCM'])
       }.
 
 gen_v2_node_number() ->
     #v2_node_number{
-       instance = instance()
+       instance = instance(),
+       number = binary()
       }.
 
 gen_v2_node_identifier() ->
     #v2_node_identifier{
-       instance = instance()
+       instance = instance(),
+       name = binary(),
+       realm = binary()
       }.
 
 gen_v2_presence_reporting_area_action() ->
@@ -2215,37 +2406,45 @@ gen_v2_presence_reporting_area_information() ->
 
 gen_v2_twan_identifier_timestamp() ->
     #v2_twan_identifier_timestamp{
-       instance = instance()
+       instance = instance(),
+       timestamp = uint32()
       }.
 
 gen_v2_overload_control_information() ->
     #v2_overload_control_information{
-       instance = instance()
+       instance = instance(),
+       group = v2_ie_group()
       }.
 
 gen_v2_load_control_information() ->
     #v2_load_control_information{
-       instance = instance()
+       instance = instance(),
+       group = v2_ie_group()
       }.
 
 gen_v2_metric() ->
     #v2_metric{
-       instance = instance()
+       instance = instance(),
+       value = uint8()
       }.
 
 gen_v2_sequence_number() ->
     #v2_sequence_number{
-       instance = instance()
+       instance = instance(),
+       value = uint32()
       }.
 
 gen_v2_apn_and_relative_capacity() ->
     #v2_apn_and_relative_capacity{
-       instance = instance()
+       instance = instance(),
+       capacity = uint8(),
+       apn = binary()
       }.
 
 gen_v2_wlan_offloadability_indication() ->
     #v2_wlan_offloadability_indication{
-       instance = instance()
+       instance = instance(),
+       indication = flags(['EUTRAN', 'UTRAN'])
       }.
 
 gen_v2_private_extension() ->
