@@ -1,16 +1,13 @@
-dist: xenial
+sudo: required
+dist: bionic
 
 language: erlang
 
 otp_release:
- - 20.1.7
- - 20.3.8.5
- - 21.0
- - 21.1.4
- - 21.2.7
  - 21.3.8.1
  - 22.0.7
  - 22.1.8
+ - 22.2.4
 
 install: "true"
 
