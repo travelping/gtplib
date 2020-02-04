@@ -60,6 +60,7 @@ all() ->
 	 test_v2_pco_vendor_ext,
 	 partial_decode,
 	 partial_encode,
+	 flags_enc_dec,
 	 msg_enc_dec].
 
 
@@ -315,6 +316,46 @@ partial_encode(_Config) ->
     ?match(#gtp{ie = IEs} when is_binary(IEs), Msg11),
     Msg12 = gtp_packet:encode(Msg11),
     ?match(_ when is_binary(Msg12), Msg12),
+    ok.
+
+flags_enc_dec(_Config) ->
+    Bin1 = <<72,1,0,13,0,0,0,0,0,0,0,0,77,0,1,0,128>>,
+    Msg1 = #gtp{version = v2,type = echo_request,tei = 0,seq_no = 0,
+	       n_pdu = undefined,ext_hdr = [],
+	       ie = #{{v2_indication,0} =>
+			  #v2_indication{instance = 0,flags = ['DAF']}}},
+    ?match(<<72,1,0,13,0,0,0,0,0,0,0,0,77,0,1,0,128>>, gtp_packet:encode(Msg1)),
+    ?match(#gtp{version = v2,type = echo_request,tei = 0,seq_no = 0,
+		n_pdu = undefined,ext_hdr = [],
+		ie = #{{v2_indication,0} :=
+			   #v2_indication{instance = 0,flags = ['DAF']}}},
+	   gtp_packet:decode(Bin1)),
+
+    Bin2 = <<72,1,0,14,0,0,0,0,0,0,0,0,77,0,2,0,0,8>>,
+    Msg2 = #gtp{version = v2,type = echo_request,tei = 0,seq_no = 0,
+		n_pdu = undefined,ext_hdr = [],
+		ie = #{{v2_indication,0} =>
+			   #v2_indication{instance = 0,flags = ['P']}}},
+    ?match(<<72,1,0,14,0,0,0,0,0,0,0,0,77,0,2,0,0,8>>, gtp_packet:encode(Msg2)),
+    ?match(#gtp{version = v2,type = echo_request,tei = 0,seq_no = 0,
+		n_pdu = undefined,ext_hdr = [],
+		ie = #{{v2_indication,0} :=
+			   #v2_indication{instance = 0,flags = ['P']}}},
+	   gtp_packet:decode(Bin2)),
+
+    %% unkown indication flag, make sure it passed through enc/dec
+    Bin3 = <<72,1,0,22,0,0,0,0,0,0,0,0,77,0,10,0,0,0,0,0,0,0,0,0,0,8>>,
+    Msg3 = #gtp{version = v2,type = echo_request,tei = 0,seq_no = 0,
+		n_pdu = undefined,ext_hdr = [],
+		ie = #{{v2_indication,0} =>
+			   #v2_indication{instance = 0,flags = [2048]}}},
+    ?match(<<72,1,0,22,0,0,0,0,0,0,0,0,77,0,10,0,0,0,0,0,0,0,0,0,0,8>>,
+	   gtp_packet:encode(Msg3)),
+    ?match(#gtp{version = v2,type = echo_request,tei = 0,seq_no = 0,
+		n_pdu = undefined,ext_hdr = [],
+		ie = #{{v2_indication,0} :=
+			   #v2_indication{instance = 0,flags = [2048]}}},
+	   gtp_packet:decode(Bin3)),
     ok.
 
 msg_enc_dec() ->

@@ -106,8 +106,7 @@ raw_ies() ->
       [{"APN", 0, {type, fqdn}}]},
      {72, "v2 Aggregate Maximum Bit Rate",
       [{"Uplink", 32, integer},
-       {"Downlink", 32, integer},
-       {'_', 0}]},
+       {"Downlink", 32, integer}]},
      {73, "v2 EPS Bearer ID",
       [{'_', 4},
        {"EPS Bearer ID", 4, integer},
@@ -119,7 +118,15 @@ raw_ies() ->
      {76, "v2 MSISDN",
       [{"MSISDN", 0, {type, tbcd}}]},
      {77, "v2 Indication",
-      [{"Flags", 0, {type, v2_indication_flags}}]},
+      [{"Flags", 0,
+	{flags,	['DAF', 'DTF', 'HI', 'DFI', 'OI', 'ISRSI', 'ISRAI', 'SGWCI',
+		 'SQCI', 'UIMSI', 'CFSI', 'CRSI', 'P', 'PT', 'SI', 'MSV',
+		 'RetLoc', 'PBIC', 'SRNI', 'S6AF', 'S4AF', 'MBMDT', 'ISRAU', 'CCRSI',
+		 'CPRAI', 'ARRL', 'PPOF', 'PPON/PPEI', 'PPSI', 'CSFBI', 'CLII', 'CPSR',
+		 'NSI', 'UASI', 'DTCI', 'BDWI', 'PSCI', 'PCRI', 'AOSI', 'AOPI',
+		 'ROAAI', 'EPCOSI', 'CPOPCI', 'PMTSMI', 'S11TF', 'PNSI', 'UNACCSI', 'WPMSI',
+		 '5GSNN26', 'REPREFI', '5GSIWK', 'EEVRSI', 'LTEMUI', 'LTEMPI', 'ENBCRSI', 'TSPCMI',
+		 '_', '_', '_', 'N5GNMI', '5GCNRS', '5GCNRI', '5SRHOI', 'ETHPDN']}}]},
      {78, "v2 Protocol Configuration Options",
       [{"Config", protocol_config_opts}]},
      {79, "v2 PDN Address Allocation",
@@ -127,7 +134,8 @@ raw_ies() ->
        {"Type", 3, {enum, [{1, "IPv4"},
 			   {2, "IPv6"},
 			   {3, "IPv4v6"},
-			   {4, "Non-IP"}]}},
+			   {4, "Non-IP"},
+			   {5, "Ethernet"}]}},
        {"Address", 0, binary}]},
      {80, "v2 Bearer Level Quality of Service",
       [{'_', 1},
@@ -141,28 +149,58 @@ raw_ies() ->
        {"Guaranteed bit rate for uplink", 40, integer},
        {"Guaranteed bit rate for downlink", 40, integer},
        {'_', 0}]},
-     {81, "v2 Flow Quality of Service", []},
+     {81, "v2 Flow Quality of Service",
+      [{"Label", 8, integer},
+       {"Maximum bit rate for uplink", 40, integer},
+       {"Maximum bit rate for downlink", 40, integer},
+       {"Guaranteed bit rate for uplink", 40, integer},
+       {"Guaranteed bit rate for downlink", 40, integer},
+       {'_', 0}]},
      {82, "v2 RAT Type",
       [{"RAT Type", 8, integer},
        {'_', 0}]},
-     {83, "v2 Serving Network", v2_mccmnc},
-     {84, "v2 EPS Bearer Level Traffic Flow Template", []},
-     {85, "v2 Traffic Aggregation Description", []},
+     {83, "v2 Serving Network",
+      [{"MCCMNC", mccmnc},
+       {'_', 0}]},
+     {84, "v2 EPS Bearer Level Traffic Flow Template",
+      [{"Value", 0, binary}]},
+     {85, "v2 Traffic Aggregation Description",
+      [{"Value", 0, binary}]},
      {86, "v2 User Location Information", v2_user_location_information},
      {87, "v2 Fully Qualified Tunnel Endpoint Identifier", v2_fully_qualified_tunnel_endpoint_identifier},
-     {88, "v2 TMSI", []},
-     {89, "v2 Global CN-Id", []},
-     {90, "v2 S103 PDN Data Forwarding Info", []},
-     {91, "v2 S1-U Data Forwarding Info", []},
-     {92, "v2 Delay Value", []},
+     {88, "v2 TMSI",
+      [{"Value", 32, integer}]},
+     {89, "v2 Global CN-Id",
+      [{"MCCMNC", mccmnc},
+       {"Value", 0, binary}]},
+     {90, "v2 S103 PDN Data Forwarding Info",
+      [{"HSGW Address", 8, length_binary},
+       {"GRE Key", 32, integer},
+       {"EPS Bearer Id", 8, {array, {8, integer}}}]},
+     {91, "v2 S1-U Data Forwarding Info",
+      [{"Service GW Address", 8, length_binary},
+       {"TEID", 32, integer}]},
+     {92, "v2 Delay Value",
+      [{"Delay", 8, integer},
+       {'_', 0}]},
      {93, "v2 Bearer Context",
       [{"Group", 0, {type, v2_grouped}}]},
      {94, "v2 Charging ID",
-      [{id, 4, bytes}]},
+      [{"Id", 4, bytes},
+       {'_', 0}]},
      {95, "v2 Charging Characteristics",
-      [{"Value", 2, bytes}]},
-     {96, "v2 Trace Information", []},
-     {97, "v2 Bearer Flags", []},
+      [{"Value", 2, bytes},
+       {'_', 0}]},
+     {96, "v2 Trace Information",
+      [{"MCCMNC", mccmnc},
+       {"Trace ID", 32, integer},
+       {"Triggering Events", 9, bytes},
+       {"List of NE Types", 16, integer},
+       {"Session Trace Depth", 8, integer},
+       {"List of Interfaces", 12, bytes},
+       {"IP Address of Trace Collection Entity", 0, binary}]},
+     {97, "v2 Bearer Flags",
+      [{"Flags", 0, {flags, ['_', '_', '_', '_', 'ASI', 'Vind', 'VB', 'PCC']}}]},
      {99, "v2 PDN Type",
       [{'_', 4},
        {"PDN Type", 4, {enum, [{1, "IPv4"},
@@ -170,34 +208,80 @@ raw_ies() ->
 			       {3, "IPv4v6"},
 			       {4, "Non-IP"}]}},
        {'_', 0}]},
-     {100, "v2 Procedure Transaction ID", []},
+     {100, "v2 Procedure Transaction ID",
+      [{"PTI", 8, integer},
+       {'_', 0}]},
      {103, "v2 MM Context 1", []},
      {104, "v2 MM Context 2", []},
      {105, "v2 MM Context 3", []},
      {106, "v2 MM Context 4", []},
      {107, "v2 MM Context 5", []},
      {108, "v2 MM Context 6", []},
-     {109, "v2 PDN Connection", []},
-     {110, "v2 PDU Numbers", []},
-     {111, "v2 P-TMSI", []},
-     {112, "v2 P-TMSI Signature", []},
-     {113, "v2 Hop Counter", []},
+     {109, "v2 PDN Connection",
+      [{"Group", 0, {type, v2_grouped}}]},
+     {110, "v2 PDU Numbers",
+      [{'_', 4},
+       {"NSAPI", 4, integer},
+       {"DL GTP-U Sequence Number", 16, integer},
+       {"UL GTP-U Sequence Number", 16, integer},
+       {"Send N-PDU Number", 16, integer},
+       {"Receive N-PDU Number", 16, integer},
+       {'_', 0}]},
+     {111, "v2 P-TMSI",
+      [{"Value", 0, binary}]},
+     {112, "v2 P-TMSI Signature",
+      [{"Value", 0, binary}]},
+     {113, "v2 Hop Counter",
+      [{"Hop Counter", 8, integer},
+       {'_', 0}]},
      {114, "v2 UE Time Zone",
       [{"TimeZone", 8, integer},
        {'_', 6},
        {"DST", 2, integer},
        {'_', 0}]},
-     {115, "v2 Trace Reference", []},
-     {116, "v2 Complete Request Message", []},
-     {117, "v2 GUTI", []},
-     {118, "v2 F-Container", []},
-     {119, "v2 F-Cause", []},
-     {120, "v2 PLMN ID", []},
-     {121, "v2 Target Identification", []},
-     {123, "v2 Packet Flow ID ", []},
-     {124, "v2 RAB Context ", []},
-     {125, "v2 Source RNC PDCP Context Info", []},
-     {126, "v2 UDP Source Port Number", []},
+     {115, "v2 Trace Reference",
+      [{"MCCMNC", mccmnc},
+       {"Id", 24, integer}]},
+     {116, "v2 Complete Request Message",
+      [{"Type", 8, integer},
+       {"Message", 0, binary}]},
+     {117, "v2 GUTI",
+      [{"MCCMNC", mccmnc},
+       {"Group Id", 16, integer},
+       {"Code", 24, integer},
+       {"M-TMSI", 0, binary}]},
+     {118, "v2 F-Container",
+      [{'_', 4},
+       {"Type", 4, integer},
+       {"Data", 0, binary}]},
+     {119, "v2 F-Cause",
+      [{'_', 4},
+       {"Type", 4, integer},
+       {"Data", 0, binary}]},
+     {120, "v2 PLMN ID",
+      [{"Id", 3, bytes}]},
+     {121, "v2 Target Identification",
+      [{"Type", 8, integer},
+       {"Data", 0, binary}]},
+     {123, "v2 Packet Flow ID",
+      [{'_', 4},
+       {"EBI", 4, integer},
+       {"Flow Id", 0, binary}]},
+     {124, "v2 RAB Context",
+      [{"ULPSI", 1, integer},
+       {"DLPSI", 1, integer},
+       {"ULGSI", 1, integer},
+       {"DLGSI", 1, integer},
+       {"NSAPI", 4, integer},
+       {"DL GTP-U Sequence Number", 16, integer},
+       {"UL GTP-U Sequence Number", 16, integer},
+       {"DL PDCP Number", 16, integer},
+       {"UL PDCP Number", 16, integer}]},
+     {125, "v2 Source RNC PDCP Context Info",
+      [{"RRC Container", 0, binary}]},
+     {126, "v2 UDP Source Port Number",
+      [{"Port", 16, integer},
+       {'_', 0}]},
      {127, "v2 APN Restriction",
       [{"Restriction Type Value", 8, integer},
        {'_', 0}]},
@@ -205,7 +289,10 @@ raw_ies() ->
       [{'_', 6},
        {"Mode", 2, integer},
        {'_', 0}]},
-     {129, "v2 Source Identification", []},
+     {129, "v2 Source Identification",
+      [{"Target Cell Id", 8, binary},
+       {"Source Type", 8, integer},
+       {"Source Id", 0, binary}]},
      {131, "v2 Change Reporting Action",
       [{"Action", 8, {enum, [{0, "Stop Reporting"},
 			     {1, "Start Reporting CGI/SAI"},
@@ -218,61 +305,207 @@ raw_ies() ->
 			     {8, "Start Reporting TAI, Macro eNodeB ID and Extended Macro eNodeB ID"}
 			    ]}},
        {'_', 0}]},
-     {132, "v2 Fully Qualified PDN Connection Set Identifier", []},
-     {133, "v2 Channel needed", []},
-     {134, "v2 eMLPP Priority", []},
-     {135, "v2 Node Type", []},
+     {132, "v2 Fully Qualified PDN Connection Set Identifier",
+      v2_fully_qualified_pdn_connection_set_identifier},
+     {133, "v2 Channel needed",
+      [{"Value", 0, binary}]},
+     {134, "v2 eMLPP Priority",
+      [{"Value", 0, binary}]},
+     {135, "v2 Node Type",
+      [{"Node Type", 8, integer},
+       {'_', 0}]},
      {136, "v2 Fully Qualified Domain Name",
       [{"FQDN", 0, {type, fqdn}}]},
-     {137, "v2 Transaction Identifier", []},
+     {137, "v2 Transaction Identifier",
+      [{"Value", 0, binary}]},
      {138, "v2 MBMS Session Duration", []},
      {139, "v2 MBMS Service Area", []},
      {140, "v2 MBMS Session Identifier", []},
      {141, "v2 MBMS Flow Identifier", []},
      {142, "v2 MBMS IP Multicast Distribution", []},
      {143, "v2 MBMS Distribution Acknowledge", []},
-     {144, "v2 RFSP Index", []},
-     {145, "v2 User CSG Information", []},
-     {146, "v2 CSG Information Reporting Action", []},
-     {147, "v2 CSG ID", []},
-     {148, "v2 CSG Membership Indication", []},
-     {149, "v2 Service indicator", []},
-     {150, "v2 Detach Type", []},
-     {151, "v2 Local Distiguished Name", []},
-     {152, "v2 Node Features", []},
+     {144, "v2 RFSP Index",
+      [{"Value", 16, integer}]},
+     {145, "v2 User CSG Information",
+      [{"MCCMNC", mccmnc},
+       {'_', 5},
+       {"CSG Id", 27, bits},
+       {"Access mode", 2, integer},
+       {'_', 4},
+       {"LCSG", 1, boolean},
+       {"CMI", 1, integer}]},
+     {146, "v2 CSG Information Reporting Action",
+      [{"Actions", 0, {flags, ['_', '_', '_', '_', '_', 'UCIUHC', 'UCISHC', 'UCICSG']}}]},
+     {147, "v2 CSG ID",
+      [{'_', 5},
+       {"Id", 27, bits},
+       {'_', 0}]},
+     {148, "v2 CSG Membership Indication",
+      [{'_', 7},
+       {"CMI", 1, integer},
+       {'_', 0}]},
+     {149, "v2 Service indicator",
+      [{"Value", 8, integer}]},
+     {150, "v2 Detach Type",
+      [{"Value", 8, integer}]},
+     {151, "v2 Local Distiguished Name",
+      [{"Value", 0, binary}]},
+     {152, "v2 Node Features",
+      [{"Features", 0, {flags, ['_', '_', 'ETH', 'S1UN', 'CIOT', 'NTSR', 'MABR', 'PRN']}}]},
      {153, "v2 MBMS Time to Data Transfer", []},
-     {154, "v2 Throttling", []},
-     {155, "v2 Allocation/Retention Priority", []},
-     {156, "v2 EPC Timer", []},
-     {157, "v2 Signalling Priority Indication", []},
+     {154, "v2 Throttling",
+      [{"Unit", 3, integer},
+       {"Value", 5, integer},
+       {"Factor", 8, integer},
+       {'_', 0}]},
+     {155, "v2 Allocation/Retention Priority",
+      [{'_', 1},
+       {"PCI", 1, boolean},
+       {"PL", 4, integer},
+       {'_', 1},
+       {"PVI", 1, boolean},
+       {'_', 0}]},
+     {156, "v2 EPC Timer",
+      [{"Unit", 3, integer},
+       {"Value", 5, integer},
+       {'_', 0}]},
+     {157, "v2 Signalling Priority Indication",
+      [{"Indication", 0, {flags, ['_', '_', '_', '_', '_', '_', '_', 'LAPI']}}]},
      {158, "v2 Temporary Mobile Group Identity", []},
-     {159, "v2 Additional MM context for SRVCC", []},
-     {160, "v2 Additional flags for SRVCC", []},
+     {159, "v2 Additional MM context for SRVCC",
+      [{"Classmark 2", 8, length_binary},
+       {"Classmark 3", 8, length_binary},
+       {"Codec List", 8, length_binary},
+       {'_', 0}]},
+     {160, "v2 Additional flags for SRVCC",
+      [{"Flags", 0, {flags, ['_', '_', '_', '_', '_', '_', 'VF', 'ICS']}}]},
      {162, "v2 MDT Configuration", []},
-     {163, "v2 Additional Protocol Configuration Options", []},
+     {163, "v2 Additional Protocol Configuration Options",
+      [{"Config", protocol_config_opts}]},
      {164, "v2 Absolute Time of MBMS Data Transfer", []},
-     {165, "v2 HeNB Information Reporting ", []},
-     {166, "v2 IPv4 Configuration Parameters", []},
-     {167, "v2 Change to Report Flags ", []},
-     {168, "v2 Action Indication", []},
-     {169, "v2 TWAN Identifier", []},
-     {170, "v2 ULI Timestamp", []},
+     {165, "v2 HeNB Information Reporting ",
+      [{"Flags", 0, {flags, ['_', '_', '_', '_', '_', '_', '_', 'FTI']}}]},
+     {166, "v2 IPv4 Configuration Parameters",
+      [{"Prefix Length", 8, integer},
+       {"Default Route", 4, bytes},
+       {'_', 0}]},
+     {167, "v2 Change to Report Flags ",
+      [{"Flags", 0, {flags, ['_', '_', '_', '_', '_', '_', 'TZCR', 'SNCR']}}]},
+     {168, "v2 Action Indication",
+      [{'_', 5},
+       {"Indication", 3, integer},
+       {'_', 0}]},
+     {169, "v2 TWAN Identifier", v2_twan_identifier},
+     {170, "v2 ULI Timestamp",
+      [{"Timestamp", 32, integer},
+       {'_', 0}]},
      {171, "v2 MBMS Flags", []},
-     {172, "v2 RAN/NAS Cause", []},
-     {173, "v2 CN Operator Selection Entity", []},
-     {174, "v2 Trusted WLAN Mode Indication", []},
-     {175, "v2 Node Number", []},
-     {176, "v2 Node Identifier", []},
+     {172, "v2 RAN/NAS Cause",
+      [{"Protocol", 4, integer},
+       {"Type", 4, integer},
+       {"Cause", 0, binary}]},
+     {173, "v2 CN Operator Selection Entity",
+       [{'_', 6},
+	{"Entity", 2, integer},
+	{'_', 0}]},
+     {174, "v2 Trusted WLAN Mode Indication",
+      [{"Indication", 0, {flags, ['_', '_', '_', '_', '_', '_', 'MCM', 'SCM']}}]},
+     {175, "v2 Node Number",
+      [{"Number", 8, length_binary},                    %% TBD: ISDN string
+       {'_', 0}]},
+     {176, "v2 Node Identifier",
+      [{"Name", 8, length_binary},
+       {"Realm", 8, length_binary},
+       {'_', 0}]},
      {177, "v2 Presence Reporting Area Action", []},
      {178, "v2 Presence Reporting Area Information", []},
-     {179, "v2 TWAN Identifier Timestamp", []},
-     {180, "v2 Overload Control Information", []},
-     {181, "v2 Load Control Information", []},
-     {182, "v2 Metric", []},
-     {183, "v2 Sequence Number", []},
-     {184, "v2 APN and Relative Capacity", []},
-     {185, "v2 WLAN Offloadability Indication", []},
-     {255, "v2 Private Extension", []}].
+     {179, "v2 TWAN Identifier Timestamp",
+      [{"Timestamp", 32, integer},
+       {'_', 0}]},
+     {180, "v2 Overload Control Information",
+      [{"Group", 0, {type, v2_grouped}}]},
+     {181, "v2 Load Control Information",
+      [{"Group", 0, {type, v2_grouped}}]},
+     {182, "v2 Metric",
+      [{"Value", 8, integer}]},
+     {183, "v2 Sequence Number",
+      [{"Value", 32, integer}]},
+     {184, "v2 APN and Relative Capacity",
+      [{"Capacity", 8, integer},
+       {"APN", 8, length_binary},                    %% TBD: APN encoding
+       {'_', 0}]},
+     {185, "v2 WLAN Offloadability Indication",
+      [{"Indication", 0, {flags, ['_', '_', '_', '_', '_', '_', 'EUTRAN', 'UTRAN']}}]},
+     {186, "v2 Paging and Service Information", v2_paging_and_service_information},
+     {187, "v2 Integer Number", v2_integer_number},
+     {188, "v2 Millisecond Time Stamp",
+      [{"Timestamp", 48, integer},
+       {'_', 0}]},
+     {189, "v2 Monitoring Event Information", []},  % WTF: flags encoded in the spare bits
+						    %      of the Instance field
+     {190, "v2 ECGI List",
+      [{"ECGIs", 16, {array, {7, bytes}}},
+       {'_', 0}]},
+     {191, "v2 Remote UE Context",
+      [{"Group", 0, {type, v2_grouped}}]},
+     {192, "v2 Remote User ID", v2_remote_user_id},
+     {193, "v2 Remote UE IP information",
+      [{"IP", 0, binary}]},
+     {194, "v2 CIoT Optimizations Support Indication",
+      [{"Indication", 0, {flags, ['_', '_', '_', '_', 'IHCSI', 'AWOPDN', 'SCNIPDN', 'SGNIPDN']}}]},
+     {195, "v2 SCEF PDN Connection",
+      [{"Group", 0, {type, v2_grouped}}]},
+     {196, "v2 Header Compression Configuration",
+      [{"ROHC Profiles", 16, integer},
+       {"MAX CID", 16, integer},
+       {'_', 0}]},
+     {197, "v2 Extended Protocol Configuration Options",
+      [{"Config", protocol_config_opts}]},
+     {198, "v2 Serving PLMN Rate Control",
+      [{"Uplink", 16, integer},
+       {"Downlink", 16, integer},
+       {'_', 0}]},
+     {199, "v2 Counter",
+      [{"Timestamp", 32, integer},
+       {"Counter", 8, integer},
+       {'_', 0}]},
+     {200, "v2 Mapped UE Usage Type",
+      [{"Usage Type", 16, integer},
+       {'_', 0}]},
+     {201, "v2 Secondary RAT Usage Data Report",
+      [{'_', 6},
+       {"IRSGW", 1, boolean},
+       {"IRPGW", 1, boolean},
+       {"RAT Type", 8, integer},
+       {'_', 4},
+       {"EBI", 4, integer},
+       {"Start Time", 32, integer},
+       {"End Time", 32, integer},
+       {"DL", 64, integer},
+       {"UL", 64, integer},
+       {'_', 0}]},
+     {202, "v2 UP Function Selection Indication Flags",
+      [{"Indication", 0, {flags, ['_', '_', '_', '_', '_', '_', '_', 'DCNR']}}]},
+     {203, "v2 Maximum Packet Loss Rate", v2_maximum_packet_loss_rate},
+     {204, "v2 APN Rate Control Status",
+      [{"Number of Uplink packets allowed", 32, integer},
+       {"Number of additional exception reports", 32, integer},
+       {"Number of Downlink packets allowed", 32, integer},
+       {"APN Rate Control Status validity Time", 64, integer},
+       {'_', 0}]},
+     {205, "v2 Extended Trace Information",
+      [{"MCCMNC", mccmnc},
+       {"Trace ID", 32, integer},
+       {"Triggering Events", 8, length_binary},
+       {"List of NE Types", 8, length_binary},
+       {"Session Trace Depth", 8, integer},
+       {"List of Interfaces", 8, length_binary},
+       {"IP Address of Trace Collection Entity", 8, length_binary},
+       {'_', 0}]},
+     {206, "v2 Monitoring Event Extension Information", v2_monitoring_event_extension_information},
+     {207, "v2 Additional RRM Policy Index",
+      [{"Value", 32, integer}]},
+     {255, "v2 Private Extension", v2_private_extension}].
 
 msgs() ->
     [{1, "Echo Request"},
@@ -360,6 +593,7 @@ msgs() ->
 -type field_type() ::
     {flags, [flag()]} |
     {enum, [enum()]} |
+    boolean |
     integer |
     bits |
     bytes |
@@ -377,9 +611,10 @@ msgs() ->
 -define('EncoderFunName', "encode_v2_element").
 
 ies() ->
-    TypeFF = fun(Type, F)         when is_atom(Type) -> F#field{type = Type};
-		({type, Type}, F) when is_atom(Type) -> F#field{type = helper, spec = Type};
-		({Type, Spec}, F) when is_atom(Type) -> F#field{type = Type, spec = Spec}
+    TypeFF = fun(Type,          F) when is_atom(Type) -> F#field{type = Type};
+		({type,  Type}, F) when is_atom(Type) -> F#field{type = helper, spec = Type};
+		({array, Size}, F) when is_integer(Size) -> F#field{type = array, spec = {1, byte}};
+		({Type,  Spec}, F) when is_atom(Type) -> F#field{type = Type, spec = Spec}
 	     end,
     FieldF = fun({Name, Len, Type}, Optional, F) when is_integer(Len) ->
 		     [TypeFF(Type, #field{name = s2a(Name), len = Len,
@@ -413,6 +648,8 @@ ies() ->
 %%     [];
 gen_record_def(#field{type = '_'}) ->
     [];
+gen_record_def(#field{spec = mccmnc}) ->
+    ["mcc = <<\"001\">>", "mnc = <<\"001\">>"];
 gen_record_def(#field{name = Name, optional = true}) ->
     [to_string(Name)];
 gen_record_def(#field{name = Name, type = flags}) ->
@@ -421,6 +658,8 @@ gen_record_def(#field{name = Name, type = enum, spec = [{_,H}|_]}) ->
     [io_lib:format("~s = ~s", [Name, s2a(H)])];
 gen_record_def(#field{name = Name, type = enum, spec = [H|_]}) ->
     [io_lib:format("~s = ~s", [Name, s2a(H)])];
+gen_record_def(#field{name = Name, type = boolean}) ->
+    [io_lib:format("~s = false", [Name])];
 gen_record_def(#field{name = Name, type = integer}) ->
     [io_lib:format("~s = 0", [Name])];
 gen_record_def(#field{name = Name, len = Size, type = bits}) ->
@@ -442,8 +681,10 @@ gen_decoder_header_match(#field{type = '_', len = Size}) ->
     [io_lib:format("_:~w", [Size])];
 %% gen_decoder_header_match(#field{Value, Size}) when is_integer(Value); is_atom(Value) ->
 %%     [io_lib:format("~w:~w", [Value, Size])];
-gen_decoder_header_match(#field{name = Name, type = flags, spec = Flags}) ->
-    [io_lib:format("M_~s_~s:1", [Name, s2a(Flag)]) || Flag <- Flags];
+gen_decoder_header_match(#field{name = Name, spec = mccmnc}) ->
+    [io_lib:format("M_~s:3/bytes", [Name])];
+gen_decoder_header_match(#field{name = Name, type = flags}) ->
+    [io_lib:format("M_~s/binary", [Name])];
 gen_decoder_header_match(#field{name = Name, len = Size, type = enum}) ->
     [io_lib:format("M_~s:~w/integer", [Name, Size])];
 gen_decoder_header_match(#field{name = Name, type = array, spec = Multi})
@@ -457,6 +698,8 @@ gen_decoder_header_match(#field{name = Name, len = 0, type = helper}) ->
     [io_lib:format("M_~s/binary", [Name])];
 gen_decoder_header_match(#field{name = Name, len = Size, type = helper}) ->
     [io_lib:format("M_~s:~w/bits", [Name, Size])];
+gen_decoder_header_match(#field{name = Name, len = Size, type = boolean}) ->
+    [io_lib:format("M_~s:~w/integer", [Name, Size])];
 gen_decoder_header_match(#field{name = Name, len = 0, type = Type}) ->
     [io_lib:format("M_~s/~w", [Name, Type])];
 gen_decoder_header_match(#field{name = Name, len = Size, type = Type}) ->
@@ -466,19 +709,24 @@ gen_decoder_header_match(#field{name = Name, len = Size, type = Type}) ->
 %%     [];
 gen_decoder_record_assign(#field{type = '_'}) ->
     [];
+gen_decoder_record_assign(#field{name = Name, spec = mccmnc}) ->
+    [io_lib:format("mcc = decode_mcc(M_~s)", [Name]),
+     io_lib:format("mnc = decode_mnc(M_~s)", [Name])];
 gen_decoder_record_assign(#field{name = Name, type = flags, spec = Flags}) ->
-    F = [io_lib:format("[ '~s' || M_~s_~s =/= 0 ]", [X, Name, s2a(X)]) || X <- Flags],
-    [io_lib:format("~s = ~s", [Name, string:join(F, " ++ ")])];
+    [io_lib:format("~s = decode_flags(binary:decode_unsigned(M_~s, little), ~p)",
+		   [Name, Name, reorder_flags(Flags)])];
+
 gen_decoder_record_assign(#field{name = Name, type = enum}) ->
     [io_lib:format("~s = enum_v2_~s(M_~s)", [Name, Name, Name])];
 gen_decoder_record_assign(#field{name = Name, len = Size, type = array, spec = Multi})
   when is_list(Multi) ->
     [io_lib:format("~s = [X || <<X:~w/bytes>> <= M_~s]", [Name, Size, Name])];
-gen_decoder_record_assign(#field{name = Name, type = array, spec = Multi}) ->
-    [io_lib:format("~s = [X || <<X:~w/bytes>> <= M_~s]", [Name, Multi, Name])];
+gen_decoder_record_assign(#field{name = Name, type = array, spec = {Size, Type}}) ->
+    [io_lib:format("~s = [X || <<X:~w/~s>> <= M_~s]", [Name, Size, Type, Name])];
 gen_decoder_record_assign(#field{name = Name, type = helper, spec = TypeName}) ->
     [io_lib:format("~s = decode_~s(M_~s)", [Name, TypeName, Name])];
-
+gen_decoder_record_assign(#field{name = Name, type = boolean}) ->
+    [io_lib:format("~s = int2bool(M_~s)", [Name, Name])];
 gen_decoder_record_assign(#field{name = Name}) ->
     [io_lib:format("~s = M_~s", [Name, Name])].
 
@@ -486,6 +734,8 @@ gen_decoder_record_assign(#field{name = Name}) ->
 %%     [];
 gen_encoder_record_assign(#field{type = '_'}) ->
     [];
+gen_encoder_record_assign(#field{spec = mccmnc}) ->
+    ["mcc = M_mcc", "mnc = M_mnc"];
 gen_encoder_record_assign(#field{name = Name, type = undefined}) ->
     [io_lib:format("~s = undefined", [Name])];
 gen_encoder_record_assign(#field{name = Name}) ->
@@ -500,10 +750,16 @@ gen_encoder_bin(#field{type = '_', len = Size}) ->
 %%     [io_lib:format("~w:~w", [Value, Size])];
 gen_encoder_bin(#field{type = undefined}) ->
     [];
+gen_encoder_bin(#field{spec = mccmnc}) ->
+    ["(encode_mccmnc(M_mcc, M_mnc))/binary"];
 gen_encoder_bin(#field{name = Name, type = flags, spec = Flags}) ->
-    [io_lib:format("(encode_v2_flag('~s', M_~s)):1", [Flag, Name]) || Flag <- Flags];
+    [io_lib:format("(binary:encode_unsigned(encode_flags(M_~s, ~p), little))/binary",
+		   [Name, reorder_flags(Flags)])];
 gen_encoder_bin(#field{name = Name, len = Size, type = enum}) ->
     [io_lib:format("(enum_v2_~s(M_~s)):~w/integer", [Name, Name, Size])];
+gen_encoder_bin(#field{name = Name, len = Len, type = array, spec = {Size, Type}}) ->
+    [io_lib:format("(length(M_~s)):~w/integer, (<< <<X:~w/~w>> || X <- M_~s>>)/binary",
+		   [Name, Len, Size, Type, Name])];
 gen_encoder_bin(#field{name = Name, len = Len, type = array}) ->
     [io_lib:format("(length(M_~s)):~w/integer, (<< <<X/binary>> || X <- M_~s>>)/binary", [Name, Len, Name])];
 gen_encoder_bin(#field{name = Name, len = 0, type = helper, spec = TypeName}) ->
@@ -514,6 +770,8 @@ gen_encoder_bin(#field{name = Name, len = Len, type = length_binary}) ->
     [io_lib:format("(byte_size(M_~s)):~w/integer, M_~s/binary", [Name, Len, Name])];
 gen_encoder_bin(#field{name = Name, len = 0, type = Type}) ->
     [io_lib:format("M_~s/~w", [Name, Type])];
+gen_encoder_bin(#field{name = Name, len = Size, type = boolean}) ->
+    [io_lib:format("(bool2int(M_~s)):~w/integer", [Name, Size])];
 gen_encoder_bin(#field{name = Name, len = Size, type = Type}) ->
     [io_lib:format("M_~s:~w/~s", [Name, Size, Type])].
 %% gen_encoder_bin(#field{name = Name, len = Size}) ->
@@ -586,23 +844,32 @@ gen_message_type([], {FwdFuns, RevFuns}) ->
 gen_message_type([{Value, Name}|Rest], Acc) ->
     gen_message_type(Value, Name, Rest, Acc).
 
+reorder_flags([]) -> [];
+reorder_flags(Flags) ->
+    {Head, Tail} = lists:split(8, Flags),
+    lists:reverse(Head) ++ reorder_flags(Tail).
+
 build_late_assign([]) ->
     [];
-build_late_assign([H = {_Name, _Len, {array, _Multi}} | T]) ->
+build_late_assign([H = #field{type = array} | T]) ->
     build_late_assign(H, T);
 build_late_assign([_ | T]) ->
     build_late_assign(T).
 
-build_late_assign({Name, Len, {array, Multi}}, T)
+build_late_assign(#field{name = Name, len = Len, type = array, spec = Multi}, T)
   when is_list(Multi) ->
     Init = io_lib:format("M_~s_size = M_~s * ~w", [Name, s2a(Multi), Len]),
     build_late_assign(Name, Init, T);
-build_late_assign({Name, _Len, {array, Multi}}, T) ->
-    Init = io_lib:format("M_~s_size = M_~s_len * ~w", [Name, Name, Multi]),
+build_late_assign(#field{name = Name, type = array, spec = {Size, Type}}, T)
+  when Type =:= integer; Type =:= bits ->
+    Init = io_lib:format("M_~s_size = M_~s_len * ~w", [Name, Name, Size]),
+    build_late_assign(Name, Init, T);
+build_late_assign(#field{name = Name, type = array, spec = {Size, _}}, T) ->
+    Init = io_lib:format("M_~s_size = M_~s_len * ~w * 8", [Name, Name, Size]),
     build_late_assign(Name, Init, T).
 
 build_late_assign(Name, Init, Fields) ->
-    Match = io_lib:format("M_~s:M_~s_size/bytes", [Name, Name]),
+    Match = io_lib:format("M_~s:M_~s_size/bits", [Name, Name]),
     {Body, Next} = collect_late_assign(Fields, [Match]),
     M = io_lib:format("    <<~s>> = M_~s_Rest,", [string:join(Body, ",\n      "), Name]),
     ["    ", Init, ",\n", M, "\n"] ++ build_late_assign(Next).
