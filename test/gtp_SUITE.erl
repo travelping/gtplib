@@ -14,7 +14,7 @@
 %%%-------------------------------------------------------------------
 -module(gtp_SUITE).
 
--compile(export_all).
+-compile([export_all, nowarn_export_all]).
 
 -include_lib("common_test/include/ct.hrl").
 -include("../include/gtp_packet.hrl").
@@ -58,6 +58,7 @@ all() ->
 	 test_v1_ignore_spare_bits,
 	 test_g_pdu,
 	 test_v2_pco_vendor_ext,
+	 v2_list,
 	 partial_decode,
 	 partial_encode,
 	 flags_enc_dec,
@@ -271,6 +272,62 @@ test_g_pdu(_Config) ->
 test_v2_pco_vendor_ext(_Config) ->
     Msg = v2_pco_vendor_ext(),
     ?match(Data when is_binary(Data), (catch gtp_packet:encode(Msg))),
+    ok.
+
+v2_list(_Config) ->
+    IEs =
+	[
+	 #v2_bearer_context{
+	    instance = 0,
+	    group = [#v2_bearer_level_quality_of_service{
+			pci = 1,pl = 10,pvi = 0,label = 8,
+			maximum_bit_rate_for_uplink = 0,
+			maximum_bit_rate_for_downlink = 0,
+			guaranteed_bit_rate_for_uplink = 0,
+			guaranteed_bit_rate_for_downlink = 0},
+		     #v2_eps_bearer_id{eps_bearer_id = 5},
+		     #v2_fully_qualified_tunnel_endpoint_identifier{
+			instance = 2,
+			interface_type = 4,key = 1,ipv4 = <<127,0,0,1>>,
+			ipv6 = undefined}]},
+	 #v2_bearer_context{
+	    instance = 0,
+	    group = [#v2_bearer_level_quality_of_service{
+			pci = 1,pl = 10,pvi = 0,label = 8,
+			maximum_bit_rate_for_uplink = 0,
+			maximum_bit_rate_for_downlink = 0,
+			guaranteed_bit_rate_for_uplink = 0,
+			guaranteed_bit_rate_for_downlink = 0},
+		     #v2_eps_bearer_id{eps_bearer_id = 5},
+		     #v2_fully_qualified_tunnel_endpoint_identifier{
+			instance = 2,
+			interface_type = 4,key = 2,ipv4 = <<127,0,0,1>>,
+			ipv6 = undefined}]},
+	 #v2_bearer_context{
+	    instance = 0,
+	    group = [#v2_bearer_level_quality_of_service{
+			pci = 1,pl = 10,pvi = 0,label = 8,
+			maximum_bit_rate_for_uplink = 0,
+			maximum_bit_rate_for_downlink = 0,
+			guaranteed_bit_rate_for_uplink = 0,
+			guaranteed_bit_rate_for_downlink = 0},
+		     #v2_eps_bearer_id{eps_bearer_id = 5},
+		     #v2_fully_qualified_tunnel_endpoint_identifier{
+			instance = 2,
+			interface_type = 4,key = 3,ipv4 = <<127,0,0,1>>,
+			ipv6 = undefined}]}
+	],
+    Msg = #gtp{version = v2,
+	       type = create_session_request,
+	       seq_no = 1,
+	       tei = 0,
+	       ie = IEs},
+    Bin = (catch gtp_packet:encode(Msg)),
+    ?equal(true, is_binary(Bin)),
+
+    #gtp{version = v2, ie = M} = gtp_packet:decode(Bin),
+    BC = maps:get({v2_bearer_context, 0}, M),
+    ?equal(3, length(BC)),
     ok.
 
 partial_decode(_Config) ->
