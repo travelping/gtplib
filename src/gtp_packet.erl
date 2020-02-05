@@ -46,15 +46,17 @@ decode_ies(#gtp{ie = IEs} = Msg, #{ies := map})
 decode_ies(#gtp{ie = IEs} = Msg, #{ies := Format} = Opts)
   when not is_binary(IEs) orelse (Format /= map andalso Format /= binary) ->
     error(badargs, [Msg, Opts]);
-decode_ies(#gtp{version = Version, type = Type, ie = IEs} = Msg, #{ies := map})
+decode_ies(#gtp{type = g_pdu} = Msg, _) ->
+    Msg;
+decode_ies(#gtp{version = Version, ie = IEs} = Msg, #{ies := map})
   when Version =:= v1;
        Version =:= prime_v0;
        Version =:= prime_v0s;
        Version =:= prime_v1;
        Version =:= prime_v2 ->
-    Msg#gtp{ie = decode_v1(Type, IEs)};
+    Msg#gtp{ie = decode_v1(IEs, -1, 0, #{})};
 decode_ies(#gtp{version = v2, ie = IEs} = Msg, #{ies := map}) ->
-    Msg#gtp{ie = decode_v2(IEs)};
+    Msg#gtp{ie = decode_v2(IEs, #{})};
 decode_ies(Msg, _) ->
     Msg.
 
@@ -193,7 +195,6 @@ pad_length(Width, Length) ->
 put_ie(IE, IEs) ->
     Key = {element(1, IE), element(2, IE)},
     UpdateFun = fun(V) when is_list(V) -> [IE | V];
-		   (undefined)         -> IE;
 		   (V)                 -> [IE, V]
 		end,
     maps:update_with(Key, UpdateFun, IE, IEs).
@@ -401,12 +402,6 @@ decode_data_record_packet(<<NumOfRecs:8, Format:8, App:4, Release:4,
        version = {Release, Version - 1},
        records = Records}.
 
-decode_v1(g_pdu, Data) ->
-    %% G-PDU
-    Data;
-decode_v1(_, Data) ->
-    decode_v1(Data, -1, 0, #{ {recovery, 0} => undefined }).
-
 v1_instance(CurrId, PrevId, PrevInst)
   when CurrId == PrevId ->
     PrevInst + 1;
@@ -536,9 +531,6 @@ decode_v2_monitoring_event_extension_information(<<_:7, FlagLRTP:1, RefId:32, Id
     {IE1, Rest1} = bin(Rest0, IdLen, #v2_monitoring_event_extension_information.scef_id, IE0),
     {IE2, _Rest} = maybe(Rest1, FlagLRTP, int(_, 32, #v2_monitoring_event_extension_information.remaining_minimum_lrtp, _), IE1),
     IE2.
-
-decode_v2(Data) ->
-    decode_v2(Data, #{ {v2_recovery, 0} => undefined }).
 
 decode_v2(<<>>, IEs) ->
     IEs;
