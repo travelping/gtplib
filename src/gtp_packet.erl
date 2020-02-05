@@ -14,6 +14,7 @@
 	 decode/1, decode/2, decode_ies/1, decode_ies/2,
 	 msg_description/1, msg_description_v2/1,
 	 pretty_print/1]).
+-export([encode_v1_uli/1]).
 
 -compile([{parse_transform, cut}]).
 -compile({inline,[decode_tbcd/1, decode_fqdn/1,
