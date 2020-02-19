@@ -21,3 +21,6 @@ script:
   - ./rebar3 compile
   - ./rebar3 do xref, ct
   - (./rebar3 as test do coveralls send || /bin/true)
+
+notifications:
+  webhooks: https://coveralls.io/webhook
