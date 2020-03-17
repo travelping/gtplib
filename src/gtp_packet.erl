@@ -267,6 +267,14 @@ maybe_bin(Bin, IE) when is_binary(Bin) ->
 maybe_bin(_, IE) ->
     IE.
 
+encode_min_int(0, Int, little) ->
+    binary:encode_unsigned(Int, little);
+encode_min_int(Min, Int, little) ->
+    case binary:encode_unsigned(Int, little) of
+	B when bit_size(B) >= Min -> B;
+	_ -> <<Int:Min/little>>
+    end.
+
 decode_exthdr(0, Data, Hdrs) ->
     {Data, Hdrs};
 decode_exthdr(Type, <<Length, Rest/binary>>, Hdrs) ->
@@ -4106,23 +4114,22 @@ encode_v2_element(#v2_msisdn{
 encode_v2_element(#v2_indication{
 		     instance = Instance,
 		     flags = M_flags}) ->
-    encode_v2_element(77, Instance, <<(binary:encode_unsigned(encode_flags(M_flags, ['SGWCI','ISRAI','ISRSI','OI',
-                                               'DFI','HI','DTF','DAF','MSV',
-                                               'SI','PT','P','CRSI','CFSI',
-                                               'UIMSI','SQCI','CCRSI','ISRAU',
-                                               'MBMDT','S4AF','S6AF','SRNI',
-                                               'PBIC','RetLoc','CPSR','CLII',
-                                               'CSFBI','PPSI','PPON/PPEI',
-                                               'PPOF','ARRL','CPRAI','AOPI',
-                                               'AOSI','PCRI','PSCI','BDWI',
-                                               'DTCI','UASI','NSI','WPMSI',
-                                               'UNACCSI','PNSI','S11TF',
-                                               'PMTSMI','CPOPCI','EPCOSI',
-                                               'ROAAI','TSPCMI','ENBCRSI',
-                                               'LTEMPI','LTEMUI','EEVRSI',
-                                               '5GSIWK','REPREFI','5GSNN26',
-                                               'ETHPDN','5SRHOI','5GCNRI',
-                                               '5GCNRS','N5GNMI','_','_','_']), little))/binary>>);
+    encode_v2_element(77, Instance, <<(encode_min_int(0, encode_flags(M_flags, ['SGWCI','ISRAI','ISRSI','OI','DFI',
+                                          'HI','DTF','DAF','MSV','SI','PT',
+                                          'P','CRSI','CFSI','UIMSI','SQCI',
+                                          'CCRSI','ISRAU','MBMDT','S4AF',
+                                          'S6AF','SRNI','PBIC','RetLoc',
+                                          'CPSR','CLII','CSFBI','PPSI',
+                                          'PPON/PPEI','PPOF','ARRL','CPRAI',
+                                          'AOPI','AOSI','PCRI','PSCI','BDWI',
+                                          'DTCI','UASI','NSI','WPMSI',
+                                          'UNACCSI','PNSI','S11TF','PMTSMI',
+                                          'CPOPCI','EPCOSI','ROAAI','TSPCMI',
+                                          'ENBCRSI','LTEMPI','LTEMUI',
+                                          'EEVRSI','5GSIWK','REPREFI',
+                                          '5GSNN26','ETHPDN','5SRHOI',
+                                          '5GCNRI','5GCNRS','N5GNMI','_','_',
+                                          '_']), little))/binary>>);
 
 encode_v2_element(#v2_protocol_configuration_options{
 		     instance = Instance,
@@ -4268,8 +4275,8 @@ encode_v2_element(#v2_trace_information{
 encode_v2_element(#v2_bearer_flags{
 		     instance = Instance,
 		     flags = M_flags}) ->
-    encode_v2_element(97, Instance, <<(binary:encode_unsigned(encode_flags(M_flags, ['PCC','VB','Vind','ASI','_',
-                                               '_','_','_']), little))/binary>>);
+    encode_v2_element(97, Instance, <<(encode_min_int(0, encode_flags(M_flags, ['PCC','VB','Vind','ASI','_','_','_',
+                                          '_']), little))/binary>>);
 
 encode_v2_element(#v2_pdn_type{
 		     instance = Instance,
@@ -4543,8 +4550,8 @@ encode_v2_element(#v2_user_csg_information{
 encode_v2_element(#v2_csg_information_reporting_action{
 		     instance = Instance,
 		     actions = M_actions}) ->
-    encode_v2_element(146, Instance, <<(binary:encode_unsigned(encode_flags(M_actions, ['UCICSG','UCISHC','UCIUHC',
-                                                 '_','_','_','_','_']), little))/binary>>);
+    encode_v2_element(146, Instance, <<(encode_min_int(0, encode_flags(M_actions, ['UCICSG','UCISHC','UCIUHC','_',
+                                            '_','_','_','_']), little))/binary>>);
 
 encode_v2_element(#v2_csg_id{
 		     instance = Instance,
@@ -4576,8 +4583,8 @@ encode_v2_element(#v2_local_distiguished_name{
 encode_v2_element(#v2_node_features{
 		     instance = Instance,
 		     features = M_features}) ->
-    encode_v2_element(152, Instance, <<(binary:encode_unsigned(encode_flags(M_features, ['PRN','MABR','NTSR','CIOT',
-                                                  'S1UN','ETH','_','_']), little))/binary>>);
+    encode_v2_element(152, Instance, <<(encode_min_int(0, encode_flags(M_features, ['PRN','MABR','NTSR','CIOT',
+                                             'S1UN','ETH','_','_']), little))/binary>>);
 
 encode_v2_element(#v2_mbms_time_to_data_transfer{
 		     instance = Instance}) ->
@@ -4613,8 +4620,8 @@ encode_v2_element(#v2_epc_timer{
 encode_v2_element(#v2_signalling_priority_indication{
 		     instance = Instance,
 		     indication = M_indication}) ->
-    encode_v2_element(157, Instance, <<(binary:encode_unsigned(encode_flags(M_indication, ['LAPI','_','_','_','_',
-                                                    '_','_','_']), little))/binary>>);
+    encode_v2_element(157, Instance, <<(encode_min_int(0, encode_flags(M_indication, ['LAPI','_','_','_','_','_','_',
+                                               '_']), little))/binary>>);
 
 encode_v2_element(#v2_temporary_mobile_group_identity{
 		     instance = Instance}) ->
@@ -4632,8 +4639,7 @@ encode_v2_element(#v2_additional_mm_context_for_srvcc{
 encode_v2_element(#v2_additional_flags_for_srvcc{
 		     instance = Instance,
 		     flags = M_flags}) ->
-    encode_v2_element(160, Instance, <<(binary:encode_unsigned(encode_flags(M_flags, ['ICS','VF','_','_','_','_','_',
-                                               '_']), little))/binary>>);
+    encode_v2_element(160, Instance, <<(encode_min_int(0, encode_flags(M_flags, ['ICS','VF','_','_','_','_','_','_']), little))/binary>>);
 
 encode_v2_element(#v2_mdt_configuration{
 		     instance = Instance}) ->
@@ -4651,8 +4657,7 @@ encode_v2_element(#v2_absolute_time_of_mbms_data_transfer{
 encode_v2_element(#v2_henb_information_reporting_{
 		     instance = Instance,
 		     flags = M_flags}) ->
-    encode_v2_element(165, Instance, <<(binary:encode_unsigned(encode_flags(M_flags, ['FTI','_','_','_','_','_','_',
-                                               '_']), little))/binary>>);
+    encode_v2_element(165, Instance, <<(encode_min_int(0, encode_flags(M_flags, ['FTI','_','_','_','_','_','_','_']), little))/binary>>);
 
 encode_v2_element(#v2_ipv4_configuration_parameters{
 		     instance = Instance,
@@ -4664,8 +4669,8 @@ encode_v2_element(#v2_ipv4_configuration_parameters{
 encode_v2_element(#v2_change_to_report_flags_{
 		     instance = Instance,
 		     flags = M_flags}) ->
-    encode_v2_element(167, Instance, <<(binary:encode_unsigned(encode_flags(M_flags, ['SNCR','TZCR','_','_','_','_',
-                                               '_','_']), little))/binary>>);
+    encode_v2_element(167, Instance, <<(encode_min_int(0, encode_flags(M_flags, ['SNCR','TZCR','_','_','_','_','_',
+                                          '_']), little))/binary>>);
 
 encode_v2_element(#v2_action_indication{
 		     instance = Instance,
@@ -4703,8 +4708,8 @@ encode_v2_element(#v2_cn_operator_selection_entity{
 encode_v2_element(#v2_trusted_wlan_mode_indication{
 		     instance = Instance,
 		     indication = M_indication}) ->
-    encode_v2_element(174, Instance, <<(binary:encode_unsigned(encode_flags(M_indication, ['SCM','MCM','_','_','_',
-                                                    '_','_','_']), little))/binary>>);
+    encode_v2_element(174, Instance, <<(encode_min_int(0, encode_flags(M_indication, ['SCM','MCM','_','_','_','_',
+                                               '_','_']), little))/binary>>);
 
 encode_v2_element(#v2_node_number{
 		     instance = Instance,
@@ -4761,8 +4766,8 @@ encode_v2_element(#v2_apn_and_relative_capacity{
 encode_v2_element(#v2_wlan_offloadability_indication{
 		     instance = Instance,
 		     indication = M_indication}) ->
-    encode_v2_element(185, Instance, <<(binary:encode_unsigned(encode_flags(M_indication, ['UTRAN','EUTRAN','_','_',
-                                                    '_','_','_','_']), little))/binary>>);
+    encode_v2_element(185, Instance, <<(encode_min_int(0, encode_flags(M_indication, ['UTRAN','EUTRAN','_','_','_',
+                                               '_','_','_']), little))/binary>>);
 
 encode_v2_element(#v2_paging_and_service_information{instance = Instance} = IE) ->
     encode_v2_element(186, Instance, encode_v2_paging_and_service_information(IE));
@@ -4800,9 +4805,8 @@ encode_v2_element(#v2_remote_ue_ip_information{
 encode_v2_element(#v2_ciot_optimizations_support_indication{
 		     instance = Instance,
 		     indication = M_indication}) ->
-    encode_v2_element(194, Instance, <<(binary:encode_unsigned(encode_flags(M_indication, ['SGNIPDN','SCNIPDN',
-                                                    'AWOPDN','IHCSI','_','_',
-                                                    '_','_']), little))/binary>>);
+    encode_v2_element(194, Instance, <<(encode_min_int(0, encode_flags(M_indication, ['SGNIPDN','SCNIPDN','AWOPDN',
+                                               'IHCSI','_','_','_','_']), little))/binary>>);
 
 encode_v2_element(#v2_scef_pdn_connection{
 		     instance = Instance,
@@ -4864,8 +4868,8 @@ encode_v2_element(#v2_secondary_rat_usage_data_report{
 encode_v2_element(#v2_up_function_selection_indication_flags{
 		     instance = Instance,
 		     indication = M_indication}) ->
-    encode_v2_element(202, Instance, <<(binary:encode_unsigned(encode_flags(M_indication, ['DCNR','_','_','_','_',
-                                                    '_','_','_']), little))/binary>>);
+    encode_v2_element(202, Instance, <<(encode_min_int(0, encode_flags(M_indication, ['DCNR','_','_','_','_','_','_',
+                                               '_']), little))/binary>>);
 
 encode_v2_element(#v2_maximum_packet_loss_rate{instance = Instance} = IE) ->
     encode_v2_element(203, Instance, encode_v2_maximum_packet_loss_rate(IE));
