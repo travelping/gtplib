@@ -752,9 +752,9 @@ gen_encoder_bin(#field{type = undefined}) ->
     [];
 gen_encoder_bin(#field{spec = mccmnc}) ->
     ["(encode_mccmnc(M_mcc, M_mnc))/binary"];
-gen_encoder_bin(#field{name = Name, type = flags, spec = Flags}) ->
-    [io_lib:format("(binary:encode_unsigned(encode_flags(M_~s, ~p), little))/binary",
-		   [Name, reorder_flags(Flags)])];
+gen_encoder_bin(#field{name = Name, len = MinSize, type = flags, spec = Flags}) ->
+    [io_lib:format("(encode_min_int(~p, encode_flags(M_~s, ~p), little))/binary",
+		   [MinSize, Name, reorder_flags(Flags)])];
 gen_encoder_bin(#field{name = Name, len = Size, type = enum}) ->
     [io_lib:format("(enum_v2_~s(M_~s)):~w/integer", [Name, Name, Size])];
 gen_encoder_bin(#field{name = Name, len = Len, type = array, spec = {Size, Type}}) ->
