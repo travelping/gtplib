@@ -131,6 +131,12 @@ gen_pcap(Cnt) ->
 %%% Internal functions
 %%%===================================================================
 
+%% proper generates a random value for integers. That does not
+%% guarantee that the full range of the integer value is tested.
+%% Include Min and Max explicitly to ensure the full range is covered.
+int_range(Min, Max) ->
+    oneof([integer(Min, Max), Min, Max]).
+
 %% from the proper manual
 list_no_dupls(T) ->
     ?LET(L, list(T), remove_duplicates(L)).
@@ -150,14 +156,14 @@ flag() ->
     oneof([0,1]).
 
 dns_label() ->
-    ?LET(I, integer(1,64),
+    ?LET(I, int_range(1,64),
 	 vector(I,
 		oneof(
 		  lists:seq($A, $Z) ++ lists:seq($a, $z) ++ lists:seq($0, $9) ++ [$-]))).
 
 dns_name_list() ->
     ?SUCHTHAT(N,
-	      ?LET(I, integer(1,7), vector(I, dns_label())),
+	      ?LET(I, int_range(1,7), vector(I, dns_label())),
 	      length(lists:flatten(N)) < 100).
 
 dns_name() ->
@@ -165,13 +171,13 @@ dns_name() ->
 	 [list_to_binary(X) || X <- L]).
 
 mcc() ->
-    ?LET(I, integer(1,999), integer_to_binary(I)).
+    ?LET(I, int_range(1,999), integer_to_binary(I)).
 
 mcc_label() ->
     ?LET(M, mcc(), list_to_binary(io_lib:format("mcc~3..0s", [M]))).
 
 mnc() ->
-    ?LET(M, integer(1,999), integer_to_binary(M)).
+    ?LET(M, int_range(1,999), integer_to_binary(M)).
 
 mnc_label() ->
     ?LET(M, mnc(), list_to_binary(io_lib:format("mnc~3..0s", [M]))).
@@ -180,25 +186,25 @@ apn() ->
     ?LET(L, [dns_name(), mnc_label(), mcc_label(), <<"gprs">>], lists:flatten(L)).
 
 uint4() ->
-    integer(0,16#0f).
+    int_range(0,16#0f).
 
 uint8() ->
-    integer(0,16#ff).
+    int_range(0,16#ff).
 
 uint16() ->
-    integer(0,16#ffff).
+    int_range(0,16#ffff).
 
 uint24() ->
-    integer(0,16#ffffff).
+    int_range(0,16#ffffff).
 
 uint32() ->
-    integer(0,16#ffffffff).
+    int_range(0,16#ffffffff).
 
 uint40() ->
-    integer(0,16#ffffffffff).
+    int_range(0,16#ffffffffff).
 
 uint64() ->
-    integer(0,16#ffffffffffffffff).
+    int_range(0,16#ffffffffffffffff).
 
 ip4_address() ->
     binary(4).
@@ -216,14 +222,14 @@ tei() ->
     uint32().
 
 uint16_array() ->
-    ?LET(I, integer(1,10), vector(I, uint16())).
+    ?LET(I, int_range(1,10), vector(I, uint16())).
 
 binstr_number(Min, Max) ->
     ?LET(X,
-	 ?LET(I, integer(Min,Max), vector(I, integer($0, $9))), list_to_binary(X)).
+	 ?LET(I, int_range(Min,Max), vector(I, integer($0, $9))), list_to_binary(X)).
 
 binary(Min, Max) ->
-    ?LET(I, integer(Min,Max), binary(I)).
+    ?LET(I, int_range(Min,Max), binary(I)).
 
 imsi() ->
     binstr_number(7,15).
@@ -242,21 +248,21 @@ msg_gen() ->
       [#gtp{
 	  version = v1,
 	  type = v1_msg_type(),
-	  tei = integer(0,16#ffffffff),
-	  seq_no = integer(0,16#ffff),
+	  tei = uint32(),
+	  seq_no = uint16(),
 	  ie = v1_ie()
 	 },
        #gtp{
 	  version = v2,
 	  type = v2_msg_type(),
-	  tei = integer(0,16#ffffffff),
-	  seq_no = integer(0,16#ffff),
+	  tei = uint32(),
+	  seq_no = uint16(),
 	  ie = v2_ie()
 	 },
        #gtp{
 	  version = oneof([prime_v0, prime_v0s, prime_v1, prime_v2]),
 	  type = prime_msg_type(),
-	  seq_no = integer(0,16#ffff),
+	  seq_no = uint16(),
 	  ie = prime_ie()
 	 }
       ]).
@@ -732,7 +738,7 @@ gen_user_location_information() ->
 	  mcc = mcc(),
 	  mnc = mnc(),
 	  lac = uint16(),
-	  rac = integer(0,255)
+	  rac = uint8()
 	 }]).
 
 %% gen_v2_serving_network() ->
@@ -866,13 +872,13 @@ gen_ms_validated() ->
 gen_recovery() ->
     #recovery{
        instance = instance(),
-       restart_counter = integer(0,255)
+       restart_counter = uint8()
       }.
 
 gen_selection_mode() ->
     #selection_mode{
        instance = instance(),
-       mode = integer(0,3)
+       mode = int_range(0,3)
       }.
 
 gen_tunnel_endpoint_identifier_data_i() ->
@@ -971,7 +977,7 @@ gen_end_user_address() ->
     #end_user_address{
        instance = instance(),
        pdp_type_organization = uint4(),
-       pdp_type_number = integer(0,255),
+       pdp_type_number = uint8(),
        pdp_address = binary()
       }.
 
@@ -980,8 +986,8 @@ gen_mm_context_gsm() ->
     #mm_context_gsm{
        instance = instance(),
        cksn = uint4(),
-       no_of_vectors = integer(0,7),
-       used_cipher = integer(0,7),
+       no_of_vectors = int_range(0,7),
+       used_cipher = int_range(0,7),
        kc = binary(8),
        tripple = [], %% TODO
        drx_parameter = binary(2),
@@ -1014,7 +1020,7 @@ gen_mm_context_gsm_and_umts() ->
        instance = instance(),
        cksn = uint4(),
        no_of_vectors = 0,
-       used_cipher = integer(0,7),
+       used_cipher = int_range(0,7),
        kc = binary(8),
        quintuplet_length = 0,
        quintuplet = [],
@@ -1031,7 +1037,7 @@ gen_mm_context_umts_and_used_cipher() ->
        instance = instance(),
        ksi = uint4(),
        no_of_vectors = 0,
-       used_cipher = integer(0,7),
+       used_cipher = int_range(0,7),
        ck = binary(16),
        ik = binary(16),
        quintuplet_length = 0,
@@ -1089,7 +1095,7 @@ gen_ms_international_pstn_isdn_number() ->
 gen_quality_of_service_profile() ->
     #quality_of_service_profile{
        instance = instance(),
-       priority = integer(0,255),
+       priority = uint8(),
        data = binary()
       }.
 
@@ -1181,15 +1187,15 @@ gen_radio_priority_lcs() ->
 gen_rat_type() ->
     #rat_type{
        instance = instance(),
-       rat_type = integer(0,255)
+       rat_type = uint8()
       }.
 
 
 gen_ms_time_zone() ->
     #ms_time_zone{
        instance = instance(),
-       timezone = integer(0,255),
-       dst = integer(0,3)
+       timezone = uint8(),
+       dst = int_range(0,3)
       }.
 
 gen_imei() ->
@@ -1527,11 +1533,11 @@ gen_charging_gateway_address() ->
 gen_data_record_packet() ->
     #data_record_packet{
        instance = instance(),
-       format = integer(1, 3),
-       application = integer(1, 7),
-       version = {integer(0, 7), integer(0,9)},
+       format = int_range(1, 3),
+       application = int_range(1, 7),
+       version = {int_range(0, 7), int_range(0,9)},
        records =
-	   ?LET(I, integer(1,10), vector(I, binary()))
+	   ?LET(I, int_range(1,10), vector(I, binary()))
       }.
 
 gen_requests_responded() ->
@@ -1803,19 +1809,19 @@ gen_v2_fully_qualified_tunnel_endpoint_identifier() ->
     oneof(
       [#v2_fully_qualified_tunnel_endpoint_identifier{
 	  instance = instance(),
-	  interface_type = uint8(),
+	  interface_type = int_range(0,16#3f),
 	  key = uint32(),
 	  ipv4 = ip4_address()
 	 },
        #v2_fully_qualified_tunnel_endpoint_identifier{
 	  instance = instance(),
-	  interface_type = uint8(),
+	  interface_type = int_range(0,16#3f),
 	  key = uint32(),
 	  ipv6 = ip6_address()
 	 },
        #v2_fully_qualified_tunnel_endpoint_identifier{
 	  instance = instance(),
-	  interface_type = uint8(),
+	  interface_type = int_range(0,16#3f),
 	  key = uint32(),
 	  ipv4 = ip4_address(),
 	  ipv6 = ip6_address()
@@ -1969,7 +1975,7 @@ gen_v2_ue_time_zone() ->
     #v2_ue_time_zone{
        instance = instance(),
        timezone = uint8(),
-       dst = integer(0,3)
+       dst = int_range(0,3)
       }.
 
 gen_v2_trace_reference() ->
@@ -2066,7 +2072,7 @@ gen_v2_apn_restriction() ->
 gen_v2_selection_mode() ->
     #v2_selection_mode{
        instance = instance(),
-       mode = integer(0, 3)
+       mode = int_range(0, 3)
       }.
 
 gen_v2_source_identification() ->
@@ -2097,19 +2103,19 @@ gen_v2_fully_qualified_pdn_connection_set_identifier() ->
 	      instance = instance(),
 	      node_id_type = 0,
 	      node_id = ip4_address(),
-	      csids = ?LET(I, integer(0,15), vector(I, uint16()))
+	      csids = ?LET(I, uint4(), vector(I, uint16()))
 	     },
 	   #v2_fully_qualified_pdn_connection_set_identifier{
 	      instance = instance(),
 	      node_id_type = 1,
 	      node_id = ip6_address(),
-	      csids = ?LET(I, integer(0,15), vector(I, uint16()))
+	      csids = ?LET(I, uint4(), vector(I, uint16()))
 	     },
 	   #v2_fully_qualified_pdn_connection_set_identifier{
 	      instance = instance(),
 	      node_id_type = 2,
-	      node_id = {integer(0,999), integer(0,999), integer(0,16#0fff)},
-	      csids = ?LET(I, integer(0,15), vector(I, uint16()))
+	      node_id = {int_range(0,999), int_range(0,999), int_range(0,16#0fff)},
+	      csids = ?LET(I, uint4(), vector(I, uint16()))
 	     }]).
 
 gen_v2_channel_needed() ->
@@ -2184,7 +2190,7 @@ gen_v2_user_csg_information() ->
        mcc = mcc(),
        mnc = mnc(),
        csg_id = bitstring(27),
-       access_mode = integer(0,3),
+       access_mode = int_range(0,3),
        lcsg = boolean(),
        cmi = flag()
       }.
@@ -2240,8 +2246,8 @@ gen_v2_mbms_time_to_data_transfer() ->
 gen_v2_throttling() ->
     #v2_throttling{
        instance = instance(),
-       unit = integer(0,7),
-       value = integer(0,31),
+       unit = int_range(0,7),
+       value = int_range(0,31),
        factor = uint8()
       }.
 
@@ -2256,8 +2262,8 @@ gen_v2_allocation_retention_priority() ->
 gen_v2_epc_timer() ->
     #v2_epc_timer{
        instance = instance(),
-       unit = integer(0,7),
-       value = integer(0,31)
+       unit = int_range(0,7),
+       value = int_range(0,31)
       }.
 
 gen_v2_signalling_priority_indication() ->
@@ -2311,7 +2317,7 @@ gen_v2_henb_information_reporting_() ->
 gen_v2_ipv4_configuration_parameters() ->
     #v2_ipv4_configuration_parameters{
        instance = instance(),
-       prefix_length = integer(0,32),
+       prefix_length = int_range(0,32),
        default_route = ip4_address()
       }.
 
@@ -2324,7 +2330,7 @@ gen_v2_change_to_report_flags_() ->
 gen_v2_action_indication() ->
     #v2_action_indication{
        instance = instance(),
-       indication = integer(0,7)
+       indication = int_range(0,7)
       }.
 
 gen_v2_twan_identifier() ->
@@ -2374,7 +2380,7 @@ gen_v2_ran_nas_cause() ->
 gen_v2_cn_operator_selection_entity() ->
     #v2_cn_operator_selection_entity{
        instance = instance(),
-       entity = integer(0,3)
+       entity = int_range(0,3)
       }.
 
 gen_v2_trusted_wlan_mode_indication() ->
