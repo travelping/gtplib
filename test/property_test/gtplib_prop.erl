@@ -914,27 +914,38 @@ gen_nsapi() ->
 
 gen_ranap_cause() ->
     #ranap_cause{
-       instance = instance()
+       instance = instance(),
+       value = uint8()
       }.
 
 gen_rab_context() ->
     #rab_context{
-       instance = instance()
+       instance = instance(),
+       nsapi = uint4(),
+       dl_gtp_u_sequence_number = uint16(),
+       ul_gtp_u_sequence_number = uint16(),
+       dl_pdcp_sequence_number = uint16(),
+       ul_pdcp_sequence_number = uint16()
       }.
 
 gen_radio_priority_sms() ->
     #radio_priority_sms{
-       instance = instance()
+       instance = instance(),
+       value = int_range(0,7)
       }.
 
 gen_radio_priority() ->
     #radio_priority{
-       instance = instance()
+       instance = instance(),
+       nsapi = uint4(),
+       value = int_range(0,7)
       }.
 
 gen_packet_flow_id() ->
     #packet_flow_id{
-       instance = instance()
+       instance = instance(),
+       nsapi = uint4(),
+       value = uint8()
       }.
 
 gen_charging_characteristics() ->
@@ -945,17 +956,20 @@ gen_charging_characteristics() ->
 
 gen_trace_reference() ->
     #trace_reference{
-       instance = instance()
+       instance = instance(),
+       value = uint16()
       }.
 
 gen_trace_type() ->
     #trace_type{
-       instance = instance()
+       instance = instance(),
+       value = uint16()
       }.
 
 gen_ms_not_reachable_reason() ->
     #ms_not_reachable_reason{
-       instance = instance()
+       instance = instance(),
+       value = uint8()
       }.
 
 gen_packet_transfer_command() ->
