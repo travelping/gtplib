@@ -812,7 +812,7 @@ main(_) ->
     Funs = string:join([write_decoder("decode_v1_element", X) || X <- ies()] ++ [CatchAnyDecoder], ";\n\n"),
 
     MainDecodeSwitch = ["decode_v1(<<>>, _PrevId, _PrevInst, IEs) ->\n    IEs;\n",
-	[io_lib:format("decode_v1(<<~w, Data:~w/bytes, Next/binary>>, PrevInst, PrevId, IEs) ->~n"
+	[io_lib:format("decode_v1(<<~w, Data:~w/bytes, Next/binary>>, PrevId, PrevInst, IEs) ->~n"
 		       "    Instance = v1_instance(~w, PrevId, PrevInst),~n"
 		       "    IE = decode_v1_element(Data, ~w, Instance),~n"
 		       "    decode_v1(Next, ~w, Instance, put_ie(IE, IEs));~n", [Id, Length, Id, Id, Id]) || {Id, _, Length, _} <- ies(), Id < 128],
