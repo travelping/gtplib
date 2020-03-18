@@ -58,9 +58,8 @@ enc_dec_prop(_Config) ->
     numtests(1000,
 	     ?FORALL(Msg, msg_gen(),
 		     begin
-			 %% ct:pal("Msg: ~p", [Msg]),
-			 Enc = gtp_packet:encode(Msg),
-			 ?equal(Enc, gtp_packet:encode(gtp_packet:decode(Enc)))
+			 ?equal(Msg,
+				gtp_packet:decode(gtp_packet:encode(Msg)))
 		     end)).
 
 %%%===================================================================
