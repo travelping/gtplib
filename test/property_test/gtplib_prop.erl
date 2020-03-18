@@ -149,8 +149,20 @@ remove_duplicates([A|T]) ->
 	false -> [A|remove_duplicates(T)]
     end.
 
+order_by_fun(Order, List) ->
+    lists:foldr(
+      fun(I, A) ->
+	      case lists:member(I, List) of
+		  true  -> [I|A];
+		  false -> A
+	      end
+      end, [], Order).
+
+order_by(Order, List) ->
+    ?LET(L, List, order_by_fun(Order, L)).
+
 flags(Flags) ->
-    list_no_dupls(oneof(Flags)).
+    order_by(Flags, list(oneof(Flags))).
 
 flag() ->
     oneof([0,1]).

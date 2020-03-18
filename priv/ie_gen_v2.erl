@@ -713,8 +713,8 @@ gen_decoder_record_assign(#field{name = Name, spec = mccmnc}) ->
     [io_lib:format("mcc = decode_mcc(M_~s)", [Name]),
      io_lib:format("mnc = decode_mnc(M_~s)", [Name])];
 gen_decoder_record_assign(#field{name = Name, type = flags, spec = Flags}) ->
-    [io_lib:format("~s = decode_flags(binary:decode_unsigned(M_~s, little), ~p)",
-		   [Name, Name, reorder_flags(Flags)])];
+    [io_lib:format("~s = decode_flags(M_~s, ~p)",
+		   [Name, Name, Flags])];
 
 gen_decoder_record_assign(#field{name = Name, type = enum}) ->
     [io_lib:format("~s = enum_v2_~s(M_~s)", [Name, Name, Name])];
