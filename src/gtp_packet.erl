@@ -1235,11 +1235,13 @@ decode_v1_element(<<M_rand:16/bytes,
 			    sres = M_sres,
 			    kc = M_kc};
 
-decode_v1_element(<<>>, 11, Instance) ->
-    #map_cause{instance = Instance};
+decode_v1_element(<<M_value:1/bytes>>, 11, Instance) ->
+    #map_cause{instance = Instance,
+	       value = M_value};
 
-decode_v1_element(<<>>, 12, Instance) ->
-    #p_tmsi_signature{instance = Instance};
+decode_v1_element(<<M_value:3/bytes>>, 12, Instance) ->
+    #p_tmsi_signature{instance = Instance,
+		      value = M_value};
 
 decode_v1_element(<<_:7,
 		    M_validated:1/integer>>, 13, Instance) ->
@@ -1280,33 +1282,57 @@ decode_v1_element(<<_:4,
     #nsapi{instance = Instance,
 	   nsapi = M_nsapi};
 
-decode_v1_element(<<>>, 21, Instance) ->
-    #ranap_cause{instance = Instance};
+decode_v1_element(<<M_value:8/integer>>, 21, Instance) ->
+    #ranap_cause{instance = Instance,
+		 value = M_value};
 
-decode_v1_element(<<>>, 22, Instance) ->
-    #rab_context{instance = Instance};
+decode_v1_element(<<_:4,
+		    M_nsapi:4/integer,
+		    M_dl_gtp_u_sequence_number:16/integer,
+		    M_ul_gtp_u_sequence_number:16/integer,
+		    M_dl_pdcp_sequence_number:16/integer,
+		    M_ul_pdcp_sequence_number:16/integer>>, 22, Instance) ->
+    #rab_context{instance = Instance,
+		 nsapi = M_nsapi,
+		 dl_gtp_u_sequence_number = M_dl_gtp_u_sequence_number,
+		 ul_gtp_u_sequence_number = M_ul_gtp_u_sequence_number,
+		 dl_pdcp_sequence_number = M_dl_pdcp_sequence_number,
+		 ul_pdcp_sequence_number = M_ul_pdcp_sequence_number};
 
-decode_v1_element(<<>>, 23, Instance) ->
-    #radio_priority_sms{instance = Instance};
+decode_v1_element(<<_:5,
+		    M_value:3/integer>>, 23, Instance) ->
+    #radio_priority_sms{instance = Instance,
+			value = M_value};
 
-decode_v1_element(<<>>, 24, Instance) ->
-    #radio_priority{instance = Instance};
+decode_v1_element(<<M_nsapi:4/integer,
+		    _:1,
+		    M_value:3/integer>>, 24, Instance) ->
+    #radio_priority{instance = Instance,
+		    nsapi = M_nsapi,
+		    value = M_value};
 
-decode_v1_element(<<>>, 25, Instance) ->
-    #packet_flow_id{instance = Instance};
+decode_v1_element(<<_:4,
+		    M_nsapi:4/integer,
+		    M_value:8/integer>>, 25, Instance) ->
+    #packet_flow_id{instance = Instance,
+		    nsapi = M_nsapi,
+		    value = M_value};
 
 decode_v1_element(<<M_value:2/bytes>>, 26, Instance) ->
     #charging_characteristics{instance = Instance,
 			      value = M_value};
 
-decode_v1_element(<<>>, 27, Instance) ->
-    #trace_reference{instance = Instance};
+decode_v1_element(<<M_value:16/integer>>, 27, Instance) ->
+    #trace_reference{instance = Instance,
+		     value = M_value};
 
-decode_v1_element(<<>>, 28, Instance) ->
-    #trace_type{instance = Instance};
+decode_v1_element(<<M_value:16/integer>>, 28, Instance) ->
+    #trace_type{instance = Instance,
+		value = M_value};
 
-decode_v1_element(<<>>, 29, Instance) ->
-    #ms_not_reachable_reason{instance = Instance};
+decode_v1_element(<<M_value:8/integer>>, 29, Instance) ->
+    #ms_not_reachable_reason{instance = Instance,
+			     value = M_value};
 
 decode_v1_element(<<M_command:8/integer>>, 126, Instance) ->
     #packet_transfer_command{instance = Instance,
@@ -1952,13 +1978,13 @@ encode_v1_element(#authentication_triplet{
 
 encode_v1_element(#map_cause{
 		     instance = Instance,
-		     content = Content}) ->
-    encode_v1_element(11, Instance, <<Content:1/bytes>>);
+		     value = M_value}) ->
+    encode_v1_element(11, Instance, <<M_value:1/bytes>>);
 
 encode_v1_element(#p_tmsi_signature{
 		     instance = Instance,
-		     content = Content}) ->
-    encode_v1_element(12, Instance, <<Content:3/bytes>>);
+		     value = M_value}) ->
+    encode_v1_element(12, Instance, <<M_value:3/bytes>>);
 
 encode_v1_element(#ms_validated{
 		     instance = Instance,
@@ -2009,28 +2035,44 @@ encode_v1_element(#nsapi{
 
 encode_v1_element(#ranap_cause{
 		     instance = Instance,
-		     content = Content}) ->
-    encode_v1_element(21, Instance, <<Content:1/bytes>>);
+		     value = M_value}) ->
+    encode_v1_element(21, Instance, <<M_value:8>>);
 
 encode_v1_element(#rab_context{
 		     instance = Instance,
-		     content = Content}) ->
-    encode_v1_element(22, Instance, <<Content:9/bytes>>);
+		     nsapi = M_nsapi,
+		     dl_gtp_u_sequence_number = M_dl_gtp_u_sequence_number,
+		     ul_gtp_u_sequence_number = M_ul_gtp_u_sequence_number,
+		     dl_pdcp_sequence_number = M_dl_pdcp_sequence_number,
+		     ul_pdcp_sequence_number = M_ul_pdcp_sequence_number}) ->
+    encode_v1_element(22, Instance, <<0:4,
+				      M_nsapi:4,
+				      M_dl_gtp_u_sequence_number:16,
+				      M_ul_gtp_u_sequence_number:16,
+				      M_dl_pdcp_sequence_number:16,
+				      M_ul_pdcp_sequence_number:16>>);
 
 encode_v1_element(#radio_priority_sms{
 		     instance = Instance,
-		     content = Content}) ->
-    encode_v1_element(23, Instance, <<Content:1/bytes>>);
+		     value = M_value}) ->
+    encode_v1_element(23, Instance, <<0:5,
+				      M_value:3>>);
 
 encode_v1_element(#radio_priority{
 		     instance = Instance,
-		     content = Content}) ->
-    encode_v1_element(24, Instance, <<Content:1/bytes>>);
+		     nsapi = M_nsapi,
+		     value = M_value}) ->
+    encode_v1_element(24, Instance, <<M_nsapi:4,
+				      0:1,
+				      M_value:3>>);
 
 encode_v1_element(#packet_flow_id{
 		     instance = Instance,
-		     content = Content}) ->
-    encode_v1_element(25, Instance, <<Content:2/bytes>>);
+		     nsapi = M_nsapi,
+		     value = M_value}) ->
+    encode_v1_element(25, Instance, <<0:4,
+				      M_nsapi:4,
+				      M_value:8>>);
 
 encode_v1_element(#charging_characteristics{
 		     instance = Instance,
@@ -2039,18 +2081,18 @@ encode_v1_element(#charging_characteristics{
 
 encode_v1_element(#trace_reference{
 		     instance = Instance,
-		     content = Content}) ->
-    encode_v1_element(27, Instance, <<Content:2/bytes>>);
+		     value = M_value}) ->
+    encode_v1_element(27, Instance, <<M_value:16>>);
 
 encode_v1_element(#trace_type{
 		     instance = Instance,
-		     content = Content}) ->
-    encode_v1_element(28, Instance, <<Content:2/bytes>>);
+		     value = M_value}) ->
+    encode_v1_element(28, Instance, <<M_value:16>>);
 
 encode_v1_element(#ms_not_reachable_reason{
 		     instance = Instance,
-		     content = Content}) ->
-    encode_v1_element(29, Instance, <<Content:1/bytes>>);
+		     value = M_value}) ->
+    encode_v1_element(29, Instance, <<M_value:8>>);
 
 encode_v1_element(#packet_transfer_command{
 		     instance = Instance,
