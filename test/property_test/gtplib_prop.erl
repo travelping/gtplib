@@ -677,31 +677,48 @@ prime_simple_ie() ->
        gen_private_extension()]).
 
 v1_ie() ->
-    ie_map(
-      ?LET(I, integer(1,10), vector(I, v1_simple_ie()))).
+    v1_ie_map(
+      ?LET(I, int_range(1,10), vector(I, v1_simple_ie()))).
 
 v2_ie() ->
-    ie_map(
-      ?LET(I, integer(1,10), vector(I, oneof(v2_simple_ie() ++ v2_grouped_ie())))).
+    v2_ie_map(
+      ?LET(I, int_range(1,10), vector(I, oneof(v2_simple_ie() ++ v2_grouped_ie())))).
 
 prime_ie() ->
-    ie_map(
-      ?LET(I, integer(1,10), vector(I, prime_simple_ie()))).
+    v1_ie_map(
+      ?LET(I, int_range(1,10), vector(I, prime_simple_ie()))).
 
-put_ie(IE, IEs) ->
+v1_put_ie(IE, IEs) ->
+    maps:update_with(
+      element(1, IE), fun(X) -> [IE|X] end, [IE], IEs).
+
+v1_put_ie(_K, [], IEs) ->
+    IEs;
+v1_put_ie(K, [H|T], IEs) ->
+    Instance = length(T),
+    Key = {K, Instance},
+    v1_put_ie(K, T, IEs#{Key => setelement(2, H, Instance)}).
+
+v1_list2map(List) ->
+    M = lists:foldl(fun v1_put_ie/2, #{}, List),
+    maps:fold(fun v1_put_ie/3, #{}, M).
+
+v1_ie_map(IEs) ->
+    ?LET(L, IEs, v1_list2map(L)).
+
+v2_put_ie(IE, IEs) ->
     %% ct:pal("IE: ~p", [IE]),
     Key = {element(1, IE), element(2, IE)},
     IEs#{Key => IE}.
 
-list2map(List) ->
-    lists:foldl(fun put_ie/2, #{}, List).
+v2_list2map(List) ->
+    lists:foldl(fun v2_put_ie/2, #{}, List).
 
-ie_map(IEs) ->
-    ?LET(L, IEs, list2map(L)).
-
+v2_ie_map(IEs) ->
+    ?LET(L, IEs, v2_list2map(L)).
 v2_ie_group() ->
-    ie_map(
-      ?LET(I, integer(1,10), vector(I, oneof(v2_simple_ie())))).
+    v2_ie_map(
+      ?LET(I, int_range(1,10), vector(I, oneof(v2_simple_ie())))).
 
 %% v1 generator ==========================================================================
 
