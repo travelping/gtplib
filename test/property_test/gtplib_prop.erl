@@ -847,12 +847,14 @@ gen_authentication_triplet() ->
 
 gen_map_cause() ->
     #map_cause{
-       instance = instance()
+       instance = instance(),
+       value = binary(1)
       }.
 
 gen_p_tmsi_signature() ->
     #p_tmsi_signature{
-       instance = instance()
+       instance = instance(),
+       value = binary(3)
       }.
 
 gen_ms_validated() ->
