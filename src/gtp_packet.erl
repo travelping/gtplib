@@ -417,16 +417,16 @@ v1_instance(CurrId, PrevId, PrevInst)
 v1_instance(_CurrId, _PrevId, _PrevInst) ->
     0.
 
-decode_flags(0, _) ->
+decode_flags(<<>>, _) ->
     [];
-decode_flags(Int, []) ->
-    [Int];
-decode_flags(Int, ['_' | Flags]) ->
-    decode_flags(Int div 2, Flags);
-decode_flags(Int, [F | Flags]) when Int rem 2 /= 0 ->
-    [F | decode_flags(Int div 2, Flags)];
-decode_flags(Int, [_ | Flags]) ->
-    decode_flags(Int div 2, Flags).
+decode_flags(<<_:1, Next/bits>>, ['_' | Flags]) ->
+    decode_flags(Next, Flags);
+decode_flags(<<1:1, Next/bits>>, [F | Flags]) ->
+    [F | decode_flags(Next, Flags)];
+decode_flags(<<_:1, Next/bits>>, [_ | Flags]) ->
+    decode_flags(Next, Flags);
+decode_flags(Bin, []) ->
+    [binary:decode_unsigned(Bin, little)].
 
 encode_flags([I|_], []) when is_integer(I) -> I;
 encode_flags([_|N], []) -> encode_flags(N, []);
@@ -3273,50 +3273,17 @@ decode_v2_element(<<M_msisdn/binary>>, 76, Instance) ->
 
 decode_v2_element(<<M_flags/binary>>, 77, Instance) ->
     #v2_indication{instance = Instance,
-		   flags = decode_flags(binary:decode_unsigned(M_flags, little), ['SGWCI',
-                                                               'ISRAI',
-                                                               'ISRSI','OI',
-                                                               'DFI','HI',
-                                                               'DTF','DAF',
-                                                               'MSV','SI',
-                                                               'PT','P',
-                                                               'CRSI','CFSI',
-                                                               'UIMSI','SQCI',
-                                                               'CCRSI',
-                                                               'ISRAU',
-                                                               'MBMDT','S4AF',
-                                                               'S6AF','SRNI',
-                                                               'PBIC',
-                                                               'RetLoc',
-                                                               'CPSR','CLII',
-                                                               'CSFBI','PPSI',
-                                                               'PPON/PPEI',
-                                                               'PPOF','ARRL',
-                                                               'CPRAI','AOPI',
-                                                               'AOSI','PCRI',
-                                                               'PSCI','BDWI',
-                                                               'DTCI','UASI',
-                                                               'NSI','WPMSI',
-                                                               'UNACCSI',
-                                                               'PNSI','S11TF',
-                                                               'PMTSMI',
-                                                               'CPOPCI',
-                                                               'EPCOSI',
-                                                               'ROAAI',
-                                                               'TSPCMI',
-                                                               'ENBCRSI',
-                                                               'LTEMPI',
-                                                               'LTEMUI',
-                                                               'EEVRSI',
-                                                               '5GSIWK',
-                                                               'REPREFI',
-                                                               '5GSNN26',
-                                                               'ETHPDN',
-                                                               '5SRHOI',
-                                                               '5GCNRI',
-                                                               '5GCNRS',
-                                                               'N5GNMI','_',
-                                                               '_','_'])};
+		   flags = decode_flags(M_flags, ['DAF','DTF','HI','DFI','OI','ISRSI','ISRAI',
+                               'SGWCI','SQCI','UIMSI','CFSI','CRSI','P','PT',
+                               'SI','MSV','RetLoc','PBIC','SRNI','S6AF',
+                               'S4AF','MBMDT','ISRAU','CCRSI','CPRAI','ARRL',
+                               'PPOF','PPON/PPEI','PPSI','CSFBI','CLII',
+                               'CPSR','NSI','UASI','DTCI','BDWI','PSCI',
+                               'PCRI','AOSI','AOPI','ROAAI','EPCOSI','CPOPCI',
+                               'PMTSMI','S11TF','PNSI','UNACCSI','WPMSI',
+                               '5GSNN26','REPREFI','5GSIWK','EEVRSI','LTEMUI',
+                               'LTEMPI','ENBCRSI','TSPCMI','_','_','_',
+                               'N5GNMI','5GCNRS','5GCNRI','5SRHOI','ETHPDN'])};
 
 decode_v2_element(<<M_config/binary>>, 78, Instance) ->
     #v2_protocol_configuration_options{instance = Instance,
@@ -3453,10 +3420,7 @@ decode_v2_element(<<M_mccmnc:3/bytes,
 
 decode_v2_element(<<M_flags/binary>>, 97, Instance) ->
     #v2_bearer_flags{instance = Instance,
-		     flags = decode_flags(binary:decode_unsigned(M_flags, little), ['PCC','VB',
-                                                               'Vind','ASI',
-                                                               '_','_','_',
-                                                               '_'])};
+		     flags = decode_flags(M_flags, ['_','_','_','_','ASI','Vind','VB','PCC'])};
 
 decode_v2_element(<<_:4,
 		    M_pdn_type:4/integer,
@@ -3697,12 +3661,8 @@ decode_v2_element(<<M_mccmnc:3/bytes,
 
 decode_v2_element(<<M_actions/binary>>, 146, Instance) ->
     #v2_csg_information_reporting_action{instance = Instance,
-					 actions = decode_flags(binary:decode_unsigned(M_actions, little), ['UCICSG',
-                                                                   'UCISHC',
-                                                                   'UCIUHC',
-                                                                   '_','_',
-                                                                   '_','_',
-                                                                   '_'])};
+					 actions = decode_flags(M_actions, ['_','_','_','_','_','UCIUHC','UCISHC',
+                                   'UCICSG'])};
 
 decode_v2_element(<<_:5,
 		    M_id:27/bits,
@@ -3730,13 +3690,8 @@ decode_v2_element(<<M_value/binary>>, 151, Instance) ->
 
 decode_v2_element(<<M_features/binary>>, 152, Instance) ->
     #v2_node_features{instance = Instance,
-		      features = decode_flags(binary:decode_unsigned(M_features, little), ['PRN',
-                                                                     'MABR',
-                                                                     'NTSR',
-                                                                     'CIOT',
-                                                                     'S1UN',
-                                                                     'ETH',
-                                                                     '_','_'])};
+		      features = decode_flags(M_features, ['_','_','ETH','S1UN','CIOT','NTSR',
+                                     'MABR','PRN'])};
 
 decode_v2_element(<<>>, 153, Instance) ->
     #v2_mbms_time_to_data_transfer{instance = Instance};
@@ -3770,14 +3725,7 @@ decode_v2_element(<<M_unit:3/integer,
 
 decode_v2_element(<<M_indication/binary>>, 157, Instance) ->
     #v2_signalling_priority_indication{instance = Instance,
-				       indication = decode_flags(binary:decode_unsigned(M_indication, little), ['LAPI',
-                                                                         '_',
-                                                                         '_',
-                                                                         '_',
-                                                                         '_',
-                                                                         '_',
-                                                                         '_',
-                                                                         '_'])};
+				       indication = decode_flags(M_indication, ['_','_','_','_','_','_','_','LAPI'])};
 
 decode_v2_element(<<>>, 158, Instance) ->
     #v2_temporary_mobile_group_identity{instance = Instance};
@@ -3793,9 +3741,7 @@ decode_v2_element(<<M_classmark_2_len:8/integer, M_classmark_2:M_classmark_2_len
 
 decode_v2_element(<<M_flags/binary>>, 160, Instance) ->
     #v2_additional_flags_for_srvcc{instance = Instance,
-				   flags = decode_flags(binary:decode_unsigned(M_flags, little), ['ICS','VF','_',
-                                                               '_','_','_',
-                                                               '_','_'])};
+				   flags = decode_flags(M_flags, ['_','_','_','_','_','_','VF','ICS'])};
 
 decode_v2_element(<<>>, 162, Instance) ->
     #v2_mdt_configuration{instance = Instance};
@@ -3809,9 +3755,7 @@ decode_v2_element(<<>>, 164, Instance) ->
 
 decode_v2_element(<<M_flags/binary>>, 165, Instance) ->
     #v2_henb_information_reporting_{instance = Instance,
-				    flags = decode_flags(binary:decode_unsigned(M_flags, little), ['FTI','_','_',
-                                                               '_','_','_',
-                                                               '_','_'])};
+				    flags = decode_flags(M_flags, ['_','_','_','_','_','_','_','FTI'])};
 
 decode_v2_element(<<M_prefix_length:8/integer,
 		    M_default_route:4/bytes,
@@ -3822,9 +3766,7 @@ decode_v2_element(<<M_prefix_length:8/integer,
 
 decode_v2_element(<<M_flags/binary>>, 167, Instance) ->
     #v2_change_to_report_flags_{instance = Instance,
-				flags = decode_flags(binary:decode_unsigned(M_flags, little), ['SNCR','TZCR',
-                                                               '_','_','_',
-                                                               '_','_','_'])};
+				flags = decode_flags(M_flags, ['_','_','_','_','_','_','TZCR','SNCR'])};
 
 decode_v2_element(<<_:5,
 		    M_indication:3/integer,
@@ -3859,14 +3801,7 @@ decode_v2_element(<<_:6,
 
 decode_v2_element(<<M_indication/binary>>, 174, Instance) ->
     #v2_trusted_wlan_mode_indication{instance = Instance,
-				     indication = decode_flags(binary:decode_unsigned(M_indication, little), ['SCM',
-                                                                         'MCM',
-                                                                         '_',
-                                                                         '_',
-                                                                         '_',
-                                                                         '_',
-                                                                         '_',
-                                                                         '_'])};
+				     indication = decode_flags(M_indication, ['_','_','_','_','_','_','MCM','SCM'])};
 
 decode_v2_element(<<M_number_len:8/integer, M_number:M_number_len/bytes,
 		    _/binary>>, 175, Instance) ->
@@ -3916,14 +3851,8 @@ decode_v2_element(<<M_capacity:8/integer,
 
 decode_v2_element(<<M_indication/binary>>, 185, Instance) ->
     #v2_wlan_offloadability_indication{instance = Instance,
-				       indication = decode_flags(binary:decode_unsigned(M_indication, little), ['UTRAN',
-                                                                         'EUTRAN',
-                                                                         '_',
-                                                                         '_',
-                                                                         '_',
-                                                                         '_',
-                                                                         '_',
-                                                                         '_'])};
+				       indication = decode_flags(M_indication, ['_','_','_','_','_','_','EUTRAN',
+                                         'UTRAN'])};
 
 decode_v2_element(<<Data/binary>>, 186, Instance) ->
     decode_v2_paging_and_service_information(Data, Instance);
@@ -3959,14 +3888,8 @@ decode_v2_element(<<M_ip/binary>>, 193, Instance) ->
 
 decode_v2_element(<<M_indication/binary>>, 194, Instance) ->
     #v2_ciot_optimizations_support_indication{instance = Instance,
-					      indication = decode_flags(binary:decode_unsigned(M_indication, little), ['SGNIPDN',
-                                                                         'SCNIPDN',
-                                                                         'AWOPDN',
-                                                                         'IHCSI',
-                                                                         '_',
-                                                                         '_',
-                                                                         '_',
-                                                                         '_'])};
+					      indication = decode_flags(M_indication, ['_','_','_','_','IHCSI','AWOPDN',
+                                         'SCNIPDN','SGNIPDN'])};
 
 decode_v2_element(<<M_group/binary>>, 195, Instance) ->
     #v2_scef_pdn_connection{instance = Instance,
@@ -4025,14 +3948,7 @@ decode_v2_element(<<_:6,
 
 decode_v2_element(<<M_indication/binary>>, 202, Instance) ->
     #v2_up_function_selection_indication_flags{instance = Instance,
-					       indication = decode_flags(binary:decode_unsigned(M_indication, little), ['DCNR',
-                                                                         '_',
-                                                                         '_',
-                                                                         '_',
-                                                                         '_',
-                                                                         '_',
-                                                                         '_',
-                                                                         '_'])};
+					       indication = decode_flags(M_indication, ['_','_','_','_','_','_','_','DCNR'])};
 
 decode_v2_element(<<Data/binary>>, 203, Instance) ->
     decode_v2_maximum_packet_loss_rate(Data, Instance);
