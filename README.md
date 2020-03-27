@@ -17,8 +17,8 @@ Using rebar:
     # rebar3 compile
 
 <!-- Badges -->
-[travis]: https://travis-ci.org/travelping/gtplib
-[travis badge]: https://img.shields.io/travis/travelping/gtplib/master.svg?style=flat-square
+[travis]: https://travis-ci.com/travelping/gtplib
+[travis badge]: https://img.shields.io/travis/travelping/com/gtplib/master.svg?style=flat-square
 [coveralls]: https://coveralls.io/github/travelping/gtplib
 [coveralls badge]: https://img.shields.io/coveralls/travelping/gtplib/master.svg?style=flat-square
 [erlang version badge]: https://img.shields.io/badge/erlang-R20.1%20to%21.0-blue.svg?style=flat-square

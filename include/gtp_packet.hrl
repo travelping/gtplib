@@ -79,7 +79,9 @@
 	  rai,
 	  tai,
 	  ecgi,
-	  lai
+	  lai,
+	  macro_enb,
+	  ext_macro_enb
 	}).
 
 -record(v2_fully_qualified_tunnel_endpoint_identifier, {
@@ -90,11 +92,62 @@
 	  ipv6
 	 }).
 
--record(v2_serving_network, {
+-record(v2_fully_qualified_pdn_connection_set_identifier, {
 	  instance = 0,
-	  mcc,
-	  mnc
+	  node_id_type = 0,
+	  node_id,
+	  csids = []
 	 }).
+
+-record(v2_private_extension, {
+	  instance = 0,
+	  enterprise_id = 0,
+	  value = <<>>
+	 }).
+
+-record(v2_twan_identifier, {
+	  instance = 0,
+	  ssid = <<>>,
+	  bssid,
+	  civic_address,
+	  plmn_id,
+	  operator_name,
+	  relay_identity_type,
+	  relay_identity,
+	  circuit_id
+	 }).
+
+-record(v2_paging_and_service_information, {
+	  instance = 0,
+	  ebi = 0,
+	  ppi
+	 }).
+
+-record(v2_integer_number, {
+	  instance = 0,
+	  width = 0,
+	  value = 0
+	 }).
+
+-record(v2_remote_user_id, {
+	  instance = 0,
+	  imsi = <<>>,
+	  msisdn,
+	  imei
+	 }).
+
+-record(v2_maximum_packet_loss_rate, {
+	  instance = 0,
+	  ul,
+	  dl
+	 }).
+
+-record(v2_monitoring_event_extension_information, {
+	  instance = 0,
+	  scef_reference_id = 0,
+	  scef_id = <<>>,
+	  remaining_minimum_lrtp
+}).
 
 %% -include("gtp_packet_v1_gen.hrl").
 
@@ -133,12 +186,12 @@
 
 -record(map_cause, {
 	  instance = 0,
-	  content = <<0>>
+	  value = <<0>>
 }).
 
 -record(p_tmsi_signature, {
 	  instance = 0,
-	  content = <<0,0,0>>
+	  value = <<0,0,0>>
 }).
 
 -record(ms_validated, {
@@ -184,27 +237,33 @@
 
 -record(ranap_cause, {
 	  instance = 0,
-	  content = <<0>>
+	  value = 0
 }).
 
 -record(rab_context, {
 	  instance = 0,
-	  content = <<0,0,0,0,0,0,0,0,0>>
+	  nsapi = 0,
+	  dl_gtp_u_sequence_number = 0,
+	  ul_gtp_u_sequence_number = 0,
+	  dl_pdcp_sequence_number = 0,
+	  ul_pdcp_sequence_number = 0
 }).
 
 -record(radio_priority_sms, {
 	  instance = 0,
-	  content = <<0>>
+	  value = 0
 }).
 
 -record(radio_priority, {
 	  instance = 0,
-	  content = <<0>>
+	  nsapi = 0,
+	  value = 0
 }).
 
 -record(packet_flow_id, {
 	  instance = 0,
-	  content = <<0,0>>
+	  nsapi = 0,
+	  value = 0
 }).
 
 -record(charging_characteristics, {
@@ -214,17 +273,17 @@
 
 -record(trace_reference, {
 	  instance = 0,
-	  content = <<0,0>>
+	  value = 0
 }).
 
 -record(trace_type, {
 	  instance = 0,
-	  content = <<0,0>>
+	  value = 0
 }).
 
 -record(ms_not_reachable_reason, {
 	  instance = 0,
-	  content = <<0>>
+	  value = 0
 }).
 
 -record(packet_transfer_command, {
@@ -701,7 +760,8 @@
 	  v2_cause = reserved,
 	  pce = 0,
 	  bce = 0,
-	  cs = 0
+	  cs = 0,
+	  offending_ie
 }).
 
 -record(v2_recovery, {
@@ -746,7 +806,7 @@
 
 -record(v2_indication, {
 	  instance = 0,
-	  flags
+	  flags = []
 }).
 
 -record(v2_protocol_configuration_options, {
@@ -773,7 +833,12 @@
 }).
 
 -record(v2_flow_quality_of_service, {
-	  instance = 0
+	  instance = 0,
+	  label = 0,
+	  maximum_bit_rate_for_uplink = 0,
+	  maximum_bit_rate_for_downlink = 0,
+	  guaranteed_bit_rate_for_uplink = 0,
+	  guaranteed_bit_rate_for_downlink = 0
 }).
 
 -record(v2_rat_type, {
@@ -781,35 +846,52 @@
 	  rat_type = 0
 }).
 
+-record(v2_serving_network, {
+	  instance = 0,
+	  mcc = <<"001">>,
+	  mnc = <<"001">>
+}).
 
 -record(v2_eps_bearer_level_traffic_flow_template, {
-	  instance = 0
+	  instance = 0,
+	  value = <<>>
 }).
 
 -record(v2_traffic_aggregation_description, {
-	  instance = 0
+	  instance = 0,
+	  value = <<>>
 }).
 
 
 
 -record(v2_tmsi, {
-	  instance = 0
+	  instance = 0,
+	  value = 0
 }).
 
 -record(v2_global_cn_id, {
-	  instance = 0
+	  instance = 0,
+	  mcc = <<"001">>,
+	  mnc = <<"001">>,
+	  value = <<>>
 }).
 
 -record(v2_s103_pdn_data_forwarding_info, {
-	  instance = 0
+	  instance = 0,
+	  hsgw_address = <<>>,
+	  gre_key = 0,
+	  eps_bearer_id = []
 }).
 
 -record(v2_s1_u_data_forwarding_info, {
-	  instance = 0
+	  instance = 0,
+	  service_gw_address = <<>>,
+	  teid = 0
 }).
 
 -record(v2_delay_value, {
-	  instance = 0
+	  instance = 0,
+	  delay = 0
 }).
 
 -record(v2_bearer_context, {
@@ -828,11 +910,20 @@
 }).
 
 -record(v2_trace_information, {
-	  instance = 0
+	  instance = 0,
+	  mcc = <<"001">>,
+	  mnc = <<"001">>,
+	  trace_id = 0,
+	  triggering_events = <<0,0,0,0,0,0,0,0,0>>,
+	  list_of_ne_types = 0,
+	  session_trace_depth = 0,
+	  list_of_interfaces = <<0,0,0,0,0,0,0,0,0,0,0,0>>,
+	  ip_address_of_trace_collection_entity = <<>>
 }).
 
 -record(v2_bearer_flags, {
-	  instance = 0
+	  instance = 0,
+	  flags = []
 }).
 
 -record(v2_pdn_type, {
@@ -841,7 +932,8 @@
 }).
 
 -record(v2_procedure_transaction_id, {
-	  instance = 0
+	  instance = 0,
+	  pti = 0
 }).
 
 -record(v2_mm_context_1, {
@@ -869,23 +961,32 @@
 }).
 
 -record(v2_pdn_connection, {
-	  instance = 0
+	  instance = 0,
+	  group
 }).
 
 -record(v2_pdu_numbers, {
-	  instance = 0
+	  instance = 0,
+	  nsapi = 0,
+	  dl_gtp_u_sequence_number = 0,
+	  ul_gtp_u_sequence_number = 0,
+	  send_n_pdu_number = 0,
+	  receive_n_pdu_number = 0
 }).
 
 -record(v2_p_tmsi, {
-	  instance = 0
+	  instance = 0,
+	  value = <<>>
 }).
 
 -record(v2_p_tmsi_signature, {
-	  instance = 0
+	  instance = 0,
+	  value = <<>>
 }).
 
 -record(v2_hop_counter, {
-	  instance = 0
+	  instance = 0,
+	  hop_counter = 0
 }).
 
 -record(v2_ue_time_zone, {
@@ -895,47 +996,77 @@
 }).
 
 -record(v2_trace_reference, {
-	  instance = 0
+	  instance = 0,
+	  mcc = <<"001">>,
+	  mnc = <<"001">>,
+	  id = 0
 }).
 
 -record(v2_complete_request_message, {
-	  instance = 0
+	  instance = 0,
+	  type = 0,
+	  message = <<>>
 }).
 
 -record(v2_guti, {
-	  instance = 0
+	  instance = 0,
+	  mcc = <<"001">>,
+	  mnc = <<"001">>,
+	  group_id = 0,
+	  code = 0,
+	  m_tmsi = <<>>
 }).
 
 -record(v2_f_container, {
-	  instance = 0
+	  instance = 0,
+	  type = 0,
+	  data = <<>>
 }).
 
 -record(v2_f_cause, {
-	  instance = 0
+	  instance = 0,
+	  type = 0,
+	  data = <<>>
 }).
 
 -record(v2_plmn_id, {
-	  instance = 0
+	  instance = 0,
+	  id = <<0,0,0>>
 }).
 
 -record(v2_target_identification, {
-	  instance = 0
+	  instance = 0,
+	  type = 0,
+	  data = <<>>
 }).
 
--record(v2_packet_flow_id_, {
-	  instance = 0
+-record(v2_packet_flow_id, {
+	  instance = 0,
+	  ebi = 0,
+	  flow_id = <<>>
 }).
 
--record(v2_rab_context_, {
-	  instance = 0
+-record(v2_rab_context, {
+	  instance = 0,
+	  ulpsi = 0,
+	  dlpsi = 0,
+	  ulgsi = 0,
+	  dlgsi = 0,
+	  nsapi = 0,
+	  dl_gtp_u_sequence_number = 0,
+	  ul_gtp_u_sequence_number = 0,
+	  dl_pdcp_number = 0,
+	  ul_pdcp_number = 0
 }).
 
 -record(v2_source_rnc_pdcp_context_info, {
-	  instance = 0
+	  instance = 0,
+	  rrc_container = <<>>
 }).
 
 -record(v2_udp_source_port_number, {
-	  instance = 0
+	  instance = 0,
+	  port = 0
 }).
 
 -record(v2_apn_restriction, {
@@ -949,7 +1080,10 @@
 }).
 
 -record(v2_source_identification, {
-	  instance = 0
+	  instance = 0,
+	  target_cell_id = <<>>,
+	  source_type = 0,
+	  source_id = <<>>
 }).
 
 -record(v2_change_reporting_action, {
@@ -957,20 +1091,20 @@
 	  action = stop_reporting
 }).
 
--record(v2_fully_qualified_pdn_connection_set_identifier, {
-	  instance = 0
-}).
 
 -record(v2_channel_needed, {
-	  instance = 0
+	  instance = 0,
+	  value = <<>>
 }).
 
 -record(v2_emlpp_priority, {
-	  instance = 0
+	  instance = 0,
+	  value = <<>>
 }).
 
 -record(v2_node_type, {
-	  instance = 0
+	  instance = 0,
+	  node_type = 0
 }).
 
 -record(v2_fully_qualified_domain_name, {
@@ -979,7 +1113,8 @@
 }).
 
 -record(v2_transaction_identifier, {
-	  instance = 0
+	  instance = 0,
+	  value = <<>>
 }).
 
 -record(v2_mbms_session_duration, {
@@ -1007,39 +1142,53 @@
 }).
 
 -record(v2_rfsp_index, {
-	  instance = 0
+	  instance = 0,
+	  value = 0
 }).
 
 -record(v2_user_csg_information, {
-	  instance = 0
+	  instance = 0,
+	  mcc = <<"001">>,
+	  mnc = <<"001">>,
+	  csg_id = <<0,0,0,0:3>>,
+	  access_mode = 0,
+	  lcsg = false,
+	  cmi = 0
 }).
 
 -record(v2_csg_information_reporting_action, {
-	  instance = 0
+	  instance = 0,
+	  actions = []
 }).
 
 -record(v2_csg_id, {
-	  instance = 0
+	  instance = 0,
+	  id = <<0,0,0,0:3>>
 }).
 
 -record(v2_csg_membership_indication, {
-	  instance = 0
+	  instance = 0,
+	  cmi = 0
 }).
 
 -record(v2_service_indicator, {
-	  instance = 0
+	  instance = 0,
+	  value = 0
 }).
 
 -record(v2_detach_type, {
-	  instance = 0
+	  instance = 0,
+	  value = 0
 }).
 
 -record(v2_local_distiguished_name, {
-	  instance = 0
+	  instance = 0,
+	  value = <<>>
 }).
 
 -record(v2_node_features, {
-	  instance = 0
+	  instance = 0,
+	  features = []
 }).
 
 -record(v2_mbms_time_to_data_transfer, {
@@ -1047,19 +1196,28 @@
 }).
 
 -record(v2_throttling, {
-	  instance = 0
+	  instance = 0,
+	  unit = 0,
+	  value = 0,
+	  factor = 0
 }).
 
 -record(v2_allocation_retention_priority, {
-	  instance = 0
+	  instance = 0,
+	  pci = false,
+	  pl = 0,
+	  pvi = false
 }).
 
 -record(v2_epc_timer, {
-	  instance = 0
+	  instance = 0,
+	  unit = 0,
+	  value = 0
 }).
 
 -record(v2_signalling_priority_indication, {
-	  instance = 0
+	  instance = 0,
+	  indication = []
 }).
 
 -record(v2_temporary_mobile_group_identity, {
@@ -1067,11 +1225,15 @@
 }).
 
 -record(v2_additional_mm_context_for_srvcc, {
-	  instance = 0
+	  instance = 0,
+	  classmark_2 = <<>>,
+	  classmark_3 = <<>>,
+	  codec_list = <<>>
 }).
 
 -record(v2_additional_flags_for_srvcc, {
-	  instance = 0
+	  instance = 0,
+	  flags = []
 }).
 
 -record(v2_mdt_configuration, {
@@ -1079,7 +1241,8 @@
 }).
 
 -record(v2_additional_protocol_configuration_options, {
-	  instance = 0
+	  instance = 0,
+	  config
 }).
 
 -record(v2_absolute_time_of_mbms_data_transfer, {
@@ -1087,27 +1250,30 @@
 }).
 
 -record(v2_henb_information_reporting_, {
-	  instance = 0
+	  instance = 0,
+	  flags = []
 }).
 
 -record(v2_ipv4_configuration_parameters, {
-	  instance = 0
+	  instance = 0,
+	  prefix_length = 0,
+	  default_route = <<0,0,0,0>>
 }).
 
 -record(v2_change_to_report_flags_, {
-	  instance = 0
+	  instance = 0,
+	  flags = []
 }).
 
 -record(v2_action_indication, {
-	  instance = 0
+	  instance = 0,
+	  indication = 0
 }).
 
--record(v2_twan_identifier, {
-	  instance = 0
-}).
 
 -record(v2_uli_timestamp, {
-	  instance = 0
+	  instance = 0,
+	  timestamp = 0
 }).
 
 -record(v2_mbms_flags, {
@@ -1115,23 +1281,31 @@
 }).
 
 -record(v2_ran_nas_cause, {
-	  instance = 0
+	  instance = 0,
+	  protocol = 0,
+	  type = 0,
+	  cause = <<>>
 }).
 
 -record(v2_cn_operator_selection_entity, {
-	  instance = 0
+	  instance = 0,
+	  entity = 0
 }).
 
 -record(v2_trusted_wlan_mode_indication, {
-	  instance = 0
+	  instance = 0,
+	  indication = []
 }).
 
 -record(v2_node_number, {
-	  instance = 0
+	  instance = 0,
+	  number = <<>>
 }).
 
 -record(v2_node_identifier, {
-	  instance = 0
+	  instance = 0,
+	  name = <<>>,
+	  realm = <<>>
 }).
 
 -record(v2_presence_reporting_area_action, {
@@ -1143,33 +1317,147 @@
 }).
 
 -record(v2_twan_identifier_timestamp, {
-	  instance = 0
+	  instance = 0,
+	  timestamp = 0
 }).
 
 -record(v2_overload_control_information, {
-	  instance = 0
+	  instance = 0,
+	  group
 }).
 
 -record(v2_load_control_information, {
-	  instance = 0
+	  instance = 0,
+	  group
 }).
 
 -record(v2_metric, {
-	  instance = 0
+	  instance = 0,
+	  value = 0
 }).
 
 -record(v2_sequence_number, {
-	  instance = 0
+	  instance = 0,
+	  value = 0
 }).
 
 -record(v2_apn_and_relative_capacity, {
-	  instance = 0
+	  instance = 0,
+	  capacity = 0,
+	  apn = <<>>
 }).
 
 -record(v2_wlan_offloadability_indication, {
+	  instance = 0,
+	  indication = []
+}).
+
+
+
+-record(v2_millisecond_time_stamp, {
+	  instance = 0,
+	  timestamp = 0
+}).
+
+-record(v2_monitoring_event_information, {
 	  instance = 0
 }).
 
--record(v2_private_extension, {
-	  instance = 0
+-record(v2_ecgi_list, {
+	  instance = 0,
+	  ecgis = []
 }).
+
+-record(v2_remote_ue_context, {
+	  instance = 0,
+	  group
+}).
+
+
+-record(v2_remote_ue_ip_information, {
+	  instance = 0,
+	  ip = <<>>
+}).
+
+-record(v2_ciot_optimizations_support_indication, {
+	  instance = 0,
+	  indication = []
+}).
+
+-record(v2_scef_pdn_connection, {
+	  instance = 0,
+	  group
+}).
+
+-record(v2_header_compression_configuration, {
+	  instance = 0,
+	  rohc_profiles = 0,
+	  max_cid = 0
+}).
+
+-record(v2_extended_protocol_configuration_options, {
+	  instance = 0,
+	  config
+}).
+
+-record(v2_serving_plmn_rate_control, {
+	  instance = 0,
+	  uplink = 0,
+	  downlink = 0
+}).
+
+-record(v2_counter, {
+	  instance = 0,
+	  timestamp = 0,
+	  counter = 0
+}).
+
+-record(v2_mapped_ue_usage_type, {
+	  instance = 0,
+	  usage_type = 0
+}).
+
+-record(v2_secondary_rat_usage_data_report, {
+	  instance = 0,
+	  irsgw = false,
+	  irpgw = false,
+	  rat_type = 0,
+	  ebi = 0,
+	  start_time = 0,
+	  end_time = 0,
+	  dl = 0,
+	  ul = 0
+}).
+
+-record(v2_up_function_selection_indication_flags, {
+	  instance = 0,
+	  indication = []
+}).
+
+
+-record(v2_apn_rate_control_status, {
+	  instance = 0,
+	  number_of_uplink_packets_allowed = 0,
+	  number_of_additional_exception_reports = 0,
+	  number_of_downlink_packets_allowed = 0,
+	  apn_rate_control_status_validity_time = 0
+}).
+
+-record(v2_extended_trace_information, {
+	  instance = 0,
+	  mcc = <<"001">>,
+	  mnc = <<"001">>,
+	  trace_id = 0,
+	  triggering_events = <<>>,
+	  list_of_ne_types = <<>>,
+	  session_trace_depth = 0,
+	  list_of_interfaces = <<>>,
+	  ip_address_of_trace_collection_entity = <<>>
+}).
+
+
+-record(v2_additional_rrm_policy_index, {
+	  instance = 0,
+	  value = 0
+}).
+

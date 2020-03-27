@@ -14,7 +14,7 @@
 %%%-------------------------------------------------------------------
 -module(gtp_SUITE).
 
--compile(export_all).
+-compile([export_all, nowarn_export_all]).
 
 -include_lib("common_test/include/ct.hrl").
 -include("../include/gtp_packet.hrl").
@@ -58,8 +58,10 @@ all() ->
 	 test_v1_ignore_spare_bits,
 	 test_g_pdu,
 	 test_v2_pco_vendor_ext,
+	 v2_list,
 	 partial_decode,
 	 partial_encode,
+	 flags_enc_dec,
 	 msg_enc_dec].
 
 
@@ -272,6 +274,62 @@ test_v2_pco_vendor_ext(_Config) ->
     ?match(Data when is_binary(Data), (catch gtp_packet:encode(Msg))),
     ok.
 
+v2_list(_Config) ->
+    IEs =
+	[
+	 #v2_bearer_context{
+	    instance = 0,
+	    group = [#v2_bearer_level_quality_of_service{
+			pci = 1,pl = 10,pvi = 0,label = 8,
+			maximum_bit_rate_for_uplink = 0,
+			maximum_bit_rate_for_downlink = 0,
+			guaranteed_bit_rate_for_uplink = 0,
+			guaranteed_bit_rate_for_downlink = 0},
+		     #v2_eps_bearer_id{eps_bearer_id = 5},
+		     #v2_fully_qualified_tunnel_endpoint_identifier{
+			instance = 2,
+			interface_type = 4,key = 1,ipv4 = <<127,0,0,1>>,
+			ipv6 = undefined}]},
+	 #v2_bearer_context{
+	    instance = 0,
+	    group = [#v2_bearer_level_quality_of_service{
+			pci = 1,pl = 10,pvi = 0,label = 8,
+			maximum_bit_rate_for_uplink = 0,
+			maximum_bit_rate_for_downlink = 0,
+			guaranteed_bit_rate_for_uplink = 0,
+			guaranteed_bit_rate_for_downlink = 0},
+		     #v2_eps_bearer_id{eps_bearer_id = 5},
+		     #v2_fully_qualified_tunnel_endpoint_identifier{
+			instance = 2,
+			interface_type = 4,key = 2,ipv4 = <<127,0,0,1>>,
+			ipv6 = undefined}]},
+	 #v2_bearer_context{
+	    instance = 0,
+	    group = [#v2_bearer_level_quality_of_service{
+			pci = 1,pl = 10,pvi = 0,label = 8,
+			maximum_bit_rate_for_uplink = 0,
+			maximum_bit_rate_for_downlink = 0,
+			guaranteed_bit_rate_for_uplink = 0,
+			guaranteed_bit_rate_for_downlink = 0},
+		     #v2_eps_bearer_id{eps_bearer_id = 5},
+		     #v2_fully_qualified_tunnel_endpoint_identifier{
+			instance = 2,
+			interface_type = 4,key = 3,ipv4 = <<127,0,0,1>>,
+			ipv6 = undefined}]}
+	],
+    Msg = #gtp{version = v2,
+	       type = create_session_request,
+	       seq_no = 1,
+	       tei = 0,
+	       ie = IEs},
+    Bin = (catch gtp_packet:encode(Msg)),
+    ?equal(true, is_binary(Bin)),
+
+    #gtp{version = v2, ie = M} = gtp_packet:decode(Bin),
+    BC = maps:get({v2_bearer_context, 0}, M),
+    ?equal(3, length(BC)),
+    ok.
+
 partial_decode(_Config) ->
     Msg0 = gtp_packet:decode(get_msg(v1, create_pdp_context_request_2), #{ies => binary}),
     ?match(#gtp{ie = IEs} when is_binary(IEs), Msg0),
@@ -315,6 +373,46 @@ partial_encode(_Config) ->
     ?match(#gtp{ie = IEs} when is_binary(IEs), Msg11),
     Msg12 = gtp_packet:encode(Msg11),
     ?match(_ when is_binary(Msg12), Msg12),
+    ok.
+
+flags_enc_dec(_Config) ->
+    Bin1 = <<72,1,0,13,0,0,0,0,0,0,0,0,77,0,1,0,128>>,
+    Msg1 = #gtp{version = v2,type = echo_request,tei = 0,seq_no = 0,
+	       n_pdu = undefined,ext_hdr = [],
+	       ie = #{{v2_indication,0} =>
+			  #v2_indication{instance = 0,flags = ['DAF']}}},
+    ?match(<<72,1,0,13,0,0,0,0,0,0,0,0,77,0,1,0,128>>, gtp_packet:encode(Msg1)),
+    ?match(#gtp{version = v2,type = echo_request,tei = 0,seq_no = 0,
+		n_pdu = undefined,ext_hdr = [],
+		ie = #{{v2_indication,0} :=
+			   #v2_indication{instance = 0,flags = ['DAF']}}},
+	   gtp_packet:decode(Bin1)),
+
+    Bin2 = <<72,1,0,14,0,0,0,0,0,0,0,0,77,0,2,0,0,8>>,
+    Msg2 = #gtp{version = v2,type = echo_request,tei = 0,seq_no = 0,
+		n_pdu = undefined,ext_hdr = [],
+		ie = #{{v2_indication,0} =>
+			   #v2_indication{instance = 0,flags = ['P']}}},
+    ?match(<<72,1,0,14,0,0,0,0,0,0,0,0,77,0,2,0,0,8>>, gtp_packet:encode(Msg2)),
+    ?match(#gtp{version = v2,type = echo_request,tei = 0,seq_no = 0,
+		n_pdu = undefined,ext_hdr = [],
+		ie = #{{v2_indication,0} :=
+			   #v2_indication{instance = 0,flags = ['P']}}},
+	   gtp_packet:decode(Bin2)),
+
+    %% unkown indication flag, make sure it passed through enc/dec
+    Bin3 = <<72,1,0,22,0,0,0,0,0,0,0,0,77,0,10,0,0,0,0,0,0,0,0,0,0,8>>,
+    Msg3 = #gtp{version = v2,type = echo_request,tei = 0,seq_no = 0,
+		n_pdu = undefined,ext_hdr = [],
+		ie = #{{v2_indication,0} =>
+			   #v2_indication{instance = 0,flags = [2048]}}},
+    ?match(<<72,1,0,22,0,0,0,0,0,0,0,0,77,0,10,0,0,0,0,0,0,0,0,0,0,8>>,
+	   gtp_packet:encode(Msg3)),
+    ?match(#gtp{version = v2,type = echo_request,tei = 0,seq_no = 0,
+		n_pdu = undefined,ext_hdr = [],
+		ie = #{{v2_indication,0} :=
+			   #v2_indication{instance = 0,flags = [2048]}}},
+	   gtp_packet:decode(Bin3)),
     ok.
 
 msg_enc_dec() ->
