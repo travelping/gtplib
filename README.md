@@ -4,7 +4,7 @@ gtplib
 [![Coverage Status][coveralls badge]][coveralls]
 [![Erlang Versions][erlang version badge]][travis]
 
-Erlang library for encoding and decoding GTPv1 and GTPv2 frames.
+Erlang library for encoding and decoding GTPv1, GTPv2 and GTP' frames.
 Erlang netlink wrapper for talking the Linux kernel GTP-U module
 (devel version: https://github.com/RoadRunnr/osmo-ggsn,
  upstream:      http://git.osmocom.org/osmo-gtp-kernel/)
