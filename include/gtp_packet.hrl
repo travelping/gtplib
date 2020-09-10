@@ -572,7 +572,8 @@
 }).
 
 -record(ms_info_change_reporting_action, {
-	  instance = 0
+	  instance = 0,
+	  action = stop_reporting
 }).
 
 -record(direct_tunnel_flags, {

@@ -283,6 +283,12 @@ decode_exthdr(Type, <<Length, Rest/binary>>, Hdrs) ->
     Hdr = decode_exthdr_type(HdrData, Type),
     decode_exthdr(NextType, Data, [Hdr|Hdrs]).
 
+decode_exthdr_type(_, 2#00000001) ->
+    %% MBMS support indication
+    mbms_support_indication;
+decode_exthdr_type(_, 2#00000010) ->
+    %% MS Info Change Reporting support indication
+    ms_info_change_reporting_support_indication;
 decode_exthdr_type(<<Class:8, _/binary>>, 2#00100000) ->
     %% Service Class Indicator
     {service_class, Class};
@@ -298,6 +304,12 @@ decode_exthdr_type(<<PDU:16, _/binary>>, 2#11000000) ->
 decode_exthdr_type(Container, 2#10000001) ->
     %% RAN Container
     {ran_container, Container};
+decode_exthdr_type(_, 2#11000001) ->
+    %% Suspend Request
+    suspend_request;
+decode_exthdr_type(_, 2#11000010) ->
+    %% Suspend Response
+    suspend_response;
 decode_exthdr_type(Data, Type) ->
     {Type, Data}.
 
@@ -628,6 +640,12 @@ encode_exthdr([V|T], Bin) ->
 	  end,
     encode_exthdr(T, <<Bin/binary, HdrType:8, ((size(Hdr) + 2) div 4):8, Hdr/binary>>).
 
+encode_exthdr_type(mbms_support_indication) ->
+    %% MBMS support indication
+    {2#00000001, <<16#ff, 16#ff>>};
+encode_exthdr_type(ms_info_change_reporting_support_indication) ->
+    %% MS Info Change Reporting support indication
+    {2#00000010, <<16#ff, 16#ff>>};
 encode_exthdr_type({service_class, Class}) ->
     %% Service Class Indicator
     {2#00100000, <<Class:8>>};
@@ -643,6 +661,12 @@ encode_exthdr_type({long_pdcp_pdu_number, PDU}) ->
 encode_exthdr_type({pdcp_pdu_number, PDU}) ->
     %% PDCP PDU Number
     {2#11000000, <<PDU:16>>};
+encode_exthdr_type(suspend_request) ->
+    %% Suspend Request
+    {2#11000001, <<16#ff, 16#ff>>};
+encode_exthdr_type(suspend_response) ->
+    %% Suspend Response
+    {2#11000010, <<16#ff, 16#ff>>};
 encode_exthdr_type({Type, Hdr} = V)
   when is_integer(Type), is_binary(Hdr) ->
     V.
@@ -1052,6 +1076,14 @@ message_type_v1(241) -> data_record_transfer_response;
 message_type_v1(254) -> end_marker;
 message_type_v1(255) -> g_pdu;
 message_type_v1(Type) -> error(badarg, [Type]).
+
+enum_action(stop_reporting) -> 0;
+enum_action(start_reporting_cgi_sai) -> 1;
+enum_action(start_reporting_rai) -> 2;
+enum_action(0) -> stop_reporting;
+enum_action(1) -> start_reporting_cgi_sai;
+enum_action(2) -> start_reporting_rai;
+enum_action(X) when is_integer(X) -> X.
 
 enum_command(send_data_record_packet) -> 1;
 enum_command(send_possibly_duplicated_data_record_packet) -> 2;
@@ -1659,8 +1691,9 @@ decode_v1_element(<<>>, 179, Instance) ->
 decode_v1_element(<<>>, 180, Instance) ->
     #ps_handover_xid_parameters{instance = Instance};
 
-decode_v1_element(<<>>, 181, Instance) ->
-    #ms_info_change_reporting_action{instance = Instance};
+decode_v1_element(<<M_action:8/integer>>, 181, Instance) ->
+    #ms_info_change_reporting_action{instance = Instance,
+				     action = enum_action(M_action)};
 
 decode_v1_element(<<>>, 182, Instance) ->
     #direct_tunnel_flags{instance = Instance};
@@ -2444,8 +2477,9 @@ encode_v1_element(#ps_handover_xid_parameters{
     encode_v1_element(180, Instance, <<>>);
 
 encode_v1_element(#ms_info_change_reporting_action{
-		     instance = Instance}) ->
-    encode_v1_element(181, Instance, <<>>);
+		     instance = Instance,
+		     action = M_action}) ->
+    encode_v1_element(181, Instance, <<(enum_action(M_action)):8/integer>>);
 
 encode_v1_element(#direct_tunnel_flags{
 		     instance = Instance}) ->

@@ -1373,7 +1373,8 @@ gen_ps_handover_xid_parameters() ->
 
 gen_ms_info_change_reporting_action() ->
     #ms_info_change_reporting_action{
-       instance = instance()
+       instance = instance(),
+       action = oneof([stop_reporting, start_reporting_cgi_sai, start_reporting_rai])
       }.
 
 gen_direct_tunnel_flags() ->
