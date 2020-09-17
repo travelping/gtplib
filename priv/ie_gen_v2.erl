@@ -118,7 +118,7 @@ raw_ies() ->
      {76, "v2 MSISDN",
       [{"MSISDN", 0, {type, tbcd}}]},
      {77, "v2 Indication",
-      [{"Flags", 0,
+      [{"Flags", 16,
 	{flags,	['DAF', 'DTF', 'HI', 'DFI', 'OI', 'ISRSI', 'ISRAI', 'SGWCI',
 		 'SQCI', 'UIMSI', 'CFSI', 'CRSI', 'P', 'PT', 'SI', 'MSV',
 		 'RetLoc', 'PBIC', 'SRNI', 'S6AF', 'S4AF', 'MBMDT', 'ISRAU', 'CCRSI',

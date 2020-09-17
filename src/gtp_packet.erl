@@ -4106,22 +4106,22 @@ encode_v2_element(#v2_msisdn{
 encode_v2_element(#v2_indication{
 		     instance = Instance,
 		     flags = M_flags}) ->
-    encode_v2_element(77, Instance, <<(encode_min_int(0, encode_flags(M_flags, ['SGWCI','ISRAI','ISRSI','OI','DFI',
-                                          'HI','DTF','DAF','MSV','SI','PT',
-                                          'P','CRSI','CFSI','UIMSI','SQCI',
-                                          'CCRSI','ISRAU','MBMDT','S4AF',
-                                          'S6AF','SRNI','PBIC','RetLoc',
-                                          'CPSR','CLII','CSFBI','PPSI',
-                                          'PPON/PPEI','PPOF','ARRL','CPRAI',
-                                          'AOPI','AOSI','PCRI','PSCI','BDWI',
-                                          'DTCI','UASI','NSI','WPMSI',
-                                          'UNACCSI','PNSI','S11TF','PMTSMI',
-                                          'CPOPCI','EPCOSI','ROAAI','TSPCMI',
-                                          'ENBCRSI','LTEMPI','LTEMUI',
-                                          'EEVRSI','5GSIWK','REPREFI',
-                                          '5GSNN26','ETHPDN','5SRHOI',
-                                          '5GCNRI','5GCNRS','N5GNMI','_','_',
-                                          '_']), little))/binary>>);
+    encode_v2_element(77, Instance, <<(encode_min_int(16, encode_flags(M_flags, ['SGWCI','ISRAI','ISRSI','OI','DFI',
+                                           'HI','DTF','DAF','MSV','SI','PT',
+                                           'P','CRSI','CFSI','UIMSI','SQCI',
+                                           'CCRSI','ISRAU','MBMDT','S4AF',
+                                           'S6AF','SRNI','PBIC','RetLoc',
+                                           'CPSR','CLII','CSFBI','PPSI',
+                                           'PPON/PPEI','PPOF','ARRL','CPRAI',
+                                           'AOPI','AOSI','PCRI','PSCI','BDWI',
+                                           'DTCI','UASI','NSI','WPMSI',
+                                           'UNACCSI','PNSI','S11TF','PMTSMI',
+                                           'CPOPCI','EPCOSI','ROAAI','TSPCMI',
+                                           'ENBCRSI','LTEMPI','LTEMUI',
+                                           'EEVRSI','5GSIWK','REPREFI',
+                                           '5GSNN26','ETHPDN','5SRHOI',
+                                           '5GCNRI','5GCNRS','N5GNMI','_','_',
+                                           '_']), little))/binary>>);
 
 encode_v2_element(#v2_protocol_configuration_options{
 		     instance = Instance,
