@@ -376,12 +376,13 @@ partial_encode(_Config) ->
     ok.
 
 flags_enc_dec(_Config) ->
-    Bin1 = <<72,1,0,13,0,0,0,0,0,0,0,0,77,0,1,0,128>>,
+    %% test minimum length of Indication IE
+    Bin1 = <<72,1,0,14,0,0,0,0,0,0,0,0,77,0,2,0,128,0>>,
     Msg1 = #gtp{version = v2,type = echo_request,tei = 0,seq_no = 0,
 	       n_pdu = undefined,ext_hdr = [],
 	       ie = #{{v2_indication,0} =>
 			  #v2_indication{instance = 0,flags = ['DAF']}}},
-    ?match(<<72,1,0,13,0,0,0,0,0,0,0,0,77,0,1,0,128>>, gtp_packet:encode(Msg1)),
+    ?match(<<72,1,0,14,0,0,0,0,0,0,0,0,77,0,2,0,128,0>>, gtp_packet:encode(Msg1)),
     ?match(#gtp{version = v2,type = echo_request,tei = 0,seq_no = 0,
 		n_pdu = undefined,ext_hdr = [],
 		ie = #{{v2_indication,0} :=
