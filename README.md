@@ -21,4 +21,4 @@ Using rebar:
 [gh badge]: https://img.shields.io/github/workflow/status/travelping/gtplib/CI?style=flat-square
 [coveralls]: https://coveralls.io/github/travelping/gtplib
 [coveralls badge]: https://img.shields.io/coveralls/travelping/gtplib/master.svg?style=flat-square
-[erlang version badge]: https://img.shields.io/badge/erlang-R20.1%20to%21.0-blue.svg?style=flat-square
+[erlang version badge]: https://img.shields.io/badge/erlang-21.3%20to%2023.2-blue.svg?style=flat-square
