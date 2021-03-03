@@ -3,5 +3,7 @@
     {vsn, semver},
     {description, "Erlang library for GTP-c v1 and v2"},
     {applications, [kernel, stdlib]},
-    {registered, []}
+    {registered, []},
+    {licenses, ["Mozilla Public License 2.0"]},
+    {links, [{"Github", "https://github.com/travelping/gtplib"}]}
 ]}.
