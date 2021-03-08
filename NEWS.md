@@ -3,6 +3,32 @@ gtplib
 
 Erlang library for encoding and decoding GTPv1, GTPv2 and GTP' frames.
 
+Version 2.0.0 - 8 Mar 2021
+---------------------------
+
+**Dependencies** :gear:
+* [#20](https://github.com/travelping/gtplib/pull/20) Start use `ppplib`
+* [#21](https://github.com/travelping/gtplib/pull/21) Replace `erlando` to `cut` `1.0.3`
+
+**Improvements** :bulb:
+* [d78b096](https://github.com/travelping/gtplib/commit/d78b09662f4735c25aa7da1b33d6ba13a52dc06f) remove all reference to `lager`
+* [#6](https://github.com/travelping/gtplib/pull/6) improve tests
+
+**Features** :rocket:
+* [c40dc18](https://github.com/travelping/gtplib/commit/c40dc183f5c44d72f35e1d5622e33cf3e9342903) implement `GTPv1` Evolved `ARP` and A`PN-AMBR` IEs
+* [#9](https://github.com/travelping/gtplib/pull/9) switch `travis-ci` from `.org` to `.com`
+* [#10](https://github.com/travelping/gtplib/pull/10) add `R16` IEs
+* [#12](https://github.com/travelping/gtplib/pull/12) rename duplicated enum
+* [#15](https://github.com/travelping/gtplib/pull/15) Add `.github`
+* [#19](https://github.com/travelping/gtplib/pull/19) Add hex to GH action
+
+**Bugfixes** :bug:
+* [f036d98](https://github.com/travelping/gtplib/commit/f036d98d2e01a1bde9f471d045cdb024adf80217) fix `de/encode` of Protocol Configuration Options (`PCO`)
+* [d990d22](https://github.com/travelping/gtplib/commit/d990d22bbf8f209dfa8fa1f86b45bd18e6ea770b) fix `IMEI(SV)` in `GTPv2` encoding
+* [#11](https://github.com/travelping/gtplib/pull/11) fix `GTPv2` flags
+* [#13](https://github.com/travelping/gtplib/pull/13) fix wrong `GTPv1` cause codes
+* [#14](https://github.com/travelping/gtplib/pull/14) `GTPv2`: fix minimum IE length for all flags IEs
+
 Version 1.3.X - 
 ---------------------------
 
