@@ -170,7 +170,7 @@ dns_label() ->
     ?LET(I, int_range(1,64),
 	 vector(I,
 		oneof(
-		  lists:seq($A, $Z) ++ lists:seq($a, $z) ++ lists:seq($0, $9) ++ [$-]))).
+		  lists:seq($a, $z) ++ lists:seq($0, $9) ++ [$-]))).
 
 dns_name_list() ->
     ?SUCHTHAT(N,
