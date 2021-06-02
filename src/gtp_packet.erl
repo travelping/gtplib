@@ -171,6 +171,15 @@ decode_v2_msg(<<TEI:32/integer, SeqNo:24, _Spare1:8, IEs/binary>>, 1, Type) ->
 decode_v2_msg(<<SeqNo:24, _Spare1:8, IEs/binary>>, 0, Type) ->
     #gtp{version = v2, type = message_type_v2(Type), tei = undefined, seq_no = SeqNo, ie = IEs}.
 
+%% only intended for domain names, no support for anything outside
+%% of the allowed character range
+to_lower_char(C) when C >= $A andalso C =< $Z ->
+    C bor 16#20;
+to_lower_char(C) -> C.
+
+to_lower(BinStr) when is_binary(BinStr) ->
+    << << (to_lower_char(C)) >> || << C >> <= BinStr >>.
+
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
@@ -379,7 +388,7 @@ decode_v1_uli(<<Type:8, MCCMNC:3/bytes, LAC:16, Info:16, _/binary>>, Instance) -
     end.
 
 decode_fqdn(FQDN) ->
-    [ Part || <<Len:8, Part:Len/bytes>> <= FQDN ].
+    [ to_lower(Part) || <<Len:8, Part:Len/bytes>> <= FQDN ].
 
 decode_isdn_address_string(<<>>) ->
     {isdn_address, 1, 1, 1, <<"000000000000000">>};
