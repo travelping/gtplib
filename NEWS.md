@@ -3,6 +3,12 @@ gtplib
 
 Erlang library for encoding and decoding GTPv1, GTPv2 and GTP' frames.
 
+Version 2.1.0 - 3 June 2021
+---------------------------
+
+**Features** :rocket:
+* [#28](https://github.com/travelping/gtplib/pull/28) Normalize `FQDNs` by lowercasing them in all `IEs`
+
 Version 2.0.1 - 25 Mar 2021
 ---------------------------
 **Bugfixes** :bug:
