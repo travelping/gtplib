@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        otp: [22.0.7, 22.1.8, 22.2.8, 22.3.4.14, 23.0.4, 23.1.5.0, 23.2.1.0]
+        otp: [22.0.7, 22.1.8, 22.2.8, 22.3.4.14, 23.0.4, 23.1.5.0, 23.2.1.0, 24.0.2]
     container:
       image: erlang:${{ matrix.otp }}-alpine
     steps:
