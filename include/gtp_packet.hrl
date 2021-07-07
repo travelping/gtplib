@@ -45,23 +45,23 @@
 	  ie		:: [term()] | map() | binary()
 	 }).
 
+-record(cgi, {plmn, lac, ci}).
+-record(sai, {plmn, lac, sac}).
+-record(rai, {plmn, lac, rac}).
+-record(tai, {plmn, tac}).
+-record(ecgi, {plmn, eci}).
+-record(lai, {plmn, lac}).
+-record(macro_enb, {plmn, id}).
+-record(ext_macro_enb, {plmn, id}).
+
 -record(routeing_area_identity, {
 	  instance = 0,
-	  mcc,
-	  mnc,
-	  lac = 0,
-	  rac = 0
+	  identity
 	 }).
 
 -record(user_location_information, {
 	  instance = 0,
-	  type,
-	  mcc,
-	  mnc,
-	  lac = 0,
-	  ci = 0,
-	  sac = 0,
-	  rac = 0
+	  location
 	 }).
 
 -record(data_record_packet, {
