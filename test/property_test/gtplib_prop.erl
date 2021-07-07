@@ -193,8 +193,14 @@ mnc() ->
 mnc_label() ->
     ?LET(M, mnc(), list_to_binary(io_lib:format("mnc~3..0s", [M]))).
 
+plmn() ->
+    {mcc(), mnc()}.
+
 apn() ->
     ?LET(L, [dns_name(), mnc_label(), mcc_label(), <<"gprs">>], lists:flatten(L)).
+
+uint(Bits) ->
+    int_range(0,(1 bsl Bits) - 1).
 
 uint4() ->
     int_range(0,16#0f).
@@ -736,38 +742,35 @@ v2_ie_group() ->
 gen_routeing_area_identity() ->
     #routeing_area_identity{
        instance = instance(),
-       mcc = mcc(),
-       mnc = mnc(),
+       identity = gen_v1_rai()
+      }.
+
+gen_v1_cgi() ->
+    #cgi{
+       plmn = plmn(),
        lac = uint16(),
-       rac = 0
+       ci = uint16()
+      }.
+
+gen_v1_sai() ->
+    #sai{
+       plmn = plmn(),
+       lac = uint16(),
+       sac = uint16()
+      }.
+
+gen_v1_rai() ->
+    #rai{
+       plmn = plmn(),
+       lac = uint16(),
+       rac = ?LET(L, uint8(), (L bsl 8) bor 16#ff)
       }.
 
 gen_user_location_information() ->
-    oneof(
-      [#user_location_information{
-	  instance = instance(),
-	  type = 0,
-	  mcc = mcc(),
-	  mnc = mnc(),
-	  lac = uint16(),
-	  ci = uint16()
-	 },
-       #user_location_information{
-	  instance = instance(),
-	  type = 1,
-	  mcc = mcc(),
-	  mnc = mnc(),
-	  lac = uint16(),
-	  sac = uint16()
-	 },
-       #user_location_information{
-	  instance = instance(),
-	  type = 2,
-	  mcc = mcc(),
-	  mnc = mnc(),
-	  lac = uint16(),
-	  rac = uint8()
-	 }]).
+    #user_location_information{
+       instance = instance(),
+       location = oneof([gen_v1_cgi(), gen_v1_sai(), gen_v1_rai()])
+      }.
 
 %% gen_v2_serving_network() ->
 %%     #v2_serving_network{
@@ -1835,17 +1838,68 @@ gen_v2_traffic_aggregation_description() ->
        value = binary()
       }.
 
+gen_v2_cgi() ->
+    #cgi{
+       plmn = plmn(),
+       lac = uint16(),
+       ci = uint16()
+      }.
+
+gen_v2_sai() ->
+    #sai{
+       plmn = plmn(),
+       lac = uint16(),
+       sac = uint16()
+      }.
+
+gen_v2_rai() ->
+    #rai{
+       plmn = plmn(),
+       lac = uint16(),
+       rac = uint16()
+      }.
+
+gen_v2_tai() ->
+    #tai{
+       plmn = plmn(),
+       tac = uint16()
+      }.
+
+gen_v2_ecgi() ->
+    #ecgi{
+       plmn = plmn(),
+       eci = uint(28)
+      }.
+
+gen_v2_lai() ->
+    #lai{
+       plmn = plmn(),
+       lac = uint16()
+      }.
+
+gen_v2_macro_enb() ->
+    #macro_enb{
+       plmn = plmn(),
+       id = uint(20)
+      }.
+
+gen_v2_ext_macro_enb() ->
+    #ext_macro_enb{
+       plmn = plmn(),
+       id = oneof([uint(18), uint(21)])
+      }.
+
 gen_v2_user_location_information() ->
     #v2_user_location_information{
        instance = instance(),
-       cgi = oneof([undefined, binary(7)]),
-       sai = oneof([undefined, binary(7)]),
-       rai = oneof([undefined, binary(7)]),
-       tai = oneof([undefined, binary(5)]),
-       ecgi = oneof([undefined, binary(7)]),
-       lai = oneof([undefined, binary(5)]),
-       macro_enb = oneof([undefined, binary(6)]),
-       ext_macro_enb = oneof([undefined, binary(6)])
+       cgi = oneof([undefined, gen_v2_cgi()]),
+       sai = oneof([undefined, gen_v2_sai()]),
+       rai = oneof([undefined, gen_v2_rai()]),
+       tai = oneof([undefined, gen_v2_tai()]),
+       ecgi = oneof([undefined, gen_v2_ecgi()]),
+       lai = oneof([undefined, gen_v2_lai()]),
+       macro_enb = oneof([undefined, gen_v2_macro_enb()]),
+       ext_macro_enb = oneof([undefined, gen_v2_ext_macro_enb()])
       }.
 
 gen_v2_fully_qualified_tunnel_endpoint_identifier() ->

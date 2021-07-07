@@ -230,6 +230,10 @@ bin(Bin, Len, Pos, IE) ->
     <<V:Len/bytes, Rest/binary>> = Bin,
     {setelement(Pos, IE, V), Rest}.
 
+bin(Bin, Len, Fun, Pos, IE) ->
+    <<V:Len/bytes, Rest/binary>> = Bin,
+    {setelement(Pos, IE, Fun(V)), Rest}.
+
 int(Bin, Len, Pos, IE) ->
     <<V:Len/integer, Rest/binary>> = Bin,
     {setelement(Pos, IE, V), Rest}.
@@ -365,26 +369,24 @@ encode_mccmnc(MCC, MNC) ->
     <<MCC2:4, MCC1:4, MNC3:4, MCC3:4, MNC2:4, MNC1:4>>.
 
 decode_v1_rai(<<MCCMNC:3/bytes, LAC:16, RAC:8>>, Instance) ->
+    PLMN = {decode_mcc(MCCMNC), decode_mnc(MCCMNC)},
     #routeing_area_identity{
        instance = Instance,
-       mcc = decode_mcc(MCCMNC),
-       mnc = decode_mnc(MCCMNC),
-       lac = LAC,
-       rac = RAC}.
+       identity = #rai{plmn = PLMN, lac = LAC, rac = (RAC bsl 8) bor 255}
+      }.
 
 decode_v1_uli(<<Type:8, MCCMNC:3/bytes, LAC:16, Info:16, _/binary>>, Instance) ->
-    ULI = #user_location_information{
-	     instance = Instance,
-	     type = Type,
-	     mcc = decode_mcc(MCCMNC),
-	     mnc = decode_mnc(MCCMNC),
-	     lac = LAC
-	    },
+    PLMN = {decode_mcc(MCCMNC), decode_mnc(MCCMNC)},
+    ULI = #user_location_information{instance = Instance},
     case Type of
-	0 -> ULI#user_location_information{ci = Info};
-	1 -> ULI#user_location_information{sac = Info};
-	2 -> ULI#user_location_information{rac = Info bsr 8};
-	_ -> ULI
+	0 -> ULI#user_location_information{
+	       location = #cgi{plmn = PLMN, lac = LAC, ci = Info}};
+	1 -> ULI#user_location_information{
+	       location = #sai{plmn = PLMN, lac = LAC, sac = Info}};
+	2 -> ULI#user_location_information{
+	       location = #rai{plmn = PLMN, lac = LAC, rac = Info}};
+	_ -> ULI#user_location_information{
+	       location = {Type, PLMN, LAC, Info}}
     end.
 
 decode_fqdn(FQDN) ->
@@ -457,20 +459,40 @@ encode_flags(Flags, [F | N]) ->
     bool2int(lists:member(F, Flags)) +
 	encode_flags(Flags -- [F], N) * 2.
 
+decode_v2_cgi(<<MCCMNC:3/bytes, LAC:16, CI:16>>) ->
+    #cgi{plmn = {decode_mcc(MCCMNC), decode_mnc(MCCMNC)}, lac = LAC, ci = CI}.
+decode_v2_sai(<<MCCMNC:3/bytes, LAC:16, SAC:16>>) ->
+    #sai{plmn = {decode_mcc(MCCMNC), decode_mnc(MCCMNC)}, lac = LAC, sac = SAC}.
+decode_v2_rai(<<MCCMNC:3/bytes, LAC:16, RAC:16>>) ->
+    #rai{plmn = {decode_mcc(MCCMNC), decode_mnc(MCCMNC)}, lac = LAC, rac = RAC}.
+decode_v2_tai(<<MCCMNC:3/bytes, TAC:16>>) ->
+    #tai{plmn = {decode_mcc(MCCMNC), decode_mnc(MCCMNC)}, tac = TAC}.
+decode_v2_ecgi(<<MCCMNC:3/bytes, _:4, ECI:28>>) ->
+    #ecgi{plmn = {decode_mcc(MCCMNC), decode_mnc(MCCMNC)}, eci = ECI}.
+decode_v2_lai(<<MCCMNC:3/bytes, LAC:16>>) ->
+    #lai{plmn = {decode_mcc(MCCMNC), decode_mnc(MCCMNC)}, lac = LAC}.
+decode_v2_macro_enb(<<MCCMNC:3/bytes, _:4, Id:20>>) ->
+    #macro_enb{plmn = {decode_mcc(MCCMNC), decode_mnc(MCCMNC)}, id = Id}.
+decode_v2_ext_macro_enb(<<MCCMNC:3/bytes, 0:1, _:5, Id:18>>) ->
+    #ext_macro_enb{plmn = {decode_mcc(MCCMNC), decode_mnc(MCCMNC)}, id = Id};
+decode_v2_ext_macro_enb(<<MCCMNC:3/bytes, 1:1, _:2, Id:21>>) ->
+    #ext_macro_enb{plmn = {decode_mcc(MCCMNC), decode_mnc(MCCMNC)}, id = Id}.
+
 decode_v2_user_location_information(<<FlagEMeNB:1, FlagEeNB:1, FlagLAI:1, FlagECGI:1,
 				      FlagTAI:1, FlagRAI:1, FlagSAI:1, FlagCGI:1,
 				      Rest0/binary>>, Instance) ->
     IE0 = #v2_user_location_information{instance = Instance},
-    {IE1, Rest1} = maybe_bin(Rest0, FlagCGI,  7, #v2_user_location_information.cgi,  IE0),
-    {IE2, Rest2} = maybe_bin(Rest1, FlagSAI,  7, #v2_user_location_information.sai,  IE1),
-    {IE3, Rest3} = maybe_bin(Rest2, FlagRAI,  7, #v2_user_location_information.rai,  IE2),
-    {IE4, Rest4} = maybe_bin(Rest3, FlagTAI,  5, #v2_user_location_information.tai,  IE3),
-    {IE5, Rest5} = maybe_bin(Rest4, FlagECGI, 7, #v2_user_location_information.ecgi, IE4),
-    {IE6, Rest6} = maybe_bin(Rest5, FlagLAI,  5, #v2_user_location_information.lai,  IE5),
+
+    {IE1, Rest1} = maybe(Rest0, FlagCGI,  bin(_, 7, fun decode_v2_cgi/1, #v2_user_location_information.cgi, _),  IE0),
+    {IE2, Rest2} = maybe(Rest1, FlagSAI,  bin(_, 7, fun decode_v2_sai/1, #v2_user_location_information.sai, _),  IE1),
+    {IE3, Rest3} = maybe(Rest2, FlagRAI,  bin(_, 7, fun decode_v2_rai/1, #v2_user_location_information.rai, _),  IE2),
+    {IE4, Rest4} = maybe(Rest3, FlagTAI,  bin(_, 5, fun decode_v2_tai/1, #v2_user_location_information.tai, _),  IE3),
+    {IE5, Rest5} = maybe(Rest4, FlagECGI, bin(_, 7, fun decode_v2_ecgi/1, #v2_user_location_information.ecgi, _), IE4),
+    {IE6, Rest6} = maybe(Rest5, FlagLAI,  bin(_, 5, fun decode_v2_lai/1, #v2_user_location_information.lai, _),  IE5),
     {IE7, Rest7} =
-	maybe_bin(Rest6, FlagEeNB,  6, #v2_user_location_information.macro_enb,     IE6),
+	maybe(Rest6, FlagEeNB,  bin(_, 6, fun decode_v2_macro_enb/1, #v2_user_location_information.macro_enb, _),     IE6),
     {IE8, _Rest} =
-	maybe_bin(Rest7, FlagEMeNB, 6, #v2_user_location_information.ext_macro_enb, IE7),
+	maybe(Rest7, FlagEMeNB, bin(_, 6, fun decode_v2_ext_macro_enb/1, #v2_user_location_information.ext_macro_enb, _), IE7),
     IE8.
 
 decode_v2_fully_qualified_tunnel_endpoint_identifier(<<FlagV4:1, FlagV6:1, InterfaceType:6,
@@ -706,27 +728,21 @@ encode_imsi(IMSI) ->
     B.
 
 encode_v1_rai(#routeing_area_identity{
-		 mcc = MCC,
-		 mnc = MNC,
-		 lac = LAC,
-		 rac = RAC}) ->
-    <<(encode_mccmnc(MCC, MNC))/binary, LAC:16, RAC:8>>.
+		 identity = #rai{plmn = {MCC, MNC}, lac = LAC, rac = RAC}}) ->
+    <<(encode_mccmnc(MCC, MNC))/binary, LAC:16, (RAC bsr 8):8>>.
 
-
-encode_v1_uli(#user_location_information{
-		 type = Type,
-		 mcc = MCC,
-		 mnc = MNC,
-		 lac = LAC,
-		 ci = CI,
-		 sac = SAC,
-		 rac = RAC}) ->
-    Info = case Type of
-	       0 -> CI;
-	       1 -> SAC;
-	       2 -> (RAC bsl 8) bor 255;
-	       _ -> 16#ffff
-	   end,
+encode_v1_uli(#user_location_information{location = Location}) ->
+    {Type, {MCC, MNC}, LAC, Info} =
+	case Location of
+	    #cgi{plmn = PLMN, lac = LAC0, ci = CI} ->
+		{0, PLMN, LAC0, CI};
+	    #sai{plmn = PLMN, lac = LAC0, sac = SAC} ->
+		{1, PLMN, LAC0, SAC};
+	    #rai{plmn = PLMN, lac = LAC0, rac = RAC} ->
+		{2, PLMN, LAC0, RAC};
+	    {Type0, _, _, _, _} = V when is_integer(Type0) ->
+		V
+	end,
     <<Type:8, (encode_mccmnc(MCC, MNC))/binary, LAC:16, Info:16>>.
 
 encode_fqdn(FQDN) ->
@@ -767,23 +783,50 @@ encode_data_record_packet(#data_record_packet{
     BinRecs = << <<(size(R)):16, R/binary>> || R <- Records >>,
     << (length(Records)):8, Format:8, App:4, Release:4, (Version + 1):8, BinRecs/binary >>.
 
+encode_v2_cgi(#cgi{plmn = {MCC, MNC}, lac = LAC, ci = CI}, IE) ->
+    <<IE/binary, (encode_mccmnc(MCC, MNC))/binary, LAC:16, CI:16>>.
+encode_v2_sai(#sai{plmn = {MCC, MNC}, lac = LAC, sac = SAC}, IE) ->
+    <<IE/binary, (encode_mccmnc(MCC, MNC))/binary, LAC:16, SAC:16>>.
+encode_v2_rai(#rai{plmn = {MCC, MNC}, lac = LAC, rac = RAC}, IE) ->
+    <<IE/binary, (encode_mccmnc(MCC, MNC))/binary, LAC:16, RAC:16>>.
+encode_v2_tai(#tai{plmn = {MCC, MNC}, tac = TAC}, IE) ->
+    <<IE/binary, (encode_mccmnc(MCC, MNC))/binary, TAC:16>>.
+encode_v2_ecgi(#ecgi{plmn = {MCC, MNC}, eci = ECI}, IE) ->
+    <<IE/binary, (encode_mccmnc(MCC, MNC))/binary, 0:4, ECI:28>>.
+encode_v2_lai(#lai{plmn = {MCC, MNC}, lac = LAC}, IE) ->
+    <<IE/binary, (encode_mccmnc(MCC, MNC))/binary, LAC:16>>.
+encode_v2_macro_enb(#macro_enb{plmn = {MCC, MNC}, id = Id}, IE) ->
+    <<IE/binary, (encode_mccmnc(MCC, MNC))/binary, 0:4, Id:20>>.
+encode_v2_ext_macro_enb(#ext_macro_enb{plmn = {MCC, MNC}, id = Id}, IE)
+  when Id =< 16#03ffff ->
+    <<IE/binary, (encode_mccmnc(MCC, MNC))/binary, 0:1, 0:5, Id:18>>;
+encode_v2_ext_macro_enb(#ext_macro_enb{plmn = {MCC, MNC}, id = Id}, IE) ->
+    <<IE/binary, (encode_mccmnc(MCC, MNC))/binary, 1:1, 0:2, Id:21>>.
+
 encode_v2_user_location_information(
   #v2_user_location_information{cgi = CGI, sai = SAI, rai = RAI,
 				tai = TAI, ecgi = ECGI, lai = LAI,
 				macro_enb = MeNB, ext_macro_enb = EMeNB}) ->
+    FlagCGI = is_record(CGI, cgi),
+    FlagSAI = is_record(SAI, sai),
+    FlagRAI = is_record(RAI, rai),
+    FlagTAI = is_record(TAI, tai),
+    FlagECGI = is_record(ECGI, ecgi),
+    FlagLAI = is_record(LAI, lai),
+    FlagMeNB = is_record(MeNB, macro_enb),
+    FlagEMeNB = is_record(EMeNB, ext_macro_enb),
 
-    IE0 = <<(is_bin(EMeNB)):1, (is_bin(MeNB)):1,
-	    (is_bin(LAI)):1, (is_bin(ECGI)):1,
-	    (is_bin(TAI)):1, (is_bin(RAI)):1,
-	    (is_bin(SAI)):1, (is_bin(CGI)):1>>,
-    IE1 = maybe_bin(CGI,  IE0),
-    IE2 = maybe_bin(SAI,  IE1),
-    IE3 = maybe_bin(RAI,  IE2),
-    IE4 = maybe_bin(TAI,  IE3),
-    IE5 = maybe_bin(ECGI, IE4),
-    IE6 = maybe_bin(LAI,  IE5),
-    IE7 = maybe_bin(MeNB, IE6),
-    _IE = maybe_bin(EMeNB,IE7).
+    IE0 = <<(bool2int(FlagEMeNB)):1, (bool2int(FlagMeNB)):1, (bool2int(FlagLAI)):1, (bool2int(FlagECGI)):1,
+	    (bool2int(FlagTAI)):1,   (bool2int(FlagRAI)):1,  (bool2int(FlagSAI)):1, (bool2int(FlagCGI)):1>>,
+
+    IE1 = maybe(FlagCGI,   encode_v2_cgi(CGI, _), IE0),
+    IE2 = maybe(FlagSAI,   encode_v2_sai(SAI, _), IE1),
+    IE3 = maybe(FlagRAI,   encode_v2_rai(RAI, _), IE2),
+    IE4 = maybe(FlagTAI,   encode_v2_tai(TAI, _), IE3),
+    IE5 = maybe(FlagECGI,  encode_v2_ecgi(ECGI, _), IE4),
+    IE6 = maybe(FlagLAI,   encode_v2_lai(LAI, _), IE5),
+    IE7 = maybe(FlagMeNB,  encode_v2_macro_enb(MeNB, _), IE6),
+    _IE = maybe(FlagEMeNB, encode_v2_ext_macro_enb(EMeNB, _), IE7).
 
 encode_v2_fully_qualified_tunnel_endpoint_identifier(
   #v2_fully_qualified_tunnel_endpoint_identifier{
