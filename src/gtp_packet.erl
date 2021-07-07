@@ -14,7 +14,7 @@
 	 decode/1, decode/2, decode_ies/1, decode_ies/2,
 	 msg_description/1, msg_description_v2/1,
 	 pretty_print/1]).
--export([encode_v1_uli/1]).
+-export([encode_plmn_id/1]).
 
 -compile([{parse_transform, cut}]).
 -compile({inline,[decode_tbcd/1, decode_fqdn/1,
@@ -363,6 +363,9 @@ decode_mcc(<<MCCHi:8, _:4, MCC3:4, _:8>>) ->
 decode_mnc(<<_:8, MNC3:4, _:4, MNCHi:8>>) ->
     decode_tbcd(<<MNCHi:8, 15:4, MNC3:4>>).
 
+encode_plmn_id({MCC, MNC}) ->
+    encode_mccmnc(MCC, MNC).
+
 encode_mccmnc(MCC, MNC) ->
     [MCC1, MCC2, MCC3 | _] = [ string_to_tbcd(X) || <<X:8>> <= MCC] ++ [15,15,15],
     [MNC1, MNC2, MNC3 | _] = [ string_to_tbcd(X) || <<X:8>> <= MNC] ++ [15,15,15],
@@ -372,7 +375,7 @@ decode_v1_rai(<<MCCMNC:3/bytes, LAC:16, RAC:8>>, Instance) ->
     PLMN = {decode_mcc(MCCMNC), decode_mnc(MCCMNC)},
     #routeing_area_identity{
        instance = Instance,
-       identity = #rai{plmn = PLMN, lac = LAC, rac = (RAC bsl 8) bor 255}
+       identity = #rai{plmn_id = PLMN, lac = LAC, rac = (RAC bsl 8) bor 255}
       }.
 
 decode_v1_uli(<<Type:8, MCCMNC:3/bytes, LAC:16, Info:16, _/binary>>, Instance) ->
@@ -380,11 +383,11 @@ decode_v1_uli(<<Type:8, MCCMNC:3/bytes, LAC:16, Info:16, _/binary>>, Instance) -
     ULI = #user_location_information{instance = Instance},
     case Type of
 	0 -> ULI#user_location_information{
-	       location = #cgi{plmn = PLMN, lac = LAC, ci = Info}};
+	       location = #cgi{plmn_id = PLMN, lac = LAC, ci = Info}};
 	1 -> ULI#user_location_information{
-	       location = #sai{plmn = PLMN, lac = LAC, sac = Info}};
+	       location = #sai{plmn_id = PLMN, lac = LAC, sac = Info}};
 	2 -> ULI#user_location_information{
-	       location = #rai{plmn = PLMN, lac = LAC, rac = Info}};
+	       location = #rai{plmn_id = PLMN, lac = LAC, rac = Info}};
 	_ -> ULI#user_location_information{
 	       location = {Type, PLMN, LAC, Info}}
     end.
@@ -460,23 +463,23 @@ encode_flags(Flags, [F | N]) ->
 	encode_flags(Flags -- [F], N) * 2.
 
 decode_v2_cgi(<<MCCMNC:3/bytes, LAC:16, CI:16>>) ->
-    #cgi{plmn = {decode_mcc(MCCMNC), decode_mnc(MCCMNC)}, lac = LAC, ci = CI}.
+    #cgi{plmn_id = {decode_mcc(MCCMNC), decode_mnc(MCCMNC)}, lac = LAC, ci = CI}.
 decode_v2_sai(<<MCCMNC:3/bytes, LAC:16, SAC:16>>) ->
-    #sai{plmn = {decode_mcc(MCCMNC), decode_mnc(MCCMNC)}, lac = LAC, sac = SAC}.
+    #sai{plmn_id = {decode_mcc(MCCMNC), decode_mnc(MCCMNC)}, lac = LAC, sac = SAC}.
 decode_v2_rai(<<MCCMNC:3/bytes, LAC:16, RAC:16>>) ->
-    #rai{plmn = {decode_mcc(MCCMNC), decode_mnc(MCCMNC)}, lac = LAC, rac = RAC}.
+    #rai{plmn_id = {decode_mcc(MCCMNC), decode_mnc(MCCMNC)}, lac = LAC, rac = RAC}.
 decode_v2_tai(<<MCCMNC:3/bytes, TAC:16>>) ->
-    #tai{plmn = {decode_mcc(MCCMNC), decode_mnc(MCCMNC)}, tac = TAC}.
+    #tai{plmn_id = {decode_mcc(MCCMNC), decode_mnc(MCCMNC)}, tac = TAC}.
 decode_v2_ecgi(<<MCCMNC:3/bytes, _:4, ECI:28>>) ->
-    #ecgi{plmn = {decode_mcc(MCCMNC), decode_mnc(MCCMNC)}, eci = ECI}.
+    #ecgi{plmn_id = {decode_mcc(MCCMNC), decode_mnc(MCCMNC)}, eci = ECI}.
 decode_v2_lai(<<MCCMNC:3/bytes, LAC:16>>) ->
-    #lai{plmn = {decode_mcc(MCCMNC), decode_mnc(MCCMNC)}, lac = LAC}.
+    #lai{plmn_id = {decode_mcc(MCCMNC), decode_mnc(MCCMNC)}, lac = LAC}.
 decode_v2_macro_enb(<<MCCMNC:3/bytes, _:4, Id:20>>) ->
-    #macro_enb{plmn = {decode_mcc(MCCMNC), decode_mnc(MCCMNC)}, id = Id}.
+    #macro_enb{plmn_id = {decode_mcc(MCCMNC), decode_mnc(MCCMNC)}, id = Id}.
 decode_v2_ext_macro_enb(<<MCCMNC:3/bytes, 0:1, _:5, Id:18>>) ->
-    #ext_macro_enb{plmn = {decode_mcc(MCCMNC), decode_mnc(MCCMNC)}, id = Id};
+    #ext_macro_enb{plmn_id = {decode_mcc(MCCMNC), decode_mnc(MCCMNC)}, id = Id};
 decode_v2_ext_macro_enb(<<MCCMNC:3/bytes, 1:1, _:2, Id:21>>) ->
-    #ext_macro_enb{plmn = {decode_mcc(MCCMNC), decode_mnc(MCCMNC)}, id = Id}.
+    #ext_macro_enb{plmn_id = {decode_mcc(MCCMNC), decode_mnc(MCCMNC)}, id = Id}.
 
 decode_v2_user_location_information(<<FlagEMeNB:1, FlagEeNB:1, FlagLAI:1, FlagECGI:1,
 				      FlagTAI:1, FlagRAI:1, FlagSAI:1, FlagCGI:1,
@@ -728,17 +731,17 @@ encode_imsi(IMSI) ->
     B.
 
 encode_v1_rai(#routeing_area_identity{
-		 identity = #rai{plmn = {MCC, MNC}, lac = LAC, rac = RAC}}) ->
+		 identity = #rai{plmn_id = {MCC, MNC}, lac = LAC, rac = RAC}}) ->
     <<(encode_mccmnc(MCC, MNC))/binary, LAC:16, (RAC bsr 8):8>>.
 
 encode_v1_uli(#user_location_information{location = Location}) ->
     {Type, {MCC, MNC}, LAC, Info} =
 	case Location of
-	    #cgi{plmn = PLMN, lac = LAC0, ci = CI} ->
+	    #cgi{plmn_id = PLMN, lac = LAC0, ci = CI} ->
 		{0, PLMN, LAC0, CI};
-	    #sai{plmn = PLMN, lac = LAC0, sac = SAC} ->
+	    #sai{plmn_id = PLMN, lac = LAC0, sac = SAC} ->
 		{1, PLMN, LAC0, SAC};
-	    #rai{plmn = PLMN, lac = LAC0, rac = RAC} ->
+	    #rai{plmn_id = PLMN, lac = LAC0, rac = RAC} ->
 		{2, PLMN, LAC0, RAC};
 	    {Type0, _, _, _, _} = V when is_integer(Type0) ->
 		V
@@ -783,24 +786,24 @@ encode_data_record_packet(#data_record_packet{
     BinRecs = << <<(size(R)):16, R/binary>> || R <- Records >>,
     << (length(Records)):8, Format:8, App:4, Release:4, (Version + 1):8, BinRecs/binary >>.
 
-encode_v2_cgi(#cgi{plmn = {MCC, MNC}, lac = LAC, ci = CI}, IE) ->
+encode_v2_cgi(#cgi{plmn_id = {MCC, MNC}, lac = LAC, ci = CI}, IE) ->
     <<IE/binary, (encode_mccmnc(MCC, MNC))/binary, LAC:16, CI:16>>.
-encode_v2_sai(#sai{plmn = {MCC, MNC}, lac = LAC, sac = SAC}, IE) ->
+encode_v2_sai(#sai{plmn_id = {MCC, MNC}, lac = LAC, sac = SAC}, IE) ->
     <<IE/binary, (encode_mccmnc(MCC, MNC))/binary, LAC:16, SAC:16>>.
-encode_v2_rai(#rai{plmn = {MCC, MNC}, lac = LAC, rac = RAC}, IE) ->
+encode_v2_rai(#rai{plmn_id = {MCC, MNC}, lac = LAC, rac = RAC}, IE) ->
     <<IE/binary, (encode_mccmnc(MCC, MNC))/binary, LAC:16, RAC:16>>.
-encode_v2_tai(#tai{plmn = {MCC, MNC}, tac = TAC}, IE) ->
+encode_v2_tai(#tai{plmn_id = {MCC, MNC}, tac = TAC}, IE) ->
     <<IE/binary, (encode_mccmnc(MCC, MNC))/binary, TAC:16>>.
-encode_v2_ecgi(#ecgi{plmn = {MCC, MNC}, eci = ECI}, IE) ->
+encode_v2_ecgi(#ecgi{plmn_id = {MCC, MNC}, eci = ECI}, IE) ->
     <<IE/binary, (encode_mccmnc(MCC, MNC))/binary, 0:4, ECI:28>>.
-encode_v2_lai(#lai{plmn = {MCC, MNC}, lac = LAC}, IE) ->
+encode_v2_lai(#lai{plmn_id = {MCC, MNC}, lac = LAC}, IE) ->
     <<IE/binary, (encode_mccmnc(MCC, MNC))/binary, LAC:16>>.
-encode_v2_macro_enb(#macro_enb{plmn = {MCC, MNC}, id = Id}, IE) ->
+encode_v2_macro_enb(#macro_enb{plmn_id = {MCC, MNC}, id = Id}, IE) ->
     <<IE/binary, (encode_mccmnc(MCC, MNC))/binary, 0:4, Id:20>>.
-encode_v2_ext_macro_enb(#ext_macro_enb{plmn = {MCC, MNC}, id = Id}, IE)
+encode_v2_ext_macro_enb(#ext_macro_enb{plmn_id = {MCC, MNC}, id = Id}, IE)
   when Id =< 16#03ffff ->
     <<IE/binary, (encode_mccmnc(MCC, MNC))/binary, 0:1, 0:5, Id:18>>;
-encode_v2_ext_macro_enb(#ext_macro_enb{plmn = {MCC, MNC}, id = Id}, IE) ->
+encode_v2_ext_macro_enb(#ext_macro_enb{plmn_id = {MCC, MNC}, id = Id}, IE) ->
     <<IE/binary, (encode_mccmnc(MCC, MNC))/binary, 1:1, 0:2, Id:21>>.
 
 encode_v2_user_location_information(
@@ -3421,11 +3424,10 @@ decode_v2_element(<<M_rat_type:8/integer,
     #v2_rat_type{instance = Instance,
 		 rat_type = M_rat_type};
 
-decode_v2_element(<<M_mccmnc:3/bytes,
+decode_v2_element(<<M_plmn:3/bytes,
 		    _/binary>>, 83, Instance) ->
     #v2_serving_network{instance = Instance,
-			mcc = decode_mcc(M_mccmnc),
-			mnc = decode_mnc(M_mccmnc)};
+			plmn_id = {decode_mcc(M_plmn), decode_mnc(M_plmn)}};
 
 decode_v2_element(<<M_value/binary>>, 84, Instance) ->
     #v2_eps_bearer_level_traffic_flow_template{instance = Instance,
@@ -3445,11 +3447,10 @@ decode_v2_element(<<M_value:32/integer>>, 88, Instance) ->
     #v2_tmsi{instance = Instance,
 	     value = M_value};
 
-decode_v2_element(<<M_mccmnc:3/bytes,
+decode_v2_element(<<M_plmn:3/bytes,
 		    M_value/binary>>, 89, Instance) ->
     #v2_global_cn_id{instance = Instance,
-		     mcc = decode_mcc(M_mccmnc),
-		     mnc = decode_mnc(M_mccmnc),
+		     plmn_id = {decode_mcc(M_plmn), decode_mnc(M_plmn)},
 		     value = M_value};
 
 decode_v2_element(<<M_hsgw_address_len:8/integer, M_hsgw_address:M_hsgw_address_len/bytes,
@@ -3487,7 +3488,7 @@ decode_v2_element(<<M_value:2/bytes,
     #v2_charging_characteristics{instance = Instance,
 				 value = M_value};
 
-decode_v2_element(<<M_mccmnc:3/bytes,
+decode_v2_element(<<M_plmn:3/bytes,
 		    M_trace_id:32/integer,
 		    M_triggering_events:9/bytes,
 		    M_list_of_ne_types:16/integer,
@@ -3495,8 +3496,7 @@ decode_v2_element(<<M_mccmnc:3/bytes,
 		    M_list_of_interfaces:12/bytes,
 		    M_ip_address_of_trace_collection_entity/binary>>, 96, Instance) ->
     #v2_trace_information{instance = Instance,
-			  mcc = decode_mcc(M_mccmnc),
-			  mnc = decode_mnc(M_mccmnc),
+			  plmn_id = {decode_mcc(M_plmn), decode_mnc(M_plmn)},
 			  trace_id = M_trace_id,
 			  triggering_events = M_triggering_events,
 			  list_of_ne_types = M_list_of_ne_types,
@@ -3576,11 +3576,10 @@ decode_v2_element(<<M_timezone:8/integer,
 		     timezone = M_timezone,
 		     dst = M_dst};
 
-decode_v2_element(<<M_mccmnc:3/bytes,
+decode_v2_element(<<M_plmn:3/bytes,
 		    M_id:24/integer>>, 115, Instance) ->
     #v2_trace_reference{instance = Instance,
-			mcc = decode_mcc(M_mccmnc),
-			mnc = decode_mnc(M_mccmnc),
+			plmn_id = {decode_mcc(M_plmn), decode_mnc(M_plmn)},
 			id = M_id};
 
 decode_v2_element(<<M_type:8/integer,
@@ -3589,13 +3588,12 @@ decode_v2_element(<<M_type:8/integer,
 				 type = M_type,
 				 message = M_message};
 
-decode_v2_element(<<M_mccmnc:3/bytes,
+decode_v2_element(<<M_plmn:3/bytes,
 		    M_group_id:16/integer,
 		    M_code:24/integer,
 		    M_m_tmsi/binary>>, 117, Instance) ->
     #v2_guti{instance = Instance,
-	     mcc = decode_mcc(M_mccmnc),
-	     mnc = decode_mnc(M_mccmnc),
+	     plmn_id = {decode_mcc(M_plmn), decode_mnc(M_plmn)},
 	     group_id = M_group_id,
 	     code = M_code,
 	     m_tmsi = M_m_tmsi};
@@ -3730,7 +3728,7 @@ decode_v2_element(<<M_value:16/integer>>, 144, Instance) ->
     #v2_rfsp_index{instance = Instance,
 		   value = M_value};
 
-decode_v2_element(<<M_mccmnc:3/bytes,
+decode_v2_element(<<M_plmn:3/bytes,
 		    _:5,
 		    M_csg_id:27/bits,
 		    M_access_mode:2/integer,
@@ -3738,8 +3736,7 @@ decode_v2_element(<<M_mccmnc:3/bytes,
 		    M_lcsg:1/integer,
 		    M_cmi:1/integer>>, 145, Instance) ->
     #v2_user_csg_information{instance = Instance,
-			     mcc = decode_mcc(M_mccmnc),
-			     mnc = decode_mnc(M_mccmnc),
+			     plmn_id = {decode_mcc(M_plmn), decode_mnc(M_plmn)},
 			     csg_id = M_csg_id,
 			     access_mode = M_access_mode,
 			     lcsg = int2bool(M_lcsg),
@@ -4050,7 +4047,7 @@ decode_v2_element(<<M_number_of_uplink_packets_allowed:32/integer,
 				number_of_downlink_packets_allowed = M_number_of_downlink_packets_allowed,
 				apn_rate_control_status_validity_time = M_apn_rate_control_status_validity_time};
 
-decode_v2_element(<<M_mccmnc:3/bytes,
+decode_v2_element(<<M_plmn:3/bytes,
 		    M_trace_id:32/integer,
 		    M_triggering_events_len:8/integer, M_triggering_events:M_triggering_events_len/bytes,
 		    M_list_of_ne_types_len:8/integer, M_list_of_ne_types:M_list_of_ne_types_len/bytes,
@@ -4059,8 +4056,7 @@ decode_v2_element(<<M_mccmnc:3/bytes,
 		    M_ip_address_of_trace_collection_entity_len:8/integer, M_ip_address_of_trace_collection_entity:M_ip_address_of_trace_collection_entity_len/bytes,
 		    _/binary>>, 205, Instance) ->
     #v2_extended_trace_information{instance = Instance,
-				   mcc = decode_mcc(M_mccmnc),
-				   mnc = decode_mnc(M_mccmnc),
+				   plmn_id = {decode_mcc(M_plmn), decode_mnc(M_plmn)},
 				   trace_id = M_trace_id,
 				   triggering_events = M_triggering_events,
 				   list_of_ne_types = M_list_of_ne_types,
@@ -4229,8 +4225,7 @@ encode_v2_element(#v2_rat_type{
 
 encode_v2_element(#v2_serving_network{
 		     instance = Instance,
-		     mcc = M_mcc,
-		     mnc = M_mnc}) ->
+		     plmn_id = {M_mcc, M_mnc}}) ->
     encode_v2_element(83, Instance, <<(encode_mccmnc(M_mcc, M_mnc))/binary>>);
 
 encode_v2_element(#v2_eps_bearer_level_traffic_flow_template{
@@ -4256,8 +4251,7 @@ encode_v2_element(#v2_tmsi{
 
 encode_v2_element(#v2_global_cn_id{
 		     instance = Instance,
-		     mcc = M_mcc,
-		     mnc = M_mnc,
+		     plmn_id = {M_mcc, M_mnc},
 		     value = M_value}) ->
     encode_v2_element(89, Instance, <<(encode_mccmnc(M_mcc, M_mnc))/binary,
 				      M_value/binary>>);
@@ -4300,8 +4294,7 @@ encode_v2_element(#v2_charging_characteristics{
 
 encode_v2_element(#v2_trace_information{
 		     instance = Instance,
-		     mcc = M_mcc,
-		     mnc = M_mnc,
+		     plmn_id = {M_mcc, M_mnc},
 		     trace_id = M_trace_id,
 		     triggering_events = M_triggering_events,
 		     list_of_ne_types = M_list_of_ne_types,
@@ -4401,8 +4394,7 @@ encode_v2_element(#v2_ue_time_zone{
 
 encode_v2_element(#v2_trace_reference{
 		     instance = Instance,
-		     mcc = M_mcc,
-		     mnc = M_mnc,
+		     plmn_id = {M_mcc, M_mnc},
 		     id = M_id}) ->
     encode_v2_element(115, Instance, <<(encode_mccmnc(M_mcc, M_mnc))/binary,
 				       M_id:24/integer>>);
@@ -4416,8 +4408,7 @@ encode_v2_element(#v2_complete_request_message{
 
 encode_v2_element(#v2_guti{
 		     instance = Instance,
-		     mcc = M_mcc,
-		     mnc = M_mnc,
+		     plmn_id = {M_mcc, M_mnc},
 		     group_id = M_group_id,
 		     code = M_code,
 		     m_tmsi = M_m_tmsi}) ->
@@ -4577,8 +4568,7 @@ encode_v2_element(#v2_rfsp_index{
 
 encode_v2_element(#v2_user_csg_information{
 		     instance = Instance,
-		     mcc = M_mcc,
-		     mnc = M_mnc,
+		     plmn_id = {M_mcc, M_mnc},
 		     csg_id = M_csg_id,
 		     access_mode = M_access_mode,
 		     lcsg = M_lcsg,
@@ -4931,8 +4921,7 @@ encode_v2_element(#v2_apn_rate_control_status{
 
 encode_v2_element(#v2_extended_trace_information{
 		     instance = Instance,
-		     mcc = M_mcc,
-		     mnc = M_mnc,
+		     plmn_id = {M_mcc, M_mnc},
 		     trace_id = M_trace_id,
 		     triggering_events = M_triggering_events,
 		     list_of_ne_types = M_list_of_ne_types,

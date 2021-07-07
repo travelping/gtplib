@@ -206,7 +206,7 @@ v2_pco_vendor_ext() ->
 	 #v2_rat_type{rat_type = 6},
 	 #v2_selection_mode{mode = 0},
 	 #v2_serving_network{
-	    mcc = <<"302">>, mnc = <<"610">>},
+	    plmn_id = {<<"302">>, <<"610">>}},
 	 #v2_ue_time_zone{timezone = 138,dst = 0},
 	 #v2_user_location_information{
 	    cgi = undefined,
