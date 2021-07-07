@@ -160,7 +160,7 @@ raw_ies() ->
       [{"RAT Type", 8, integer},
        {'_', 0}]},
      {83, "v2 Serving Network",
-      [{"MCCMNC", mccmnc},
+      [{"PLMN", mccmnc},
        {'_', 0}]},
      {84, "v2 EPS Bearer Level Traffic Flow Template",
       [{"Value", 0, binary}]},
@@ -171,7 +171,7 @@ raw_ies() ->
      {88, "v2 TMSI",
       [{"Value", 32, integer}]},
      {89, "v2 Global CN-Id",
-      [{"MCCMNC", mccmnc},
+      [{"PLMN", mccmnc},
        {"Value", 0, binary}]},
      {90, "v2 S103 PDN Data Forwarding Info",
       [{"HSGW Address", 8, length_binary},
@@ -192,7 +192,7 @@ raw_ies() ->
       [{"Value", 2, bytes},
        {'_', 0}]},
      {96, "v2 Trace Information",
-      [{"MCCMNC", mccmnc},
+      [{"PLMN", mccmnc},
        {"Trace ID", 32, integer},
        {"Triggering Events", 9, bytes},
        {"List of NE Types", 16, integer},
@@ -240,13 +240,13 @@ raw_ies() ->
        {"DST", 2, integer},
        {'_', 0}]},
      {115, "v2 Trace Reference",
-      [{"MCCMNC", mccmnc},
+      [{"PLMN", mccmnc},
        {"Id", 24, integer}]},
      {116, "v2 Complete Request Message",
       [{"Type", 8, integer},
        {"Message", 0, binary}]},
      {117, "v2 GUTI",
-      [{"MCCMNC", mccmnc},
+      [{"PLMN", mccmnc},
        {"Group Id", 16, integer},
        {"Code", 24, integer},
        {"M-TMSI", 0, binary}]},
@@ -327,7 +327,7 @@ raw_ies() ->
      {144, "v2 RFSP Index",
       [{"Value", 16, integer}]},
      {145, "v2 User CSG Information",
-      [{"MCCMNC", mccmnc},
+      [{"PLMN", mccmnc},
        {'_', 5},
        {"CSG Id", 27, bits},
        {"Access mode", 2, integer},
@@ -494,7 +494,7 @@ raw_ies() ->
        {"APN Rate Control Status validity Time", 64, integer},
        {'_', 0}]},
      {205, "v2 Extended Trace Information",
-      [{"MCCMNC", mccmnc},
+      [{"PLMN", mccmnc},
        {"Trace ID", 32, integer},
        {"Triggering Events", 8, length_binary},
        {"List of NE Types", 8, length_binary},
@@ -649,7 +649,7 @@ ies() ->
 gen_record_def(#field{type = '_'}) ->
     [];
 gen_record_def(#field{spec = mccmnc}) ->
-    ["mcc = <<\"001\">>", "mnc = <<\"001\">>"];
+    ["plmn_id = {<<\"001\">>, <<\"001\">>}"];
 gen_record_def(#field{name = Name, optional = true}) ->
     [to_string(Name)];
 gen_record_def(#field{name = Name, type = flags}) ->
@@ -710,8 +710,7 @@ gen_decoder_header_match(#field{name = Name, len = Size, type = Type}) ->
 gen_decoder_record_assign(#field{type = '_'}) ->
     [];
 gen_decoder_record_assign(#field{name = Name, spec = mccmnc}) ->
-    [io_lib:format("mcc = decode_mcc(M_~s)", [Name]),
-     io_lib:format("mnc = decode_mnc(M_~s)", [Name])];
+    [io_lib:format("plmn_id = {decode_mcc(M_~s), decode_mnc(M_~s)}", [Name, Name])];
 gen_decoder_record_assign(#field{name = Name, type = flags, spec = Flags}) ->
     [io_lib:format("~s = decode_flags(M_~s, ~p)",
 		   [Name, Name, Flags])];
@@ -735,7 +734,7 @@ gen_decoder_record_assign(#field{name = Name}) ->
 gen_encoder_record_assign(#field{type = '_'}) ->
     [];
 gen_encoder_record_assign(#field{spec = mccmnc}) ->
-    ["mcc = M_mcc", "mnc = M_mnc"];
+    ["plmn_id = {M_mcc, M_mnc}"];
 gen_encoder_record_assign(#field{name = Name, type = undefined}) ->
     [io_lib:format("~s = undefined", [Name])];
 gen_encoder_record_assign(#field{name = Name}) ->

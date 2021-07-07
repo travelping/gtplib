@@ -45,14 +45,14 @@
 	  ie		:: [term()] | map() | binary()
 	 }).
 
--record(cgi, {plmn, lac, ci}).
--record(sai, {plmn, lac, sac}).
--record(rai, {plmn, lac, rac}).
--record(tai, {plmn, tac}).
--record(ecgi, {plmn, eci}).
--record(lai, {plmn, lac}).
--record(macro_enb, {plmn, id}).
--record(ext_macro_enb, {plmn, id}).
+-record(cgi, {plmn_id, lac, ci}).
+-record(sai, {plmn_id, lac, sac}).
+-record(rai, {plmn_id, lac, rac}).
+-record(tai, {plmn_id, tac}).
+-record(ecgi, {plmn_id, eci}).
+-record(lai, {plmn_id, lac}).
+-record(macro_enb, {plmn_id, id}).
+-record(ext_macro_enb, {plmn_id, id}).
 
 -record(routeing_area_identity, {
 	  instance = 0,
@@ -849,8 +849,7 @@
 
 -record(v2_serving_network, {
 	  instance = 0,
-	  mcc = <<"001">>,
-	  mnc = <<"001">>
+	  plmn_id = {<<"001">>, <<"001">>}
 }).
 
 -record(v2_eps_bearer_level_traffic_flow_template, {
@@ -872,8 +871,7 @@
 
 -record(v2_global_cn_id, {
 	  instance = 0,
-	  mcc = <<"001">>,
-	  mnc = <<"001">>,
+	  plmn_id = {<<"001">>, <<"001">>},
 	  value = <<>>
 }).
 
@@ -912,8 +910,7 @@
 
 -record(v2_trace_information, {
 	  instance = 0,
-	  mcc = <<"001">>,
-	  mnc = <<"001">>,
+	  plmn_id = {<<"001">>, <<"001">>},
 	  trace_id = 0,
 	  triggering_events = <<0,0,0,0,0,0,0,0,0>>,
 	  list_of_ne_types = 0,
@@ -998,8 +995,7 @@
 
 -record(v2_trace_reference, {
 	  instance = 0,
-	  mcc = <<"001">>,
-	  mnc = <<"001">>,
+	  plmn_id = {<<"001">>, <<"001">>},
 	  id = 0
 }).
 
@@ -1011,8 +1007,7 @@
 
 -record(v2_guti, {
 	  instance = 0,
-	  mcc = <<"001">>,
-	  mnc = <<"001">>,
+	  plmn_id = {<<"001">>, <<"001">>},
 	  group_id = 0,
 	  code = 0,
 	  m_tmsi = <<>>
@@ -1149,8 +1144,7 @@
 
 -record(v2_user_csg_information, {
 	  instance = 0,
-	  mcc = <<"001">>,
-	  mnc = <<"001">>,
+	  plmn_id = {<<"001">>, <<"001">>},
 	  csg_id = <<0,0,0,0:3>>,
 	  access_mode = 0,
 	  lcsg = false,
@@ -1446,8 +1440,7 @@
 
 -record(v2_extended_trace_information, {
 	  instance = 0,
-	  mcc = <<"001">>,
-	  mnc = <<"001">>,
+	  plmn_id = {<<"001">>, <<"001">>},
 	  trace_id = 0,
 	  triggering_events = <<>>,
 	  list_of_ne_types = <<>>,

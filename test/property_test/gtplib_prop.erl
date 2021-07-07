@@ -747,21 +747,21 @@ gen_routeing_area_identity() ->
 
 gen_v1_cgi() ->
     #cgi{
-       plmn = plmn(),
+       plmn_id = plmn(),
        lac = uint16(),
        ci = uint16()
       }.
 
 gen_v1_sai() ->
     #sai{
-       plmn = plmn(),
+       plmn_id = plmn(),
        lac = uint16(),
        sac = uint16()
       }.
 
 gen_v1_rai() ->
     #rai{
-       plmn = plmn(),
+       plmn_id = plmn(),
        lac = uint16(),
        rac = ?LET(L, uint8(), (L bsl 8) bor 16#ff)
       }.
@@ -1840,52 +1840,52 @@ gen_v2_traffic_aggregation_description() ->
 
 gen_v2_cgi() ->
     #cgi{
-       plmn = plmn(),
+       plmn_id = plmn(),
        lac = uint16(),
        ci = uint16()
       }.
 
 gen_v2_sai() ->
     #sai{
-       plmn = plmn(),
+       plmn_id = plmn(),
        lac = uint16(),
        sac = uint16()
       }.
 
 gen_v2_rai() ->
     #rai{
-       plmn = plmn(),
+       plmn_id = plmn(),
        lac = uint16(),
        rac = uint16()
       }.
 
 gen_v2_tai() ->
     #tai{
-       plmn = plmn(),
+       plmn_id = plmn(),
        tac = uint16()
       }.
 
 gen_v2_ecgi() ->
     #ecgi{
-       plmn = plmn(),
+       plmn_id = plmn(),
        eci = uint(28)
       }.
 
 gen_v2_lai() ->
     #lai{
-       plmn = plmn(),
+       plmn_id = plmn(),
        lac = uint16()
       }.
 
 gen_v2_macro_enb() ->
     #macro_enb{
-       plmn = plmn(),
+       plmn_id = plmn(),
        id = uint(20)
       }.
 
 gen_v2_ext_macro_enb() ->
     #ext_macro_enb{
-       plmn = plmn(),
+       plmn_id = plmn(),
        id = oneof([uint(18), uint(21)])
       }.
 
@@ -1975,8 +1975,7 @@ gen_v2_charging_characteristics() ->
 gen_v2_trace_information() ->
     #v2_trace_information{
        instance = instance(),
-       mcc = mcc(),
-       mnc = mnc(),
+       plmn_id = plmn(),
        trace_id = uint32(),
        triggering_events = binary(9),
        list_of_ne_types = uint16(),
@@ -2078,8 +2077,7 @@ gen_v2_ue_time_zone() ->
 gen_v2_trace_reference() ->
     #v2_trace_reference{
        instance = instance(),
-       mcc = mcc(),
-       mnc = mnc(),
+       plmn_id = plmn(),
        id = uint24()
       }.
 
@@ -2093,8 +2091,7 @@ gen_v2_complete_request_message() ->
 gen_v2_guti() ->
     #v2_guti{
        instance = instance(),
-       mcc = mcc(),
-       mnc = mnc(),
+       plmn_id = plmn(),
        group_id = uint16(),
        code = uint24(),
        m_tmsi = binary()
@@ -2284,8 +2281,7 @@ gen_v2_rfsp_index() ->
 gen_v2_user_csg_information() ->
     #v2_user_csg_information{
        instance = instance(),
-       mcc = mcc(),
-       mnc = mnc(),
+       plmn_id = plmn(),
        csg_id = bitstring(27),
        access_mode = int_range(0,3),
        lcsg = boolean(),
