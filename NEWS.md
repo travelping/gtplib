@@ -3,6 +3,12 @@ gtplib
 
 Erlang library for encoding and decoding GTPv1, GTPv2 and GTP' frames.
 
+Version 3.0.0 - 9 July 2021
+---------------------------
+
+**Features** :rocket:
+* [#31](https://github.com/travelping/gtplib/pull/31) `de/encode` location information into records
+
 Version 2.1.0 - 3 June 2021
 ---------------------------
 
