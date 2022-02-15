@@ -447,7 +447,8 @@
 }).
 
 -record(apn_restriction, {
-	  instance = 0
+	  instance = 0,
+	  restriction_type_value = 0
 }).
 
 -record(radio_priority_lcs, {

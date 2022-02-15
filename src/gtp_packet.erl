@@ -1644,8 +1644,9 @@ decode_v1_element(<<M_flags_dual_address_bearer_flag:1,
     #common_flags{instance = Instance,
 		  flags = [ 'Dual Address Bearer Flag' || M_flags_dual_address_bearer_flag =/= 0 ] ++ [ 'Upgrade QoS Supported' || M_flags_upgrade_qos_supported =/= 0 ] ++ [ 'NRSN' || M_flags_nrsn =/= 0 ] ++ [ 'No QoS negotiation' || M_flags_no_qos_negotiation =/= 0 ] ++ [ 'MBMS Counting Information' || M_flags_mbms_counting_information =/= 0 ] ++ [ 'RAN Procedures Ready' || M_flags_ran_procedures_ready =/= 0 ] ++ [ 'MBMS Service Type' || M_flags_mbms_service_type =/= 0 ] ++ [ 'Prohibit Payload Compression' || M_flags_prohibit_payload_compression =/= 0 ]};
 
-decode_v1_element(<<>>, 149, Instance) ->
-    #apn_restriction{instance = Instance};
+decode_v1_element(<<M_restriction_type_value:8/integer>>, 149, Instance) ->
+    #apn_restriction{instance = Instance,
+		     restriction_type_value = M_restriction_type_value};
 
 decode_v1_element(<<>>, 150, Instance) ->
     #radio_priority_lcs{instance = Instance};
@@ -2403,8 +2404,9 @@ encode_v1_element(#common_flags{
 				       (encode_flag('Prohibit Payload Compression', M_flags)):1>>);
 
 encode_v1_element(#apn_restriction{
-		     instance = Instance}) ->
-    encode_v1_element(149, Instance, <<>>);
+		     instance = Instance,
+		     restriction_type_value = M_restriction_type_value}) ->
+    encode_v1_element(149, Instance, <<M_restriction_type_value:8>>);
 
 encode_v1_element(#radio_priority_lcs{
 		     instance = Instance}) ->

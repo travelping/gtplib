@@ -270,7 +270,7 @@ ies() ->
 			  "Prohibit Payload Compression"]}},
        {'_', 0}]},
      {149, "APN Restriction", '_',
-      []},
+      [{"Restriction Type Value", 8, integer}]},
      {150, "Radio Priority LCS", '_',
       []},
      {151, "RAT Type", '_',
