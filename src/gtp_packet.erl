@@ -3373,8 +3373,10 @@ decode_v2_element(<<M_flags/binary>>, 77, Instance) ->
                                'PCRI','AOSI','AOPI','ROAAI','EPCOSI','CPOPCI',
                                'PMTSMI','S11TF','PNSI','UNACCSI','WPMSI',
                                '5GSNN26','REPREFI','5GSIWK','EEVRSI','LTEMUI',
-                               'LTEMPI','ENBCRSI','TSPCMI','_','_','_',
-                               'N5GNMI','5GCNRS','5GCNRI','5SRHOI','ETHPDN'])};
+                               'LTEMPI','ENBCRSI','TSPCMI', 'CSRMFI', 'MTEDTN', 
+                               'MTEDTA', 'N5GNMI', '5GCNRS', '5GCNRI', '5SRHOI', 
+                               'ETHPDN', '_', '_', '_', '_', 'SISSME', 'NSENBI', 
+                               'IPFUPF', 'EMCI'])};
 
 decode_v2_element(<<M_config/binary>>, 78, Instance) ->
     #v2_protocol_configuration_options{instance = Instance,
@@ -4169,9 +4171,11 @@ encode_v2_element(#v2_indication{
                                            'CPOPCI','EPCOSI','ROAAI','TSPCMI',
                                            'ENBCRSI','LTEMPI','LTEMUI',
                                            'EEVRSI','5GSIWK','REPREFI',
-                                           '5GSNN26','ETHPDN','5SRHOI',
-                                           '5GCNRI','5GCNRS','N5GNMI','_','_',
-                                           '_']), little))/binary>>);
+                                           '5GSNN26', 'ETHPDN','5SRHOI',
+                                           '5GCNRI','5GCNRS','N5GNMI',
+                                           'MTEDTA','MTEDTN', 'CSRMFI', 'EMCI', 
+                                           'IPFUPF', 'NSENBI', 'SISSME', 
+                                           '_', '_', '_', '_']), little))/binary>>);
 
 encode_v2_element(#v2_protocol_configuration_options{
 		     instance = Instance,

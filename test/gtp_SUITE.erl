@@ -402,18 +402,29 @@ flags_enc_dec(_Config) ->
 	   gtp_packet:decode(Bin2)),
 
     %% unkown indication flag, make sure it passed through enc/dec
-    Bin3 = <<72,1,0,22,0,0,0,0,0,0,0,0,77,0,10,0,0,0,0,0,0,0,0,0,0,8>>,
+    Bin3 = <<72,1,0,23,0,0,0,0,0,0,0,0,77,0,11,0,0,0,0,0,0,0,0,0,0,0,8>>,
     Msg3 = #gtp{version = v2,type = echo_request,tei = 0,seq_no = 0,
 		n_pdu = undefined,ext_hdr = [],
 		ie = #{{v2_indication,0} =>
 			   #v2_indication{instance = 0,flags = [2048]}}},
-    ?match(<<72,1,0,22,0,0,0,0,0,0,0,0,77,0,10,0,0,0,0,0,0,0,0,0,0,8>>,
+    ?match(<<72,1,0,23,0,0,0,0,0,0,0,0,77,0,11,0,0,0,0,0,0,0,0,0,0,0,8>>,
 	   gtp_packet:encode(Msg3)),
     ?match(#gtp{version = v2,type = echo_request,tei = 0,seq_no = 0,
 		n_pdu = undefined,ext_hdr = [],
 		ie = #{{v2_indication,0} :=
 			   #v2_indication{instance = 0,flags = [2048]}}},
 	   gtp_packet:decode(Bin3)),
+    Bin4 = <<72,1,0,21,0,0,0,0,0,0,0,0,77,0,9,0,0,0,0,0,0,0,0,0,1>>,
+    Msg4 = #gtp{version = v2,type = echo_request,tei = 0,seq_no = 0,
+		n_pdu = undefined,ext_hdr = [],
+		ie = #{{v2_indication,0} =>
+			   #v2_indication{instance = 0,flags = ['EMCI']}}},
+    ?match(<<72,1,0,21,0,0,0,0,0,0,0,0,77,0,9,0,0,0,0,0,0,0,0,0,1>>, gtp_packet:encode(Msg4)),
+    ?match(#gtp{version = v2,type = echo_request,tei = 0,seq_no = 0,
+		n_pdu = undefined,ext_hdr = [],
+		ie = #{{v2_indication,0} :=
+			   #v2_indication{instance = 0,flags = ['EMCI']}}},
+	   gtp_packet:decode(Bin4)),
     ok.
 
 msg_enc_dec() ->
