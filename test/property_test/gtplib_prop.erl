@@ -1772,7 +1772,11 @@ gen_v2_indication() ->
 	      'CPRAI', 'ARRL', 'PPOF', 'PPON/PPEI', 'PPSI', 'CSFBI', 'CLII', 'CPSR',
 	      'NSI', 'UASI', 'DTCI', 'BDWI', 'PSCI', 'PCRI', 'AOSI', 'AOPI',
 	      'ROAAI', 'EPCOSI', 'CPOPCI', 'PMTSMI', 'S11TF', 'PNSI', 'UNACCSI', 'WPMSI',
-	      '5GSNN26', 'REPREFI', '5GSIWK', 'EEVRSI', 'LTEMUI', 'LTEMPI', 'ENBCRSI', 'TSPCMI'])
+	      '5GSNN26', 'REPREFI', '5GSIWK', 'EEVRSI', 'LTEMUI', 'LTEMPI', 'ENBCRSI', 'TSPCMI',
+		  'CSRMFI', 'MTEDTN', 'MTEDTA', 'N5GNMI', '5GCNRS', '5GCNRI', '5SRHOI', 'ETHPDN',
+		  'SISSME', 'NSENBI', 'IPFUPF', 'EMCI'])
+
+
       }.
 
 gen_v2_protocol_configuration_options() ->
