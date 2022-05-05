@@ -1612,7 +1612,8 @@ gen_address_of_recommended_node() ->
 
 gen_private_extension() ->
     #private_extension{
-       instance = instance()
+       instance = instance(),
+       value = binary()
       }.
 
 %% v2 generator ==========================================================================

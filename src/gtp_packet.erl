@@ -1897,8 +1897,11 @@ decode_v1_element(<<M_address/binary>>, 254, Instance) ->
     #address_of_recommended_node{instance = Instance,
 				 address = M_address};
 
-decode_v1_element(<<>>, 255, Instance) ->
-    #private_extension{instance = Instance};
+decode_v1_element(<<M_enterprise_id:16/integer,
+		    M_value/binary>>, 255, Instance) ->
+    #private_extension{instance = Instance,
+		       enterprise_id = M_enterprise_id,
+		       value = M_value};
 
 decode_v1_element(Value, Tag, Instance) ->
     {Tag, Instance, Value}.
@@ -2723,8 +2726,11 @@ encode_v1_element(#address_of_recommended_node{
     encode_v1_element(254, Instance, <<M_address/binary>>);
 
 encode_v1_element(#private_extension{
-		     instance = Instance}) ->
-    encode_v1_element(255, Instance, <<>>);
+		     instance = Instance,
+		     enterprise_id = M_enterprise_id,
+		     value = M_value}) ->
+    encode_v1_element(255, Instance, <<M_enterprise_id:16,
+				       M_value/binary>>);
 
 encode_v1_element({Tag, Instance, Value}) when is_integer(Tag), is_integer(Instance), is_binary(Value) ->
     encode_v1_element(Tag, Instance, Value).

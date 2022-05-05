@@ -433,7 +433,8 @@ ies() ->
      {254, "Address of Recommended Node", '_',
       [{"Address", 0, binary}]},
      {255, "Private Extension", '_',
-      []}
+      [{"Enterprise Id", 16, integer},
+       {"Value", 0, binary}]}
     ].
 
 msgs() ->

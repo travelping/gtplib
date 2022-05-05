@@ -747,7 +747,9 @@
 }).
 
 -record(private_extension, {
-	  instance = 0
+	  instance = 0,
+	  enterprise_id = 0,
+	  value = <<>>
 }).
 
 %% -include("gtp_packet_v2_gen.hrl").
