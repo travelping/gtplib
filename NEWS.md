@@ -3,6 +3,15 @@ gtplib
 
 Erlang library for encoding and decoding GTPv1, GTPv2 and GTP' frames.
 
+Version 3.1.0 - 12 September 2022
+---------------------------
+
+**Features** :rocket:
+* [#37](https://github.com/travelping/gtplib/pull/37) Exporting `ULI`/`RAI` decoding functions
+* [#36](https://github.com/travelping/gtplib/pull/36) Add a plain binary value to the `v1` private extension
+* [#34](https://github.com/travelping/gtplib/pull/34) Rework Indication flags
+* [#33](https://github.com/travelping/gtplib/pull/33) `APN` Restriction
+
 Version 3.0.0 - 9 July 2021
 ---------------------------
 
@@ -46,7 +55,7 @@ Version 2.0.0 - 8 Mar 2021
 * [#13](https://github.com/travelping/gtplib/pull/13) fix wrong `GTPv1` cause codes
 * [#14](https://github.com/travelping/gtplib/pull/14) `GTPv2`: fix minimum IE length for all flags IEs
 
-Version 1.3.X - 
+Version 1.3.X -
 ---------------------------
 
 * rename GTP' enum that duplicate GTPv1 enum
