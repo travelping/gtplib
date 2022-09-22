@@ -3,6 +3,12 @@ gtplib
 
 Erlang library for encoding and decoding GTPv1, GTPv2 and GTP' frames.
 
+Version 3.2.0 - 22 September 2022
+---------------------------
+
+**Features** :rocket:
+* [#39](https://github.com/travelping/gtplib/pull/39) Exporting `ULI`, `RAI` encoding functions and decoding functions
+
 Version 3.1.0 - 12 September 2022
 ---------------------------
 
