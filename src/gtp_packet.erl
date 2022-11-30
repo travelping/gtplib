@@ -13,7 +13,7 @@
 -export([encode/1, encode_ies/1,
 	 decode/1, decode/2, decode_ies/1, decode_ies/2,
 	 msg_description/1, msg_description_v2/1,
-	 pretty_print/1]).
+	 pretty_print/1, ies_to_otel_attrs/1]).
 -export([encode_plmn_id/1]).
 -export([decode_v2_user_location_information/2, decode_v1_rai/2]).
 -export([encode_v2_user_location_information/1, encode_v1_rai/1]).
@@ -118,6 +118,37 @@ pretty_print(Record, N) ->
 	_:_ ->
 	    no
     end.
+
+ies_to_otel_attrs(#gtp{ie = IEs}) ->
+    lists:sort(
+      ies_to_otel_attrs(<<"gtp">>, IEs, [])).
+
+ies_to_otel_attrs(Base, IEs, OutP) when is_map(IEs) ->
+    maps:fold(
+      fun(_K, V, Acc) -> ies_to_otel_attr(Base, V, Acc) end, OutP, IEs);
+ies_to_otel_attrs(Base, IEs, OutP) when is_list(IEs) ->
+    lists:foldl(
+      fun(V, Acc) -> ies_to_otel_attr(Base, V, Acc) end, OutP, IEs).
+
+ies_to_otel_attr(Base0, V, OutP) when is_tuple(V) ->
+    [Record, Instance | Fields] = tuple_to_list(V),
+    Base = [Base0, $., atom_to_binary(Record, latin1), $., integer_to_binary(Instance)],
+    case '#info-'(Record, fields) of
+	[_InstanceName, group] ->
+	    ies_to_otel_attrs(Base, hd(Fields), OutP);
+	[_InstanceName|FNames] ->
+	    ies_to_otel_attr(Base, FNames, Fields, OutP)
+    end;
+ies_to_otel_attr(Base0, V, OutP) when is_list(V) ->
+    lists:foldl(
+      fun(Item, Acc) -> ies_to_otel_attr(Base0, Item, Acc) end, OutP, V).
+
+ies_to_otel_attr(_Base, [], [], OutP) ->
+    OutP;
+ies_to_otel_attr(Base, [FName|FNames], [Field|Fields], OutP) ->
+    ies_to_otel_attr(Base, FNames, Fields,
+		     [{iolist_to_binary([Base, $., atom_to_binary(FName, latin1)]),
+		       iolist_to_binary(pretty_print(Field))}|OutP]).
 
 %%====================================================================
 %% Helpers
