@@ -22,7 +22,12 @@
 -compile({inline,[decode_tbcd/1, decode_fqdn/1,
 		  decode_v2_grouped/1]}).
 
+-include_lib("parse_trans/include/exprecs.hrl").
 -include("gtp_packet.hrl").
+
+-export_records([gtp, cgi, sai, rai, tai, ecgi, lai, macro_enb, ext_macro_enb]).
+-export_records(?GTP_V1_RECORDS).
+-export_records(?GTP_V2_RECORDS).
 
 -ifdef(TEST).
 -compile([bin_opt_info]).
@@ -100,25 +105,18 @@ encode_ies(#gtp{version = v2, ie = IEs} = Msg) ->
 %%% Record formating
 %%%===================================================================
 
--define(PRETTY_PRINT(F, R),
-	F(R, N) ->
-	       case record_info(size, R) - 1 of
-		   N -> record_info(fields, R);
-		   _ -> no
-	       end).
-
 pretty_print(Record) ->
     io_lib_pretty:print(Record, fun pretty_print/2).
 
-pretty_print(gtp, N) ->
-    N = record_info(size, gtp) - 1,
-    record_info(fields, gtp);
 pretty_print(Record, N) ->
-    case pretty_print_v1(Record, N) of
-	no ->
-	    pretty_print_v2(Record, N);
-	RDef ->
-	    RDef
+    try '#info-'(Record, size) of
+	X when X - 1 =:= N ->
+	    '#info-'(Record, fields);
+	_Other ->
+	    no
+    catch
+	_:_ ->
+	    no
     end.
 
 %%====================================================================
@@ -2736,133 +2734,6 @@ encode_v1_element(#private_extension{
 encode_v1_element({Tag, Instance, Value}) when is_integer(Tag), is_integer(Instance), is_binary(Value) ->
     encode_v1_element(Tag, Instance, Value).
 
-?PRETTY_PRINT(pretty_print_v1, cause);
-?PRETTY_PRINT(pretty_print_v1, international_mobile_subscriber_identity);
-?PRETTY_PRINT(pretty_print_v1, routeing_area_identity);
-?PRETTY_PRINT(pretty_print_v1, temporary_logical_link_identity);
-?PRETTY_PRINT(pretty_print_v1, packet_tmsi);
-?PRETTY_PRINT(pretty_print_v1, reordering_required);
-?PRETTY_PRINT(pretty_print_v1, authentication_triplet);
-?PRETTY_PRINT(pretty_print_v1, map_cause);
-?PRETTY_PRINT(pretty_print_v1, p_tmsi_signature);
-?PRETTY_PRINT(pretty_print_v1, ms_validated);
-?PRETTY_PRINT(pretty_print_v1, recovery);
-?PRETTY_PRINT(pretty_print_v1, selection_mode);
-?PRETTY_PRINT(pretty_print_v1, tunnel_endpoint_identifier_data_i);
-?PRETTY_PRINT(pretty_print_v1, tunnel_endpoint_identifier_control_plane);
-?PRETTY_PRINT(pretty_print_v1, tunnel_endpoint_identifier_data_ii);
-?PRETTY_PRINT(pretty_print_v1, teardown_ind);
-?PRETTY_PRINT(pretty_print_v1, nsapi);
-?PRETTY_PRINT(pretty_print_v1, ranap_cause);
-?PRETTY_PRINT(pretty_print_v1, rab_context);
-?PRETTY_PRINT(pretty_print_v1, radio_priority_sms);
-?PRETTY_PRINT(pretty_print_v1, radio_priority);
-?PRETTY_PRINT(pretty_print_v1, packet_flow_id);
-?PRETTY_PRINT(pretty_print_v1, charging_characteristics);
-?PRETTY_PRINT(pretty_print_v1, trace_reference);
-?PRETTY_PRINT(pretty_print_v1, trace_type);
-?PRETTY_PRINT(pretty_print_v1, ms_not_reachable_reason);
-?PRETTY_PRINT(pretty_print_v1, packet_transfer_command);
-?PRETTY_PRINT(pretty_print_v1, charging_id);
-?PRETTY_PRINT(pretty_print_v1, end_user_address);
-?PRETTY_PRINT(pretty_print_v1, mm_context_gsm);
-?PRETTY_PRINT(pretty_print_v1, mm_context_umts);
-?PRETTY_PRINT(pretty_print_v1, mm_context_gsm_and_umts);
-?PRETTY_PRINT(pretty_print_v1, mm_context_umts_and_used_cipher);
-?PRETTY_PRINT(pretty_print_v1, pdp_context);
-?PRETTY_PRINT(pretty_print_v1, access_point_name);
-?PRETTY_PRINT(pretty_print_v1, protocol_configuration_options);
-?PRETTY_PRINT(pretty_print_v1, gsn_address);
-?PRETTY_PRINT(pretty_print_v1, ms_international_pstn_isdn_number);
-?PRETTY_PRINT(pretty_print_v1, quality_of_service_profile);
-?PRETTY_PRINT(pretty_print_v1, authentication_quintuplet);
-?PRETTY_PRINT(pretty_print_v1, traffic_flow_template);
-?PRETTY_PRINT(pretty_print_v1, target_identification);
-?PRETTY_PRINT(pretty_print_v1, utran_transparent_container);
-?PRETTY_PRINT(pretty_print_v1, rab_setup_information);
-?PRETTY_PRINT(pretty_print_v1, extension_header_type_list);
-?PRETTY_PRINT(pretty_print_v1, trigger_id);
-?PRETTY_PRINT(pretty_print_v1, omc_identity);
-?PRETTY_PRINT(pretty_print_v1, ran_transparent_container);
-?PRETTY_PRINT(pretty_print_v1, pdp_context_prioritization);
-?PRETTY_PRINT(pretty_print_v1, additional_rab_setup_information);
-?PRETTY_PRINT(pretty_print_v1, sgsn_number);
-?PRETTY_PRINT(pretty_print_v1, common_flags);
-?PRETTY_PRINT(pretty_print_v1, apn_restriction);
-?PRETTY_PRINT(pretty_print_v1, radio_priority_lcs);
-?PRETTY_PRINT(pretty_print_v1, rat_type);
-?PRETTY_PRINT(pretty_print_v1, user_location_information);
-?PRETTY_PRINT(pretty_print_v1, ms_time_zone);
-?PRETTY_PRINT(pretty_print_v1, imei);
-?PRETTY_PRINT(pretty_print_v1, camel_charging_information_container);
-?PRETTY_PRINT(pretty_print_v1, mbms_ue_context);
-?PRETTY_PRINT(pretty_print_v1, temporary_mobile_group_identity);
-?PRETTY_PRINT(pretty_print_v1, rim_routing_address);
-?PRETTY_PRINT(pretty_print_v1, mbms_protocol_configuration_options);
-?PRETTY_PRINT(pretty_print_v1, mbms_service_area);
-?PRETTY_PRINT(pretty_print_v1, source_rnc_pdcp_context_info);
-?PRETTY_PRINT(pretty_print_v1, additional_trace_info);
-?PRETTY_PRINT(pretty_print_v1, hop_counter);
-?PRETTY_PRINT(pretty_print_v1, selected_plmn_id);
-?PRETTY_PRINT(pretty_print_v1, mbms_session_identifier);
-?PRETTY_PRINT(pretty_print_v1, mbms_2g_3g_indicator);
-?PRETTY_PRINT(pretty_print_v1, enhanced_nsapi);
-?PRETTY_PRINT(pretty_print_v1, mbms_session_duration);
-?PRETTY_PRINT(pretty_print_v1, additional_mbms_trace_info);
-?PRETTY_PRINT(pretty_print_v1, mbms_session_repetition_number);
-?PRETTY_PRINT(pretty_print_v1, mbms_time_to_data_transfer);
-?PRETTY_PRINT(pretty_print_v1, bss_container);
-?PRETTY_PRINT(pretty_print_v1, cell_identification);
-?PRETTY_PRINT(pretty_print_v1, pdu_numbers);
-?PRETTY_PRINT(pretty_print_v1, bssgp_cause);
-?PRETTY_PRINT(pretty_print_v1, required_mbms_bearer_capabilities);
-?PRETTY_PRINT(pretty_print_v1, rim_routing_address_discriminator);
-?PRETTY_PRINT(pretty_print_v1, list_of_set_up_pfcs);
-?PRETTY_PRINT(pretty_print_v1, ps_handover_xid_parameters);
-?PRETTY_PRINT(pretty_print_v1, ms_info_change_reporting_action);
-?PRETTY_PRINT(pretty_print_v1, direct_tunnel_flags);
-?PRETTY_PRINT(pretty_print_v1, correlation_id);
-?PRETTY_PRINT(pretty_print_v1, bearer_control_mode);
-?PRETTY_PRINT(pretty_print_v1, mbms_flow_identifier);
-?PRETTY_PRINT(pretty_print_v1, mbms_ip_multicast_distribution);
-?PRETTY_PRINT(pretty_print_v1, mbms_distribution_acknowledgement);
-?PRETTY_PRINT(pretty_print_v1, reliable_inter_rat_handover_info);
-?PRETTY_PRINT(pretty_print_v1, rfsp_index);
-?PRETTY_PRINT(pretty_print_v1, fully_qualified_domain_name);
-?PRETTY_PRINT(pretty_print_v1, evolved_allocation_retention_priority_i);
-?PRETTY_PRINT(pretty_print_v1, evolved_allocation_retention_priority_ii);
-?PRETTY_PRINT(pretty_print_v1, extended_common_flags);
-?PRETTY_PRINT(pretty_print_v1, user_csg_information);
-?PRETTY_PRINT(pretty_print_v1, csg_information_reporting_action);
-?PRETTY_PRINT(pretty_print_v1, csg_id);
-?PRETTY_PRINT(pretty_print_v1, csg_membership_indication);
-?PRETTY_PRINT(pretty_print_v1, aggregate_maximum_bit_rate);
-?PRETTY_PRINT(pretty_print_v1, ue_network_capability);
-?PRETTY_PRINT(pretty_print_v1, ue_ambr);
-?PRETTY_PRINT(pretty_print_v1, apn_ambr_with_nsapi);
-?PRETTY_PRINT(pretty_print_v1, ggsn_back_off_time);
-?PRETTY_PRINT(pretty_print_v1, signalling_priority_indication);
-?PRETTY_PRINT(pretty_print_v1, signalling_priority_indication_with_nsapi);
-?PRETTY_PRINT(pretty_print_v1, higher_bitrates_than_16_mbps_flag);
-?PRETTY_PRINT(pretty_print_v1, additional_mm_context_for_srvcc);
-?PRETTY_PRINT(pretty_print_v1, additional_flags_for_srvcc);
-?PRETTY_PRINT(pretty_print_v1, stn_sr);
-?PRETTY_PRINT(pretty_print_v1, c_msisdn);
-?PRETTY_PRINT(pretty_print_v1, extended_ranap_cause);
-?PRETTY_PRINT(pretty_print_v1, enodeb_id);
-?PRETTY_PRINT(pretty_print_v1, selection_mode_with_nsapi);
-?PRETTY_PRINT(pretty_print_v1, uli_timestamp);
-?PRETTY_PRINT(pretty_print_v1, local_home_network_id_with_nsapi);
-?PRETTY_PRINT(pretty_print_v1, cn_operator_selection_entity);
-?PRETTY_PRINT(pretty_print_v1, sequence_numbers_of_released_packets);
-?PRETTY_PRINT(pretty_print_v1, sequence_numbers_of_cancelled_packets);
-?PRETTY_PRINT(pretty_print_v1, charging_gateway_address);
-?PRETTY_PRINT(pretty_print_v1, data_record_packet);
-?PRETTY_PRINT(pretty_print_v1, requests_responded);
-?PRETTY_PRINT(pretty_print_v1, address_of_recommended_node);
-?PRETTY_PRINT(pretty_print_v1, private_extension);
-pretty_print_v1(_, _) ->
-    no.
 %% -include("gtp_packet_v2_gen.hrl").
 
 msg_description_v2(echo_request) -> <<"Echo Request">>;
@@ -4963,142 +4834,3 @@ encode_v2_element(#v2_private_extension{instance = Instance} = IE) ->
 
 encode_v2_element({Tag, Instance, Value}) when is_integer(Tag), is_integer(Instance), is_binary(Value) ->
     encode_v2_element(Tag, Instance, Value).
-
-?PRETTY_PRINT(pretty_print_v2, v2_international_mobile_subscriber_identity);
-?PRETTY_PRINT(pretty_print_v2, v2_cause);
-?PRETTY_PRINT(pretty_print_v2, v2_recovery);
-?PRETTY_PRINT(pretty_print_v2, v2_stn_sr);
-?PRETTY_PRINT(pretty_print_v2, v2_access_point_name);
-?PRETTY_PRINT(pretty_print_v2, v2_aggregate_maximum_bit_rate);
-?PRETTY_PRINT(pretty_print_v2, v2_eps_bearer_id);
-?PRETTY_PRINT(pretty_print_v2, v2_ip_address);
-?PRETTY_PRINT(pretty_print_v2, v2_mobile_equipment_identity);
-?PRETTY_PRINT(pretty_print_v2, v2_msisdn);
-?PRETTY_PRINT(pretty_print_v2, v2_indication);
-?PRETTY_PRINT(pretty_print_v2, v2_protocol_configuration_options);
-?PRETTY_PRINT(pretty_print_v2, v2_pdn_address_allocation);
-?PRETTY_PRINT(pretty_print_v2, v2_bearer_level_quality_of_service);
-?PRETTY_PRINT(pretty_print_v2, v2_flow_quality_of_service);
-?PRETTY_PRINT(pretty_print_v2, v2_rat_type);
-?PRETTY_PRINT(pretty_print_v2, v2_serving_network);
-?PRETTY_PRINT(pretty_print_v2, v2_eps_bearer_level_traffic_flow_template);
-?PRETTY_PRINT(pretty_print_v2, v2_traffic_aggregation_description);
-?PRETTY_PRINT(pretty_print_v2, v2_user_location_information);
-?PRETTY_PRINT(pretty_print_v2, v2_fully_qualified_tunnel_endpoint_identifier);
-?PRETTY_PRINT(pretty_print_v2, v2_tmsi);
-?PRETTY_PRINT(pretty_print_v2, v2_global_cn_id);
-?PRETTY_PRINT(pretty_print_v2, v2_s103_pdn_data_forwarding_info);
-?PRETTY_PRINT(pretty_print_v2, v2_s1_u_data_forwarding_info);
-?PRETTY_PRINT(pretty_print_v2, v2_delay_value);
-?PRETTY_PRINT(pretty_print_v2, v2_bearer_context);
-?PRETTY_PRINT(pretty_print_v2, v2_charging_id);
-?PRETTY_PRINT(pretty_print_v2, v2_charging_characteristics);
-?PRETTY_PRINT(pretty_print_v2, v2_trace_information);
-?PRETTY_PRINT(pretty_print_v2, v2_bearer_flags);
-?PRETTY_PRINT(pretty_print_v2, v2_pdn_type);
-?PRETTY_PRINT(pretty_print_v2, v2_procedure_transaction_id);
-?PRETTY_PRINT(pretty_print_v2, v2_mm_context_1);
-?PRETTY_PRINT(pretty_print_v2, v2_mm_context_2);
-?PRETTY_PRINT(pretty_print_v2, v2_mm_context_3);
-?PRETTY_PRINT(pretty_print_v2, v2_mm_context_4);
-?PRETTY_PRINT(pretty_print_v2, v2_mm_context_5);
-?PRETTY_PRINT(pretty_print_v2, v2_mm_context_6);
-?PRETTY_PRINT(pretty_print_v2, v2_pdn_connection);
-?PRETTY_PRINT(pretty_print_v2, v2_pdu_numbers);
-?PRETTY_PRINT(pretty_print_v2, v2_p_tmsi);
-?PRETTY_PRINT(pretty_print_v2, v2_p_tmsi_signature);
-?PRETTY_PRINT(pretty_print_v2, v2_hop_counter);
-?PRETTY_PRINT(pretty_print_v2, v2_ue_time_zone);
-?PRETTY_PRINT(pretty_print_v2, v2_trace_reference);
-?PRETTY_PRINT(pretty_print_v2, v2_complete_request_message);
-?PRETTY_PRINT(pretty_print_v2, v2_guti);
-?PRETTY_PRINT(pretty_print_v2, v2_f_container);
-?PRETTY_PRINT(pretty_print_v2, v2_f_cause);
-?PRETTY_PRINT(pretty_print_v2, v2_plmn_id);
-?PRETTY_PRINT(pretty_print_v2, v2_target_identification);
-?PRETTY_PRINT(pretty_print_v2, v2_packet_flow_id);
-?PRETTY_PRINT(pretty_print_v2, v2_rab_context);
-?PRETTY_PRINT(pretty_print_v2, v2_source_rnc_pdcp_context_info);
-?PRETTY_PRINT(pretty_print_v2, v2_udp_source_port_number);
-?PRETTY_PRINT(pretty_print_v2, v2_apn_restriction);
-?PRETTY_PRINT(pretty_print_v2, v2_selection_mode);
-?PRETTY_PRINT(pretty_print_v2, v2_source_identification);
-?PRETTY_PRINT(pretty_print_v2, v2_change_reporting_action);
-?PRETTY_PRINT(pretty_print_v2, v2_fully_qualified_pdn_connection_set_identifier);
-?PRETTY_PRINT(pretty_print_v2, v2_channel_needed);
-?PRETTY_PRINT(pretty_print_v2, v2_emlpp_priority);
-?PRETTY_PRINT(pretty_print_v2, v2_node_type);
-?PRETTY_PRINT(pretty_print_v2, v2_fully_qualified_domain_name);
-?PRETTY_PRINT(pretty_print_v2, v2_transaction_identifier);
-?PRETTY_PRINT(pretty_print_v2, v2_mbms_session_duration);
-?PRETTY_PRINT(pretty_print_v2, v2_mbms_service_area);
-?PRETTY_PRINT(pretty_print_v2, v2_mbms_session_identifier);
-?PRETTY_PRINT(pretty_print_v2, v2_mbms_flow_identifier);
-?PRETTY_PRINT(pretty_print_v2, v2_mbms_ip_multicast_distribution);
-?PRETTY_PRINT(pretty_print_v2, v2_mbms_distribution_acknowledge);
-?PRETTY_PRINT(pretty_print_v2, v2_rfsp_index);
-?PRETTY_PRINT(pretty_print_v2, v2_user_csg_information);
-?PRETTY_PRINT(pretty_print_v2, v2_csg_information_reporting_action);
-?PRETTY_PRINT(pretty_print_v2, v2_csg_id);
-?PRETTY_PRINT(pretty_print_v2, v2_csg_membership_indication);
-?PRETTY_PRINT(pretty_print_v2, v2_service_indicator);
-?PRETTY_PRINT(pretty_print_v2, v2_detach_type);
-?PRETTY_PRINT(pretty_print_v2, v2_local_distiguished_name);
-?PRETTY_PRINT(pretty_print_v2, v2_node_features);
-?PRETTY_PRINT(pretty_print_v2, v2_mbms_time_to_data_transfer);
-?PRETTY_PRINT(pretty_print_v2, v2_throttling);
-?PRETTY_PRINT(pretty_print_v2, v2_allocation_retention_priority);
-?PRETTY_PRINT(pretty_print_v2, v2_epc_timer);
-?PRETTY_PRINT(pretty_print_v2, v2_signalling_priority_indication);
-?PRETTY_PRINT(pretty_print_v2, v2_temporary_mobile_group_identity);
-?PRETTY_PRINT(pretty_print_v2, v2_additional_mm_context_for_srvcc);
-?PRETTY_PRINT(pretty_print_v2, v2_additional_flags_for_srvcc);
-?PRETTY_PRINT(pretty_print_v2, v2_mdt_configuration);
-?PRETTY_PRINT(pretty_print_v2, v2_additional_protocol_configuration_options);
-?PRETTY_PRINT(pretty_print_v2, v2_absolute_time_of_mbms_data_transfer);
-?PRETTY_PRINT(pretty_print_v2, v2_henb_information_reporting_);
-?PRETTY_PRINT(pretty_print_v2, v2_ipv4_configuration_parameters);
-?PRETTY_PRINT(pretty_print_v2, v2_change_to_report_flags_);
-?PRETTY_PRINT(pretty_print_v2, v2_action_indication);
-?PRETTY_PRINT(pretty_print_v2, v2_twan_identifier);
-?PRETTY_PRINT(pretty_print_v2, v2_uli_timestamp);
-?PRETTY_PRINT(pretty_print_v2, v2_mbms_flags);
-?PRETTY_PRINT(pretty_print_v2, v2_ran_nas_cause);
-?PRETTY_PRINT(pretty_print_v2, v2_cn_operator_selection_entity);
-?PRETTY_PRINT(pretty_print_v2, v2_trusted_wlan_mode_indication);
-?PRETTY_PRINT(pretty_print_v2, v2_node_number);
-?PRETTY_PRINT(pretty_print_v2, v2_node_identifier);
-?PRETTY_PRINT(pretty_print_v2, v2_presence_reporting_area_action);
-?PRETTY_PRINT(pretty_print_v2, v2_presence_reporting_area_information);
-?PRETTY_PRINT(pretty_print_v2, v2_twan_identifier_timestamp);
-?PRETTY_PRINT(pretty_print_v2, v2_overload_control_information);
-?PRETTY_PRINT(pretty_print_v2, v2_load_control_information);
-?PRETTY_PRINT(pretty_print_v2, v2_metric);
-?PRETTY_PRINT(pretty_print_v2, v2_sequence_number);
-?PRETTY_PRINT(pretty_print_v2, v2_apn_and_relative_capacity);
-?PRETTY_PRINT(pretty_print_v2, v2_wlan_offloadability_indication);
-?PRETTY_PRINT(pretty_print_v2, v2_paging_and_service_information);
-?PRETTY_PRINT(pretty_print_v2, v2_integer_number);
-?PRETTY_PRINT(pretty_print_v2, v2_millisecond_time_stamp);
-?PRETTY_PRINT(pretty_print_v2, v2_monitoring_event_information);
-?PRETTY_PRINT(pretty_print_v2, v2_ecgi_list);
-?PRETTY_PRINT(pretty_print_v2, v2_remote_ue_context);
-?PRETTY_PRINT(pretty_print_v2, v2_remote_user_id);
-?PRETTY_PRINT(pretty_print_v2, v2_remote_ue_ip_information);
-?PRETTY_PRINT(pretty_print_v2, v2_ciot_optimizations_support_indication);
-?PRETTY_PRINT(pretty_print_v2, v2_scef_pdn_connection);
-?PRETTY_PRINT(pretty_print_v2, v2_header_compression_configuration);
-?PRETTY_PRINT(pretty_print_v2, v2_extended_protocol_configuration_options);
-?PRETTY_PRINT(pretty_print_v2, v2_serving_plmn_rate_control);
-?PRETTY_PRINT(pretty_print_v2, v2_counter);
-?PRETTY_PRINT(pretty_print_v2, v2_mapped_ue_usage_type);
-?PRETTY_PRINT(pretty_print_v2, v2_secondary_rat_usage_data_report);
-?PRETTY_PRINT(pretty_print_v2, v2_up_function_selection_indication_flags);
-?PRETTY_PRINT(pretty_print_v2, v2_maximum_packet_loss_rate);
-?PRETTY_PRINT(pretty_print_v2, v2_apn_rate_control_status);
-?PRETTY_PRINT(pretty_print_v2, v2_extended_trace_information);
-?PRETTY_PRINT(pretty_print_v2, v2_monitoring_event_extension_information);
-?PRETTY_PRINT(pretty_print_v2, v2_additional_rrm_policy_index);
-?PRETTY_PRINT(pretty_print_v2, v2_private_extension);
-pretty_print_v2(_, _) ->
-    no.
