@@ -267,8 +267,7 @@ ies() ->
 			  "MBMS Counting Information",
 			  "RAN Procedures Ready",
 			  "MBMS Service Type",
-			  "Prohibit Payload Compression"]}},
-       {'_', 0}]},
+			  "Prohibit Payload Compression"]}}]},
      {149, "APN Restriction", '_',
       [{"Restriction Type Value", 8, integer}]},
      {150, "Radio Priority LCS", '_',
@@ -366,15 +365,14 @@ ies() ->
      {192, "Evolved Allocation/Retention Priority II", '_',
       []},
      {193, "Extended Common Flags", '_',
-      [{"Flags", {flags, ["Unauthenticated IMSI",
-			  "CCRSI",
-			  "CPSR",
-			  "RetLoc",
-			  "VB",
-			  "PCRI",
+      [{"Flags", {flags, ["UASI",
 			  "BDWI",
-			  "UASI"]}},
-       {'_', 0}]},
+			  "PCRI",
+			  "VB",
+			  "RetLoc",
+			  "CPSR",
+			  "CCRSI",
+			  "Unauthenticated IMSI"]}}]},
      {194, "User CSG Information", '_',
       []},
      {195, "CSG Information Reporting Action", '_',
@@ -510,7 +508,7 @@ msgs() ->
 gen_record_def({Value, _}) when is_integer(Value); is_atom(Value) ->
     [];
 gen_record_def({Name, {flags, _}}) ->
-    [io_lib:format("~s = []", [s2a(Name)])];
+    [io_lib:format("~s = #{}", [s2a(Name)])];
 gen_record_def({Name, _, {enum, [{_,H}|_]}}) ->
     [io_lib:format("~s = ~s", [s2a(Name), s2a(H)])];
 gen_record_def({Name, _, {enum, [H|_]}}) ->
@@ -541,8 +539,8 @@ gen_decoder_header_match({'1', Size}) ->
     [io_lib:format("_:~w", [Size])];
 gen_decoder_header_match({Value, Size}) when is_integer(Value); is_atom(Value) ->
     [io_lib:format("~w:~w", [Value, Size])];
-gen_decoder_header_match({Name, {flags, Flags}}) ->
-    [io_lib:format("M_~s_~s:1", [s2a(Name), s2a(Flag)]) || Flag <- Flags];
+gen_decoder_header_match({Name, {flags, _}}) ->
+    [io_lib:format("M_~s/binary", [s2a(Name)])];
 gen_decoder_header_match({Name, boolean}) ->
     [io_lib:format("M_~s:1", [s2a(Name)])];
 gen_decoder_header_match({Name, Size, {enum, _Enum}}) ->
@@ -566,9 +564,9 @@ gen_decoder_header_match({Name, Size, Type}) ->
 
 gen_decoder_record_assign({Value, _}) when is_integer(Value); is_atom(Value) ->
     [];
-gen_decoder_record_assign({Name, {flags, Flags}}) ->
-    F = [io_lib:format("[ '~s' || M_~s_~s =/= 0 ]", [X, s2a(Name), s2a(X)]) || X <- Flags],
-    [io_lib:format("~s = ~s", [s2a(Name), string:join(F, " ++ ")])];
+gen_decoder_record_assign({Name, {flags, Flags0}}) ->
+    Flags = [s2f(X) || X <- Flags0],
+    [io_lib:format("~s = decode_flags(M_~s, ~p)", [s2a(Name), s2a(Name), Flags])];
 gen_decoder_record_assign({Name, _Size, {enum, _Enum}}) ->
     [io_lib:format("~s = enum_~s(M_~s)", [s2a(Name), s2a(Name), s2a(Name)])];
 gen_decoder_record_assign({Name, boolean}) ->
@@ -598,8 +596,10 @@ gen_encoder_bin({'1', Size}) ->
     [io_lib:format("~w:~w", [(1 bsl Size) - 1, Size])];
 gen_encoder_bin({Value, Size}) when is_integer(Value); is_atom(Value) ->
     [io_lib:format("~w:~w", [Value, Size])];
-gen_encoder_bin({Name, {flags, Flags}}) ->
-    [io_lib:format("(encode_flag('~s', M_~s)):1", [Flag, s2a(Name)]) || Flag <- Flags];
+gen_encoder_bin({Name, {flags, Flags0}}) ->
+    Flags = [s2f(Flag) || Flag <- reorder_flags(Flags0)],
+    [io_lib:format("(encode_min_int(8, encode_flags(M_~s, ~p), little))/binary",
+		   [s2a(Name), Flags])];
 gen_encoder_bin({Name, Size, {enum, _Enum}}) ->
     [io_lib:format("(enum_~s(M_~s)):~w/integer", [s2a(Name), s2a(Name), Size])];
 gen_encoder_bin({Name, boolean}) ->
@@ -642,6 +642,9 @@ s2a(Name) ->
 		 (C)  -> C
 	      end,
 	      string:to_lower(Name)).
+
+s2f(Flags) when is_list(Flags) ->
+    list_to_atom(Flags).
 
 append([], Acc) ->
     Acc;
@@ -716,6 +719,10 @@ collect_late_assign(Fields = [H | T], Acc) ->
 	    collect_late_assign(T, [Match|Acc])
     end.
 
+reorder_flags([]) -> [];
+reorder_flags(Flags) ->
+    {Head, Tail} = lists:split(8, Flags),
+    lists:reverse(Head) ++ reorder_flags(Tail).
 
 collect_enum({Name, _, {enum, Enum}}, Acc) ->
     {FwdFuns, RevFuns} = gen_enum(Name, Enum, 0, {[], []}),

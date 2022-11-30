@@ -381,24 +381,24 @@ flags_enc_dec(_Config) ->
     Msg1 = #gtp{version = v2,type = echo_request,tei = 0,seq_no = 0,
 	       n_pdu = undefined,ext_hdr = [],
 	       ie = #{{v2_indication,0} =>
-			  #v2_indication{instance = 0,flags = ['DAF']}}},
+			  #v2_indication{instance = 0,flags = #{'DAF' => []}}}},
     ?match(<<72,1,0,14,0,0,0,0,0,0,0,0,77,0,2,0,128,0>>, gtp_packet:encode(Msg1)),
     ?match(#gtp{version = v2,type = echo_request,tei = 0,seq_no = 0,
 		n_pdu = undefined,ext_hdr = [],
 		ie = #{{v2_indication,0} :=
-			   #v2_indication{instance = 0,flags = ['DAF']}}},
+			   #v2_indication{instance = 0,flags = #{'DAF' := _}}}},
 	   gtp_packet:decode(Bin1)),
 
     Bin2 = <<72,1,0,14,0,0,0,0,0,0,0,0,77,0,2,0,0,8>>,
     Msg2 = #gtp{version = v2,type = echo_request,tei = 0,seq_no = 0,
 		n_pdu = undefined,ext_hdr = [],
 		ie = #{{v2_indication,0} =>
-			   #v2_indication{instance = 0,flags = ['P']}}},
+			   #v2_indication{instance = 0,flags = #{'P' => []}}}},
     ?match(<<72,1,0,14,0,0,0,0,0,0,0,0,77,0,2,0,0,8>>, gtp_packet:encode(Msg2)),
     ?match(#gtp{version = v2,type = echo_request,tei = 0,seq_no = 0,
 		n_pdu = undefined,ext_hdr = [],
 		ie = #{{v2_indication,0} :=
-			   #v2_indication{instance = 0,flags = ['P']}}},
+			   #v2_indication{instance = 0,flags = #{'P' := _}}}},
 	   gtp_packet:decode(Bin2)),
 
     %% unkown indication flag, make sure it passed through enc/dec
@@ -406,25 +406,33 @@ flags_enc_dec(_Config) ->
     Msg3 = #gtp{version = v2,type = echo_request,tei = 0,seq_no = 0,
 		n_pdu = undefined,ext_hdr = [],
 		ie = #{{v2_indication,0} =>
-			   #v2_indication{instance = 0,flags = [2048]}}},
+			   #v2_indication{instance = 0,flags = #{undecoded => 2048}}}},
     ?match(<<72,1,0,23,0,0,0,0,0,0,0,0,77,0,11,0,0,0,0,0,0,0,0,0,0,0,8>>,
 	   gtp_packet:encode(Msg3)),
     ?match(#gtp{version = v2,type = echo_request,tei = 0,seq_no = 0,
 		n_pdu = undefined,ext_hdr = [],
 		ie = #{{v2_indication,0} :=
-			   #v2_indication{instance = 0,flags = [2048]}}},
+			   #v2_indication{instance = 0,flags = #{undecoded := 2048}}}},
 	   gtp_packet:decode(Bin3)),
     Bin4 = <<72,1,0,21,0,0,0,0,0,0,0,0,77,0,9,0,0,0,0,0,0,0,0,0,1>>,
     Msg4 = #gtp{version = v2,type = echo_request,tei = 0,seq_no = 0,
 		n_pdu = undefined,ext_hdr = [],
 		ie = #{{v2_indication,0} =>
-			   #v2_indication{instance = 0,flags = ['EMCI']}}},
+			   #v2_indication{instance = 0,flags = #{'EMCI' => []}}}},
     ?match(<<72,1,0,21,0,0,0,0,0,0,0,0,77,0,9,0,0,0,0,0,0,0,0,0,1>>, gtp_packet:encode(Msg4)),
     ?match(#gtp{version = v2,type = echo_request,tei = 0,seq_no = 0,
 		n_pdu = undefined,ext_hdr = [],
 		ie = #{{v2_indication,0} :=
-			   #v2_indication{instance = 0,flags = ['EMCI']}}},
+			   #v2_indication{instance = 0,flags = #{'EMCI' := _}}}},
 	   gtp_packet:decode(Bin4)),
+
+    %% support for obsolete list format for flags when encoding
+    Msg5 = #gtp{version = v2,type = echo_request,tei = 0,seq_no = 0,
+	       n_pdu = undefined,ext_hdr = [],
+	       ie = #{{v2_indication,0} =>
+			  #v2_indication{instance = 0,flags = ['DAF']}}},
+    ?match(Bin1, gtp_packet:encode(Msg5)),
+
     ok.
 
 msg_enc_dec() ->

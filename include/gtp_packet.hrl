@@ -509,7 +509,7 @@
 
 -record(common_flags, {
 	  instance = 0,
-	  flags = []
+	  flags = #{}
 }).
 
 -record(apn_restriction, {
@@ -693,7 +693,7 @@
 
 -record(extended_common_flags, {
 	  instance = 0,
-	  flags = []
+	  flags = #{}
 }).
 
 -record(user_csg_information, {
@@ -959,7 +959,7 @@
 
 -record(v2_indication, {
 	  instance = 0,
-	  flags = []
+	  flags = #{}
 }).
 
 -record(v2_protocol_configuration_options, {
@@ -1073,7 +1073,7 @@
 
 -record(v2_bearer_flags, {
 	  instance = 0,
-	  flags = []
+	  flags = #{}
 }).
 
 -record(v2_pdn_type, {
@@ -1305,7 +1305,7 @@
 
 -record(v2_csg_information_reporting_action, {
 	  instance = 0,
-	  actions = []
+	  actions = #{}
 }).
 
 -record(v2_csg_id, {
@@ -1335,7 +1335,7 @@
 
 -record(v2_node_features, {
 	  instance = 0,
-	  features = []
+	  features = #{}
 }).
 
 -record(v2_mbms_time_to_data_transfer, {
@@ -1364,7 +1364,7 @@
 
 -record(v2_signalling_priority_indication, {
 	  instance = 0,
-	  indication = []
+	  indication = #{}
 }).
 
 -record(v2_temporary_mobile_group_identity, {
@@ -1380,7 +1380,7 @@
 
 -record(v2_additional_flags_for_srvcc, {
 	  instance = 0,
-	  flags = []
+	  flags = #{}
 }).
 
 -record(v2_mdt_configuration, {
@@ -1398,7 +1398,7 @@
 
 -record(v2_henb_information_reporting_, {
 	  instance = 0,
-	  flags = []
+	  flags = #{}
 }).
 
 -record(v2_ipv4_configuration_parameters, {
@@ -1409,7 +1409,7 @@
 
 -record(v2_change_to_report_flags_, {
 	  instance = 0,
-	  flags = []
+	  flags = #{}
 }).
 
 -record(v2_action_indication, {
@@ -1441,7 +1441,7 @@
 
 -record(v2_trusted_wlan_mode_indication, {
 	  instance = 0,
-	  indication = []
+	  indication = #{}
 }).
 
 -record(v2_node_number, {
@@ -1496,7 +1496,7 @@
 
 -record(v2_wlan_offloadability_indication, {
 	  instance = 0,
-	  indication = []
+	  indication = #{}
 }).
 
 
@@ -1528,7 +1528,7 @@
 
 -record(v2_ciot_optimizations_support_indication, {
 	  instance = 0,
-	  indication = []
+	  indication = #{}
 }).
 
 -record(v2_scef_pdn_connection, {
@@ -1578,7 +1578,7 @@
 
 -record(v2_up_function_selection_indication_flags, {
 	  instance = 0,
-	  indication = []
+	  indication = #{}
 }).
 
 

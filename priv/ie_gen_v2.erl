@@ -654,7 +654,7 @@ gen_record_def(#field{spec = mccmnc}) ->
 gen_record_def(#field{name = Name, optional = true}) ->
     [to_string(Name)];
 gen_record_def(#field{name = Name, type = flags}) ->
-    [io_lib:format("~s = []", [Name])];
+    [io_lib:format("~s = #{}", [Name])];
 gen_record_def(#field{name = Name, type = enum, spec = [{_,H}|_]}) ->
     [io_lib:format("~s = ~s", [Name, s2a(H)])];
 gen_record_def(#field{name = Name, type = enum, spec = [H|_]}) ->
