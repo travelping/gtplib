@@ -246,9 +246,6 @@ bool2int(true)  -> 1.
 int2bool(0) -> false;
 int2bool(_) -> true.
 
-encode_flag(Flag, Flags) ->
-    bool2int(proplists:get_bool(Flag, Flags)).
-
 is_bin(Bin) -> bool2int(is_binary(Bin)).
 
 %% decoder funs for optional fields
@@ -474,24 +471,30 @@ v1_instance(CurrId, PrevId, PrevInst)
 v1_instance(_CurrId, _PrevId, _PrevInst) ->
     0.
 
-decode_flags(<<>>, _) ->
-    [];
-decode_flags(<<_:1, Next/bits>>, ['_' | Flags]) ->
-    decode_flags(Next, Flags);
-decode_flags(<<1:1, Next/bits>>, [F | Flags]) ->
-    [F | decode_flags(Next, Flags)];
-decode_flags(<<_:1, Next/bits>>, [_ | Flags]) ->
-    decode_flags(Next, Flags);
-decode_flags(Bin, []) ->
-    [binary:decode_unsigned(Bin, little)].
+decode_flags(<<>>, _, Acc) ->
+    Acc;
+decode_flags(<<_:1, Next/bits>>, ['_' | Flags], Acc) ->
+    decode_flags(Next, Flags, Acc);
+decode_flags(<<1:1, Next/bits>>, [F | Flags], Acc) ->
+    decode_flags(Next, Flags, [{F, []} | Acc]);
+decode_flags(<<_:1, Next/bits>>, [_ | Flags], Acc) ->
+    decode_flags(Next, Flags, Acc);
+decode_flags(Bin, [], Acc) ->
+    case binary:decode_unsigned(Bin, little) of
+	0 -> Acc;
+	Value -> [{undecoded, Value}|Acc]
+    end.
 
-encode_flags([I|_], []) when is_integer(I) -> I;
-encode_flags([_|N], []) -> encode_flags(N, []);
-encode_flags([], _) -> 0;
-encode_flags(Flags, ['_' | N]) -> encode_flags(Flags, N) * 2;
-encode_flags(Flags, [F | N]) ->
-    bool2int(lists:member(F, Flags)) +
-	encode_flags(Flags -- [F], N) * 2.
+decode_flags(Bin, Flags) ->
+    maps:from_list(decode_flags(Bin, Flags, [])).
+
+encode_flags(List, Flags)
+  when is_list(List) ->
+    encode_flags(maps:from_list([{K, []} || K <- List]), Flags);
+encode_flags(Set, []) ->
+    maps:get(undecoded, Set, 0);
+encode_flags(Set, [F | N]) ->
+    bool2int(is_map_key(F, Set)) + encode_flags(Set, N) * 2.
 
 decode_v2_cgi(<<MCCMNC:3/bytes, LAC:16, CI:16>>) ->
     #cgi{plmn_id = {decode_mcc(MCCMNC), decode_mnc(MCCMNC)}, lac = LAC, ci = CI}.
@@ -1663,17 +1666,14 @@ decode_v1_element(<<>>, 146, Instance) ->
 decode_v1_element(<<>>, 147, Instance) ->
     #sgsn_number{instance = Instance};
 
-decode_v1_element(<<M_flags_dual_address_bearer_flag:1,
-		    M_flags_upgrade_qos_supported:1,
-		    M_flags_nrsn:1,
-		    M_flags_no_qos_negotiation:1,
-		    M_flags_mbms_counting_information:1,
-		    M_flags_ran_procedures_ready:1,
-		    M_flags_mbms_service_type:1,
-		    M_flags_prohibit_payload_compression:1,
-		    _/binary>>, 148, Instance) ->
+decode_v1_element(<<M_flags/binary>>, 148, Instance) ->
     #common_flags{instance = Instance,
-		  flags = [ 'Dual Address Bearer Flag' || M_flags_dual_address_bearer_flag =/= 0 ] ++ [ 'Upgrade QoS Supported' || M_flags_upgrade_qos_supported =/= 0 ] ++ [ 'NRSN' || M_flags_nrsn =/= 0 ] ++ [ 'No QoS negotiation' || M_flags_no_qos_negotiation =/= 0 ] ++ [ 'MBMS Counting Information' || M_flags_mbms_counting_information =/= 0 ] ++ [ 'RAN Procedures Ready' || M_flags_ran_procedures_ready =/= 0 ] ++ [ 'MBMS Service Type' || M_flags_mbms_service_type =/= 0 ] ++ [ 'Prohibit Payload Compression' || M_flags_prohibit_payload_compression =/= 0 ]};
+		  flags = decode_flags(M_flags, ['Dual Address Bearer Flag',
+                               'Upgrade QoS Supported','NRSN',
+                               'No QoS negotiation',
+                               'MBMS Counting Information',
+                               'RAN Procedures Ready','MBMS Service Type',
+                               'Prohibit Payload Compression'])};
 
 decode_v1_element(<<M_restriction_type_value:8/integer>>, 149, Instance) ->
     #apn_restriction{instance = Instance,
@@ -1823,17 +1823,10 @@ decode_v1_element(<<_:1,
 decode_v1_element(<<>>, 192, Instance) ->
     #evolved_allocation_retention_priority_ii{instance = Instance};
 
-decode_v1_element(<<M_flags_unauthenticated_imsi:1,
-		    M_flags_ccrsi:1,
-		    M_flags_cpsr:1,
-		    M_flags_retloc:1,
-		    M_flags_vb:1,
-		    M_flags_pcri:1,
-		    M_flags_bdwi:1,
-		    M_flags_uasi:1,
-		    _/binary>>, 193, Instance) ->
+decode_v1_element(<<M_flags/binary>>, 193, Instance) ->
     #extended_common_flags{instance = Instance,
-			   flags = [ 'Unauthenticated IMSI' || M_flags_unauthenticated_imsi =/= 0 ] ++ [ 'CCRSI' || M_flags_ccrsi =/= 0 ] ++ [ 'CPSR' || M_flags_cpsr =/= 0 ] ++ [ 'RetLoc' || M_flags_retloc =/= 0 ] ++ [ 'VB' || M_flags_vb =/= 0 ] ++ [ 'PCRI' || M_flags_pcri =/= 0 ] ++ [ 'BDWI' || M_flags_bdwi =/= 0 ] ++ [ 'UASI' || M_flags_uasi =/= 0 ]};
+			   flags = decode_flags(M_flags, ['UASI','BDWI','PCRI','VB','RetLoc','CPSR',
+                               'CCRSI','Unauthenticated IMSI'])};
 
 decode_v1_element(<<>>, 194, Instance) ->
     #user_csg_information{instance = Instance};
@@ -2428,14 +2421,13 @@ encode_v1_element(#sgsn_number{
 encode_v1_element(#common_flags{
 		     instance = Instance,
 		     flags = M_flags}) ->
-    encode_v1_element(148, Instance, <<(encode_flag('Dual Address Bearer Flag', M_flags)):1,
-				       (encode_flag('Upgrade QoS Supported', M_flags)):1,
-				       (encode_flag('NRSN', M_flags)):1,
-				       (encode_flag('No QoS negotiation', M_flags)):1,
-				       (encode_flag('MBMS Counting Information', M_flags)):1,
-				       (encode_flag('RAN Procedures Ready', M_flags)):1,
-				       (encode_flag('MBMS Service Type', M_flags)):1,
-				       (encode_flag('Prohibit Payload Compression', M_flags)):1>>);
+    encode_v1_element(148, Instance, <<(encode_min_int(8, encode_flags(M_flags, ['Prohibit Payload Compression',
+                                          'MBMS Service Type',
+                                          'RAN Procedures Ready',
+                                          'MBMS Counting Information',
+                                          'No QoS negotiation','NRSN',
+                                          'Upgrade QoS Supported',
+                                          'Dual Address Bearer Flag']), little))/binary>>);
 
 encode_v1_element(#apn_restriction{
 		     instance = Instance,
@@ -2627,14 +2619,9 @@ encode_v1_element(#evolved_allocation_retention_priority_ii{
 encode_v1_element(#extended_common_flags{
 		     instance = Instance,
 		     flags = M_flags}) ->
-    encode_v1_element(193, Instance, <<(encode_flag('Unauthenticated IMSI', M_flags)):1,
-				       (encode_flag('CCRSI', M_flags)):1,
-				       (encode_flag('CPSR', M_flags)):1,
-				       (encode_flag('RetLoc', M_flags)):1,
-				       (encode_flag('VB', M_flags)):1,
-				       (encode_flag('PCRI', M_flags)):1,
-				       (encode_flag('BDWI', M_flags)):1,
-				       (encode_flag('UASI', M_flags)):1>>);
+    encode_v1_element(193, Instance, <<(encode_min_int(8, encode_flags(M_flags, ['Unauthenticated IMSI','CCRSI',
+                                          'CPSR','RetLoc','VB','PCRI','BDWI',
+                                          'UASI']), little))/binary>>);
 
 encode_v1_element(#user_csg_information{
 		     instance = Instance}) ->

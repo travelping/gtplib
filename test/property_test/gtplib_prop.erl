@@ -162,7 +162,7 @@ order_by(Order, List) ->
     ?LET(L, List, order_by_fun(Order, L)).
 
 flags(Flags) ->
-    order_by(Flags, list(oneof(Flags))).
+    ?LET(L, list(oneof(Flags)), maps:from_list([{K, []} || K <- L])).
 
 flag() ->
     oneof([0,1]).
