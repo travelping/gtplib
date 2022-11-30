@@ -805,9 +805,6 @@ write_encoder(FunName, {Id, Name, Length, Helper})
     io_lib:format("encode_v1_element(#~s{instance = Instance} = IE) ->~n    ~s(~w, Instance, encode_~s(IE))",
 		  [s2a(Name), FunName, Id, Helper]).
 
-write_pretty_print(_, Def) ->
-    io_lib:format("?PRETTY_PRINT(pretty_print_v1, ~s)", [s2a(element(2, Def))]).
-
 main(_) ->
     MsgDescription = string:join([io_lib:format("msg_description(~s) -> <<\"~s\">>", [s2a(X), X]) || {_, X} <- msgs()]
 				 ++ ["msg_description(X) -> io_lib:format(\"~p\", [X])"], ";\n") ++ ".\n",
@@ -817,7 +814,9 @@ main(_) ->
     MTypes = string:join(FwdFuns ++ RevFuns ++ ErrorFun, ";\n") ++ ".\n",
 
     Records = string:join([write_record(X) || X <- ies()], "\n"),
-    HrlRecs = io_lib:format("~n~n~s~n", [Records]),
+    ExpRecs = io_lib:format("-define(GTP_V1_RECORDS, ~p).~n",
+			    [[list_to_atom(s2a(element(2, ExpRec))) || ExpRec <- ies()]]),
+    HrlRecs = io_lib:format("~n~n~s~n~s~n", [ExpRecs, Records]),
     Enums = write_enums(ies()),
 
     CatchAnyDecoder = "decode_v1_element(Value, Tag, Instance) ->\n    {Tag, Instance, Value}",
@@ -843,13 +842,9 @@ main(_) ->
     EncFuns = string:join([write_encoder("encode_v1_element", X) || X <- ies()]
 			  ++ [CatchAnyEncoder] , ";\n\n"),
 
-    CatchAnyPretty = "pretty_print_v1(_, _) ->\n    no",
-    RecPrettyDefs = string:join([write_pretty_print("pretty_print_v1", X) || X <- ies()]
-				++ [CatchAnyPretty] , ";\n"),
-
-    ErlDecls = io_lib:format("~n~n~s~n~s~n~s~n~s.~n~n~s~n~n~s.~n~n~s.~n",
+    ErlDecls = io_lib:format("~n~n~s~n~s~n~s~n~s.~n~n~s~n~n~s.~n~n",
 			     [MsgDescription, MTypes, Enums, Funs,
-			      MainDecodeSwitch, EncFuns, RecPrettyDefs]),
+			      MainDecodeSwitch, EncFuns]),
 
     {ok, HrlF0} = file:read_file("include/gtp_packet.hrl"),
     [HrlHead, _, HrlV2] = binary:split(HrlF0, [?V1_TAG, ?V2_TAG], [global]),

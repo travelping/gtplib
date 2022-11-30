@@ -969,9 +969,6 @@ write_encoder(#ie{id = Id, name = Name, type = Helper}, Fns) ->
 		      [Name, ?EncoderFunName, Id, Helper]),
     [F | Fns].
 
-write_pretty_print(_, #ie{name = Name}) ->
-    io_lib:format("?PRETTY_PRINT(pretty_print_v2, ~s)", [Name]).
-
 main(_) ->
     IEs = ies(),
 
@@ -983,7 +980,9 @@ main(_) ->
     MTypes = string:join(FwdFuns ++ RevFuns ++ ErrorFun, ";\n") ++ ".\n",
 
     Records = string:join([write_record(X) || X <- IEs], "\n"),
-    HrlRecs = io_lib:format("~n~n~s", [Records]),
+    ExpRecs = io_lib:format("-define(GTP_V2_RECORDS, ~p).~n",
+			    [[ExpRecName || #ie{name = ExpRecName} <- IEs]]),
+    HrlRecs = io_lib:format("~n~n~s~n~s", [ExpRecs, Records]),
     Enums = write_enums(IEs),
 
     CatchAnyDecoder = ?DecoderFunName ++ "(Value, Tag, Instance) ->\n    {Tag, Instance, Value}",
@@ -995,13 +994,9 @@ main(_) ->
     EncoderFns = lists:foldr(fun write_encoder/2, [CatchAnyEncoder], IEs),
     EncFuns = string:join(EncoderFns, ";\n\n"),
 
-    CatchAnyPretty = "pretty_print_v2(_, _) ->\n    no",
-    RecPrettyDefs = string:join([write_pretty_print("pretty_print_v2", X) || X <- IEs]
-				++ [CatchAnyPretty] , ";\n"),
-
-    ErlDecls = io_lib:format("~n~n~s~n~s~n~s~n~s.~n~n~s.~n~n~s.~n",
+    ErlDecls = io_lib:format("~n~n~s~n~s~n~s~n~s.~n~n~s.~n",
 			     [MsgDescription, MTypes, Enums, Funs,
-			      EncFuns, RecPrettyDefs]),
+			      EncFuns]),
 
     {ok, HrlF0} = file:read_file("include/gtp_packet.hrl"),
     [HrlHead, HrlV1, _] = binary:split(HrlF0, [?V1_TAG, ?V2_TAG], [global]),
