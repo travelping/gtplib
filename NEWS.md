@@ -3,6 +3,19 @@ gtplib
 
 Erlang library for encoding and decoding GTPv1, GTPv2 and GTP' frames.
 
+Version 4.0.0 - 01 December 2022
+--------------------------------
+
+Major version changed to 4.0 due to incompatible API change in decoding of flags in information elements.
+
+**Features** :rocket:
+* [#42](https://github.com/travelping/gtplib/pull/42) add [OpenTelemetry](https://opentelemetry.io/) helpers
+  to convert GTP messages into OpenTelemetry attributes.
+* [#43](https://github.com/travelping/gtplib/pull/43) convert all GTP flag fields from lists to maps
+
+**Features** :rocket:
+* [#39](https://github.com/travelping/gtplib/pull/39) Exporting `ULI`, `RAI` encoding functions and decoding functions
+
 Version 3.2.0 - 22 September 2022
 ---------------------------
 
