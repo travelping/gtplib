@@ -249,9 +249,9 @@ int2bool(_) -> true.
 is_bin(Bin) -> bool2int(is_binary(Bin)).
 
 %% decoder funs for optional fields
-maybe(Bin, 0, _Fun, IE) ->
+'maybe'(Bin, 0, _Fun, IE) ->
     {IE, Bin};
-maybe(Bin, 1, Fun, IE) ->
+'maybe'(Bin, 1, Fun, IE) ->
     Fun(Bin, IE).
 
 bin(Bin, Len, Pos, IE) ->
@@ -279,8 +279,8 @@ length_bin(Bin, LenSize, Pos, IE) ->
     bin(Rest, Len, Pos, IE).
 
 %% encoder funs for optional fields
-maybe(true, Fun, IE) -> Fun(IE);
-maybe(_, _, IE)      -> IE.
+'maybe'(true, Fun, IE) -> Fun(IE);
+'maybe'(_, _, IE)      -> IE.
 
 int(Int, Size, IE) ->
     <<IE/binary, Int:Size>>.
@@ -520,16 +520,16 @@ decode_v2_user_location_information(<<FlagEMeNB:1, FlagEeNB:1, FlagLAI:1, FlagEC
 				      Rest0/binary>>, Instance) ->
     IE0 = #v2_user_location_information{instance = Instance},
 
-    {IE1, Rest1} = maybe(Rest0, FlagCGI,  bin(_, 7, fun decode_v2_cgi/1, #v2_user_location_information.cgi, _),  IE0),
-    {IE2, Rest2} = maybe(Rest1, FlagSAI,  bin(_, 7, fun decode_v2_sai/1, #v2_user_location_information.sai, _),  IE1),
-    {IE3, Rest3} = maybe(Rest2, FlagRAI,  bin(_, 7, fun decode_v2_rai/1, #v2_user_location_information.rai, _),  IE2),
-    {IE4, Rest4} = maybe(Rest3, FlagTAI,  bin(_, 5, fun decode_v2_tai/1, #v2_user_location_information.tai, _),  IE3),
-    {IE5, Rest5} = maybe(Rest4, FlagECGI, bin(_, 7, fun decode_v2_ecgi/1, #v2_user_location_information.ecgi, _), IE4),
-    {IE6, Rest6} = maybe(Rest5, FlagLAI,  bin(_, 5, fun decode_v2_lai/1, #v2_user_location_information.lai, _),  IE5),
+    {IE1, Rest1} = 'maybe'(Rest0, FlagCGI,  bin(_, 7, fun decode_v2_cgi/1, #v2_user_location_information.cgi, _),  IE0),
+    {IE2, Rest2} = 'maybe'(Rest1, FlagSAI,  bin(_, 7, fun decode_v2_sai/1, #v2_user_location_information.sai, _),  IE1),
+    {IE3, Rest3} = 'maybe'(Rest2, FlagRAI,  bin(_, 7, fun decode_v2_rai/1, #v2_user_location_information.rai, _),  IE2),
+    {IE4, Rest4} = 'maybe'(Rest3, FlagTAI,  bin(_, 5, fun decode_v2_tai/1, #v2_user_location_information.tai, _),  IE3),
+    {IE5, Rest5} = 'maybe'(Rest4, FlagECGI, bin(_, 7, fun decode_v2_ecgi/1, #v2_user_location_information.ecgi, _), IE4),
+    {IE6, Rest6} = 'maybe'(Rest5, FlagLAI,  bin(_, 5, fun decode_v2_lai/1, #v2_user_location_information.lai, _),  IE5),
     {IE7, Rest7} =
-	maybe(Rest6, FlagEeNB,  bin(_, 6, fun decode_v2_macro_enb/1, #v2_user_location_information.macro_enb, _),     IE6),
+	'maybe'(Rest6, FlagEeNB,  bin(_, 6, fun decode_v2_macro_enb/1, #v2_user_location_information.macro_enb, _),     IE6),
     {IE8, _Rest} =
-	maybe(Rest7, FlagEMeNB, bin(_, 6, fun decode_v2_ext_macro_enb/1, #v2_user_location_information.ext_macro_enb, _), IE7),
+	'maybe'(Rest7, FlagEMeNB, bin(_, 6, fun decode_v2_ext_macro_enb/1, #v2_user_location_information.ext_macro_enb, _), IE7),
     IE8.
 
 decode_v2_fully_qualified_tunnel_endpoint_identifier(<<FlagV4:1, FlagV6:1, InterfaceType:6,
@@ -578,20 +578,20 @@ decode_v2_twan_identifier(<<_:3, FlagLAII:1, FlagOPNAI:1, FlagPLMNI:1,
 			    Rest0/binary>>, Instance) ->
     IE0 = #v2_twan_identifier{instance = Instance},
     {IE1, Rest1} = bin(Rest0, SSIDLen, #v2_twan_identifier.ssid, IE0),
-    {IE2, Rest2} = maybe(Rest1, FlagBSSIDI, bin(_, 6, #v2_twan_identifier.bssid, _), IE1),
-    {IE3, Rest3} = maybe(Rest2, FlagCIVAI, length_bin(_, 8, #v2_twan_identifier.civic_address, _), IE2),
-    {IE4, Rest4} = maybe(Rest3, FlagPLMNI, plmn(_, #v2_twan_identifier.plmn_id, _), IE3),
-    {IE5, Rest5} = maybe(Rest4, FlagOPNAI, length_bin(_, 8, #v2_twan_identifier.operator_name, _), IE4),
-    {IE6, Rest6} = maybe(Rest5, FlagLAII,  int(_, 8, #v2_twan_identifier.relay_identity_type,  _), IE5),
-    {IE7, Rest7} = maybe(Rest6, FlagLAII, length_bin(_, 8, #v2_twan_identifier.relay_identity, _), IE6),
-    {IE8, _Rest} = maybe(Rest7, FlagLAII, length_bin(_, 8, #v2_twan_identifier.circuit_id, _), IE7),
+    {IE2, Rest2} = 'maybe'(Rest1, FlagBSSIDI, bin(_, 6, #v2_twan_identifier.bssid, _), IE1),
+    {IE3, Rest3} = 'maybe'(Rest2, FlagCIVAI, length_bin(_, 8, #v2_twan_identifier.civic_address, _), IE2),
+    {IE4, Rest4} = 'maybe'(Rest3, FlagPLMNI, plmn(_, #v2_twan_identifier.plmn_id, _), IE3),
+    {IE5, Rest5} = 'maybe'(Rest4, FlagOPNAI, length_bin(_, 8, #v2_twan_identifier.operator_name, _), IE4),
+    {IE6, Rest6} = 'maybe'(Rest5, FlagLAII,  int(_, 8, #v2_twan_identifier.relay_identity_type,  _), IE5),
+    {IE7, Rest7} = 'maybe'(Rest6, FlagLAII, length_bin(_, 8, #v2_twan_identifier.relay_identity, _), IE6),
+    {IE8, _Rest} = 'maybe'(Rest7, FlagLAII, length_bin(_, 8, #v2_twan_identifier.circuit_id, _), IE7),
     IE8.
 
 decode_v2_paging_and_service_information(<<_:4, EBI:4, _:7, FlagPPI:1, Rest0/binary>>,
 					 Instance) ->
     IE0 = #v2_paging_and_service_information{instance = Instance, ebi = EBI},
-    {IE1, Rest1} = maybe(Rest0, FlagPPI, spare(_, 2, _), IE0),
-    {IE2, _Rest} = maybe(Rest1, FlagPPI, int(_, 6, #v2_paging_and_service_information.ppi, _), IE1),
+    {IE1, Rest1} = 'maybe'(Rest0, FlagPPI, spare(_, 2, _), IE0),
+    {IE2, _Rest} = 'maybe'(Rest1, FlagPPI, int(_, 6, #v2_paging_and_service_information.ppi, _), IE1),
     IE2.
 
 decode_v2_integer_number(Bin, Instance) ->
@@ -603,14 +603,14 @@ decode_v2_remote_user_id(<<_:6, FlagIMEI:1, FlagMSISDN:1, IMSILen:8,
 			   Rest0/binary>>, Instance) ->
     IE0 = #v2_remote_user_id{instance = Instance},
     {IE1, Rest1} = bin(Rest0, IMSILen, #v2_remote_user_id.imsi, IE0),
-    {IE2, Rest2} = maybe(Rest1, FlagMSISDN, length_bin(_, 8, #v2_remote_user_id.msisdn, _), IE1),
-    {IE3, _Rest} = maybe(Rest2, FlagIMEI, length_bin(_, 8, #v2_remote_user_id.imei, _), IE2),
+    {IE2, Rest2} = 'maybe'(Rest1, FlagMSISDN, length_bin(_, 8, #v2_remote_user_id.msisdn, _), IE1),
+    {IE3, _Rest} = 'maybe'(Rest2, FlagIMEI, length_bin(_, 8, #v2_remote_user_id.imei, _), IE2),
     IE3.
 
 decode_v2_maximum_packet_loss_rate(<<_:6, FlagDL:1, FlagUL:1, Rest0/binary>>, Instance) ->
     IE0 = #v2_maximum_packet_loss_rate{instance = Instance},
-    {IE1, Rest1} = maybe(Rest0, FlagUL, int(_, 16, #v2_maximum_packet_loss_rate.ul, _), IE0),
-    {IE2, _Rest} = maybe(Rest1, FlagDL, int(_, 16, #v2_maximum_packet_loss_rate.dl, _), IE1),
+    {IE1, Rest1} = 'maybe'(Rest0, FlagUL, int(_, 16, #v2_maximum_packet_loss_rate.ul, _), IE0),
+    {IE2, _Rest} = 'maybe'(Rest1, FlagDL, int(_, 16, #v2_maximum_packet_loss_rate.dl, _), IE1),
     IE2.
 
 decode_v2_monitoring_event_extension_information(<<_:7, FlagLRTP:1, RefId:32, IdLen:8,
@@ -618,7 +618,7 @@ decode_v2_monitoring_event_extension_information(<<_:7, FlagLRTP:1, RefId:32, Id
     IE0 = #v2_monitoring_event_extension_information{
 	     instance = Instance, scef_reference_id = RefId},
     {IE1, Rest1} = bin(Rest0, IdLen, #v2_monitoring_event_extension_information.scef_id, IE0),
-    {IE2, _Rest} = maybe(Rest1, FlagLRTP, int(_, 32, #v2_monitoring_event_extension_information.remaining_minimum_lrtp, _), IE1),
+    {IE2, _Rest} = 'maybe'(Rest1, FlagLRTP, int(_, 32, #v2_monitoring_event_extension_information.remaining_minimum_lrtp, _), IE1),
     IE2.
 
 decode_v2(<<>>, IEs) ->
@@ -856,14 +856,14 @@ encode_v2_user_location_information(
     IE0 = <<(bool2int(FlagEMeNB)):1, (bool2int(FlagMeNB)):1, (bool2int(FlagLAI)):1, (bool2int(FlagECGI)):1,
 	    (bool2int(FlagTAI)):1,   (bool2int(FlagRAI)):1,  (bool2int(FlagSAI)):1, (bool2int(FlagCGI)):1>>,
 
-    IE1 = maybe(FlagCGI,   encode_v2_cgi(CGI, _), IE0),
-    IE2 = maybe(FlagSAI,   encode_v2_sai(SAI, _), IE1),
-    IE3 = maybe(FlagRAI,   encode_v2_rai(RAI, _), IE2),
-    IE4 = maybe(FlagTAI,   encode_v2_tai(TAI, _), IE3),
-    IE5 = maybe(FlagECGI,  encode_v2_ecgi(ECGI, _), IE4),
-    IE6 = maybe(FlagLAI,   encode_v2_lai(LAI, _), IE5),
-    IE7 = maybe(FlagMeNB,  encode_v2_macro_enb(MeNB, _), IE6),
-    _IE = maybe(FlagEMeNB, encode_v2_ext_macro_enb(EMeNB, _), IE7).
+    IE1 = 'maybe'(FlagCGI,   encode_v2_cgi(CGI, _), IE0),
+    IE2 = 'maybe'(FlagSAI,   encode_v2_sai(SAI, _), IE1),
+    IE3 = 'maybe'(FlagRAI,   encode_v2_rai(RAI, _), IE2),
+    IE4 = 'maybe'(FlagTAI,   encode_v2_tai(TAI, _), IE3),
+    IE5 = 'maybe'(FlagECGI,  encode_v2_ecgi(ECGI, _), IE4),
+    IE6 = 'maybe'(FlagLAI,   encode_v2_lai(LAI, _), IE5),
+    IE7 = 'maybe'(FlagMeNB,  encode_v2_macro_enb(MeNB, _), IE6),
+    _IE = 'maybe'(FlagEMeNB, encode_v2_ext_macro_enb(EMeNB, _), IE7).
 
 encode_v2_fully_qualified_tunnel_endpoint_identifier(
   #v2_fully_qualified_tunnel_endpoint_identifier{
@@ -921,19 +921,19 @@ encode_v2_twan_identifier(
 	    (bool2int(FlagPLMNI)):1, (bool2int(FlagCIVAI)):1,
 	    (bool2int(FlagBSSIDI)):1>>,
     IE1 = length_bin(SSID, 8, IE0),
-    IE2 = maybe(FlagBSSIDI, bin(BSSID, 6, _), IE1),
-    IE3 = maybe(FlagCIVAI, length_bin(CivicAddress, 8, _), IE2),
-    IE4 = maybe(FlagPLMNI, plmn(MCCMNC, _), IE3),
-    IE5 = maybe(FlagOPNAI, length_bin(OperatorName, 8, _), IE4),
-    IE6 = maybe(FlagLAII, int(RelayIdentityType, 8, _), IE5),
-    IE7 = maybe(FlagLAII, length_bin(RelayIdentity, 8, _), IE6),
-    _IE = maybe(FlagLAII, length_bin(CircuitId, 8, _), IE7).
+    IE2 = 'maybe'(FlagBSSIDI, bin(BSSID, 6, _), IE1),
+    IE3 = 'maybe'(FlagCIVAI, length_bin(CivicAddress, 8, _), IE2),
+    IE4 = 'maybe'(FlagPLMNI, plmn(MCCMNC, _), IE3),
+    IE5 = 'maybe'(FlagOPNAI, length_bin(OperatorName, 8, _), IE4),
+    IE6 = 'maybe'(FlagLAII, int(RelayIdentityType, 8, _), IE5),
+    IE7 = 'maybe'(FlagLAII, length_bin(RelayIdentity, 8, _), IE6),
+    _IE = 'maybe'(FlagLAII, length_bin(CircuitId, 8, _), IE7).
 
 encode_v2_paging_and_service_information(
   #v2_paging_and_service_information{ebi = EBI, ppi = PPI}) ->
     FlagPPI = is_integer(PPI),
     IE0 = <<0:4, EBI:4, 0:7, (bool2int(FlagPPI))>>,
-    _IE = maybe(FlagPPI, int(PPI band 16#3f, 8, _), IE0).
+    _IE = 'maybe'(FlagPPI, int(PPI band 16#3f, 8, _), IE0).
 
 encode_v2_integer_number(#v2_integer_number{width = W, value = I}) ->
     <<I:(W*8)>>.
@@ -941,15 +941,15 @@ encode_v2_integer_number(#v2_integer_number{width = W, value = I}) ->
 encode_v2_remote_user_id(#v2_remote_user_id{imsi = IMSI, msisdn = MSISDN, imei = IMEI}) ->
     IE0 = <<0:6, (is_bin(IMEI)):1, (is_bin(MSISDN)):1>>,
     IE1 = length_bin(IMSI, 8, IE0),
-    IE2 = maybe(is_binary(MSISDN), length_bin(MSISDN, 8, _), IE1),
-    _IE = maybe(is_binary(IMSI), length_bin(IMSI, 8, _), IE2).
+    IE2 = 'maybe'(is_binary(MSISDN), length_bin(MSISDN, 8, _), IE1),
+    _IE = 'maybe'(is_binary(IMSI), length_bin(IMSI, 8, _), IE2).
 
 encode_v2_maximum_packet_loss_rate(#v2_maximum_packet_loss_rate{ul = UL, dl = DL}) ->
     FlagUL = is_integer(UL),
     FlagDL = is_integer(DL),
     IE0 = <<0:6, (bool2int(FlagDL)):1, (bool2int(FlagUL)):1>>,
-    IE1 = maybe(FlagUL, int(UL, 16, _), IE0),
-    _IE = maybe(FlagDL, int(DL, 16, _), IE1).
+    IE1 = 'maybe'(FlagUL, int(UL, 16, _), IE0),
+    _IE = 'maybe'(FlagDL, int(DL, 16, _), IE1).
 
 encode_v2_monitoring_event_extension_information(
   #v2_monitoring_event_extension_information{
@@ -957,7 +957,7 @@ encode_v2_monitoring_event_extension_information(
     FlagLRTP = is_integer(RemMinLRTP),
     IE0 = <<0:7, (bool2int(FlagLRTP)):1, RefId:32>>,
     IE1 = length_bin(ScefId, 8, IE0),
-    _IE = maybe(FlagLRTP, int(RemMinLRTP, 32, _), IE1).
+    _IE = 'maybe'(FlagLRTP, int(RemMinLRTP, 32, _), IE1).
 
 %% -include("gtp_packet_v1_gen.hrl").
 
