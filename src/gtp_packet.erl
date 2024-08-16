@@ -418,7 +418,10 @@ decode_protocol_opts(<<Id:16, Length:8, Data:Length/bytes, Next/binary>>, Protoc
     Opt = decode_protocol_ppp_opt(Id, Data),
     decode_protocol_opts(Next, Protocol, [Opt | Opts]);
 decode_protocol_opts(<<Id:16, Length:8, Data:Length/bytes, Next/binary>>, Protocol, Opts) ->
-    decode_protocol_opts(Next, Protocol, [{Id, Data} | Opts]).
+    decode_protocol_opts(Next, Protocol, [{Id, Data} | Opts]);
+decode_protocol_opts(<<_Id:16, Length:8, Data/binary>> = Raw, Protocol, Opts)
+  when Length > byte_size(Data) ->
+    decode_protocol_opts(<<>>, Protocol, [{raw, Raw} | Opts]).
 
 decode_array_of_seq_no(Array) ->
     [X || <<X:16/integer>> <= Array].
@@ -769,6 +772,8 @@ encode_protocol_config_opts({Protocol, Opts}) ->
 
 encode_protocol_opts(_Protocol, [], Opts) ->
     Opts;
+encode_protocol_opts(Protocol, [{raw, Raw} | T], Opts) ->
+    encode_protocol_opts(Protocol, T, <<Opts/binary, Raw/binary>>);
 encode_protocol_opts(Protocol, [{Id, Data} | T], Opts)
   when Id < 16#8000; Id >= 16#FF00 ->
     encode_protocol_opts(Protocol, T, <<Opts/binary, Id:16, (size(Data)):8, Data/binary>>);
