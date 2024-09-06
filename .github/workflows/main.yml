@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        otp: [22.0.7, 22.1.8, 22.2.8, 22.3.4.14, 23.0.4, 23.1.5.0, 23.2.1.0, 24.0.2]
+        otp: [22.2.8, 22.3.4.14, 23.0.4, 23.1.5.0, 23.2.1.0, 24.0.2]
     container:
       image: erlang:${{ matrix.otp }}-alpine
     steps:
@@ -23,8 +23,9 @@ jobs:
            apk update
            apk --no-cache upgrade
            apk --no-cache add gcc git libc-dev libc-utils libgcc linux-headers make bash \
-                              musl-dev musl-utils ncurses-dev pcre2 pkgconf scanelf wget zlib
-    - uses: actions/checkout@v2
+                              musl-dev musl-utils ncurses-dev pcre2 pkgconf scanelf \
+                              wget zlib zstd
+    - uses: actions/checkout@v4
     - name: Build
       run: rebar3 compile
     - name: Run tests
@@ -36,18 +37,40 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         COVERALLS_FLAG_NAME: ${{ matrix.otp }}
       run: DEBUG=1 rebar3 as test coveralls send || /bin/true
+    - name: Tar Test Output
+      if: ${{ always() }}
+      run: tar -cf - _build/test/logs/ | zstd -15 -o ct-logs-${{ matrix.otp }}.tar.zst
     - name: Archive Test Output
       if: ${{ always() }}
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: test-output-${{ matrix.otp }}
         path: |
-          _build/test/logs/
-          !_build/test/logs/last
+          ct-logs-${{ matrix.otp }}.tar.zst
+          _build/test/logs/*/junit_report.xml
 
+  publish-test-results:
+    name: "Publish Tests Results"
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      checks: write
+      pull-requests: write
+      contents: read
+      issues: read
+    if: always()
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Publish Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        with:
+          files: "artifacts/**/junit_report.xml"
   slack:
     needs: test
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: always()
     steps:
     - name: Slack notification
@@ -65,7 +88,7 @@ jobs:
 
   finish:
     needs: test
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: always()
     steps:
     - name: Coveralls Finished
