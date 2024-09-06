@@ -283,7 +283,7 @@ ies() ->
        {"DST", 2, integer},
        {'_', 0}]},
      {154, "IMEI", '_',
-      [{"IMEI", 64, {type, tbcd}},
+      [{"IMEI", 64, {type, imei}},
        {'_', 0}]},
      {155, "CAMEL Charging Information Container", '_',
       []},

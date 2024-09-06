@@ -58,6 +58,7 @@ all() ->
 	 test_v1_ignore_spare_bits,
 	 test_g_pdu,
 	 test_v2_pco_vendor_ext,
+	 v1_invalid_imei,
 	 v2_list,
 	 partial_decode,
 	 partial_encode,
@@ -281,6 +282,16 @@ test_v2_pco_vendor_ext(_Config) ->
     Msg = v2_pco_vendor_ext(),
     ?match(Data when is_binary(Data), (catch gtp_packet:encode(Msg))),
     ok.
+
+v1_invalid_imei() ->
+    [{doc, "Try to encode an IMEI shorter that 15 digits"}].
+v1_invalid_imei(_Config) ->
+    %% IMEIs are 15 digits and IMEI-SVs are 16 digits, anything else is not a valid
+    %% IMEI. However, somehow 14 digit values are observed in the wild. Make sure that
+    %% encoder/decoder handles them, so that higher levels can deal with the values.
+    Msg = #gtp{version = v1, type = create_pdp_context_request, seq_no = 1, tei = 0,
+	       ie = #{{imei, 0} => #imei{imei = <<"1234567890">>}}},
+    ?equal(Msg, gtp_packet:decode(gtp_packet:encode(Msg))).
 
 v2_list(_Config) ->
     IEs =
