@@ -735,6 +735,13 @@ encode_imsi(IMSI) ->
     << B:64/bits, _/binary>> = << (encode_tbcd(IMSI))/binary, -1:64 >>,
     B.
 
+decode_imei(Bin) ->
+    decode_tbcd(Bin).
+
+encode_imei(IMEI) ->
+    << B:64/bits, _/binary>> = << (encode_tbcd(IMEI))/binary, -1:64 >>,
+    B.
+
 encode_v1_rai(#routeing_area_identity{
 		 identity = #rai{plmn_id = {MCC, MNC}, lac = LAC, rac = RAC}}) ->
     <<(encode_mccmnc(MCC, MNC))/binary, LAC:16, (RAC bsr 8):8>>.
@@ -1677,7 +1684,7 @@ decode_v1_element(<<M_timezone:8/integer,
 decode_v1_element(<<M_imei:64/bits,
 		    _/binary>>, 154, Instance) ->
     #imei{instance = Instance,
-	  imei = decode_tbcd(M_imei)};
+	  imei = decode_imei(M_imei)};
 
 decode_v1_element(<<>>, 155, Instance) ->
     #camel_charging_information_container{instance = Instance};
@@ -2441,7 +2448,7 @@ encode_v1_element(#ms_time_zone{
 encode_v1_element(#imei{
 		     instance = Instance,
 		     imei = M_imei}) ->
-    encode_v1_element(154, Instance, <<(encode_tbcd(M_imei)):64/bits>>);
+    encode_v1_element(154, Instance, <<(encode_imei(M_imei)):64/bits>>);
 
 encode_v1_element(#camel_charging_information_container{
 		     instance = Instance}) ->
