@@ -151,672 +151,587 @@
 
 %% -include("gtp_packet_v1_gen.hrl").
 
--define(GTP_V1_RECORDS, [cause,international_mobile_subscriber_identity,
-                         routeing_area_identity,
-                         temporary_logical_link_identity,packet_tmsi,
-                         reordering_required,authentication_triplet,map_cause,
-                         p_tmsi_signature,ms_validated,recovery,
-                         selection_mode,tunnel_endpoint_identifier_data_i,
-                         tunnel_endpoint_identifier_control_plane,
-                         tunnel_endpoint_identifier_data_ii,teardown_ind,
-                         nsapi,ranap_cause,rab_context,radio_priority_sms,
-                         radio_priority,packet_flow_id,
-                         charging_characteristics,trace_reference,trace_type,
-                         ms_not_reachable_reason,packet_transfer_command,
-                         charging_id,end_user_address,mm_context_gsm,
-                         mm_context_umts,mm_context_gsm_and_umts,
-                         mm_context_umts_and_used_cipher,pdp_context,
-                         access_point_name,protocol_configuration_options,
-                         gsn_address,ms_international_pstn_isdn_number,
-                         quality_of_service_profile,authentication_quintuplet,
-                         traffic_flow_template,target_identification,
-                         utran_transparent_container,rab_setup_information,
-                         extension_header_type_list,trigger_id,omc_identity,
-                         ran_transparent_container,pdp_context_prioritization,
-                         additional_rab_setup_information,sgsn_number,
-                         common_flags,apn_restriction,radio_priority_lcs,
-                         rat_type,user_location_information,ms_time_zone,imei,
-                         camel_charging_information_container,mbms_ue_context,
-                         temporary_mobile_group_identity,rim_routing_address,
-                         mbms_protocol_configuration_options,
-                         mbms_service_area,source_rnc_pdcp_context_info,
-                         additional_trace_info,hop_counter,selected_plmn_id,
-                         mbms_session_identifier,mbms_2g_3g_indicator,
-                         enhanced_nsapi,mbms_session_duration,
-                         additional_mbms_trace_info,
-                         mbms_session_repetition_number,
-                         mbms_time_to_data_transfer,bss_container,
-                         cell_identification,pdu_numbers,bssgp_cause,
-                         required_mbms_bearer_capabilities,
-                         rim_routing_address_discriminator,
-                         list_of_set_up_pfcs,ps_handover_xid_parameters,
-                         ms_info_change_reporting_action,direct_tunnel_flags,
-                         correlation_id,bearer_control_mode,
-                         mbms_flow_identifier,mbms_ip_multicast_distribution,
-                         mbms_distribution_acknowledgement,
-                         reliable_inter_rat_handover_info,rfsp_index,
-                         fully_qualified_domain_name,
-                         evolved_allocation_retention_priority_i,
-                         evolved_allocation_retention_priority_ii,
-                         extended_common_flags,user_csg_information,
-                         csg_information_reporting_action,csg_id,
-                         csg_membership_indication,aggregate_maximum_bit_rate,
-                         ue_network_capability,ue_ambr,apn_ambr_with_nsapi,
-                         ggsn_back_off_time,signalling_priority_indication,
-                         signalling_priority_indication_with_nsapi,
-                         higher_bitrates_than_16_mbps_flag,
-                         additional_mm_context_for_srvcc,
-                         additional_flags_for_srvcc,stn_sr,c_msisdn,
-                         extended_ranap_cause,enodeb_id,
-                         selection_mode_with_nsapi,uli_timestamp,
-                         local_home_network_id_with_nsapi,
-                         cn_operator_selection_entity,
-                         sequence_numbers_of_released_packets,
-                         sequence_numbers_of_cancelled_packets,
-                         charging_gateway_address,data_record_packet,
-                         requests_responded,address_of_recommended_node,
-                         private_extension]).
-
--record(cause, {
-                instance = 0,
-                value = request_imsi
-               }).
-
--record(international_mobile_subscriber_identity, {
-                                                   instance = 0,
-                                                   imsi
-                                                  }).
-
-
--record(temporary_logical_link_identity, {
-                                          instance = 0,
-                                          tlli = <<0,0,0,0>>
-                                         }).
-
--record(packet_tmsi, {
-                      instance = 0,
-                      p_tmsi = <<0,0,0,0>>
-                     }).
-
--record(reordering_required, {
-                              instance = 0,
-                              required = no
-                             }).
-
--record(authentication_triplet, {
-                                 instance = 0,
-                                 rand = <<0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0>>,
-                                 sres = <<0,0,0,0>>,
-                                 kc = <<0,0,0,0,0,0,0,0>>
-                                }).
-
--record(map_cause, {
-                    instance = 0,
-                    value = <<0>>
-                   }).
-
--record(p_tmsi_signature, {
-                           instance = 0,
-                           value = <<0,0,0>>
-                          }).
-
--record(ms_validated, {
-                       instance = 0,
-                       validated = no
-                      }).
-
--record(recovery, {
-                   instance = 0,
-                   restart_counter = 0
-                  }).
-
--record(selection_mode, {
-                         instance = 0,
-                         mode = 0
-                        }).
-
--record(tunnel_endpoint_identifier_data_i, {
-                                            instance = 0,
-                                            tei = 0
-                                           }).
-
--record(tunnel_endpoint_identifier_control_plane, {
-                                                   instance = 0,
-                                                   tei = 0
-                                                  }).
-
--record(tunnel_endpoint_identifier_data_ii, {
-                                             instance = 0,
-                                             nsapi = 0,
-                                             tei = 0
-                                            }).
-
--record(teardown_ind, {
-                       instance = 0,
-                       value = 0
-                      }).
-
--record(nsapi, {
-                instance = 0,
-                nsapi = 0
-               }).
-
--record(ranap_cause, {
-                      instance = 0,
-                      value = 0
-                     }).
-
--record(rab_context, {
-                      instance = 0,
-                      nsapi = 0,
-                      dl_gtp_u_sequence_number = 0,
-                      ul_gtp_u_sequence_number = 0,
-                      dl_pdcp_sequence_number = 0,
-                      ul_pdcp_sequence_number = 0
-                     }).
-
--record(radio_priority_sms, {
-                             instance = 0,
-                             value = 0
-                            }).
-
--record(radio_priority, {
-                         instance = 0,
-                         nsapi = 0,
-                         value = 0
-                        }).
-
--record(packet_flow_id, {
-                         instance = 0,
-                         nsapi = 0,
-                         value = 0
-                        }).
-
--record(charging_characteristics, {
-                                   instance = 0,
-                                   value = <<0,0>>
-                                  }).
-
--record(trace_reference, {
-                          instance = 0,
-                          value = 0
-                         }).
-
--record(trace_type, {
-                     instance = 0,
-                     value = 0
-                    }).
-
--record(ms_not_reachable_reason, {
-                                  instance = 0,
-                                  value = 0
-                                 }).
-
--record(packet_transfer_command, {
-                                  instance = 0,
-                                  command = send_data_record_packet
-                                 }).
-
--record(charging_id, {
-                      instance = 0,
-                      id = <<0,0,0,0>>
-                     }).
-
--record(end_user_address, {
-                           instance = 0,
-                           pdp_type_organization = 0,
-                           pdp_type_number = 0,
-                           pdp_address = <<>>
-                          }).
-
--record(mm_context_gsm, {
-                         instance = 0,
-                         cksn = 0,
-                         no_of_vectors = 0,
-                         used_cipher = 0,
-                         kc = <<0,0,0,0,0,0,0,0>>,
-                         tripple = [],
-                         drx_parameter = <<0,0>>,
-                         ms_network_capability_length = 0,
-                         ms_network_capability = [],
-                         container_length = 0,
-                         container = []
-                        }).
-
--record(mm_context_umts, {
-                          instance = 0,
-                          ksi = 0,
-                          no_of_vectors = 0,
-                          ck = <<0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0>>,
-                          ik = <<0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0>>,
-                          quintuplet_length = 0,
-                          quintuplet = [],
-                          drx_parameter = <<0,0>>,
-                          ms_network_capability_length = 0,
-                          ms_network_capability = [],
-                          container_length = 0,
-                          container = []
-                         }).
-
--record(mm_context_gsm_and_umts, {
-                                  instance = 0,
-                                  cksn = 0,
-                                  no_of_vectors = 0,
-                                  used_cipher = 0,
-                                  kc = <<0,0,0,0,0,0,0,0>>,
-                                  quintuplet_length = 0,
-                                  quintuplet = [],
-                                  drx_parameter = <<0,0>>,
-                                  ms_network_capability_length = 0,
-                                  ms_network_capability = [],
-                                  container_length = 0,
-                                  container = []
-                                 }).
-
--record(mm_context_umts_and_used_cipher, {
-                                          instance = 0,
-                                          ksi = 0,
-                                          no_of_vectors = 0,
-                                          used_cipher = 0,
-                                          ck = <<0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0>>,
-                                          ik = <<0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0>>,
-                                          quintuplet_length = 0,
-                                          quintuplet = [],
-                                          drx_parameter = <<0,0>>,
-                                          ms_network_capability_length = 0,
-                                          ms_network_capability = [],
-                                          container_length = 0,
-                                          container = []
-                                         }).
-
--record(pdp_context, {
-                      instance = 0
-                     }).
-
--record(access_point_name, {
-                            instance = 0,
-                            apn
-                           }).
-
--record(protocol_configuration_options, {
-                                         instance = 0,
-                                         config
-                                        }).
-
--record(gsn_address, {
-                      instance = 0,
-                      address = <<>>
-                     }).
-
--record(ms_international_pstn_isdn_number, {
-                                            instance = 0,
-                                            msisdn
-                                           }).
-
--record(quality_of_service_profile, {
-                                     instance = 0,
-                                     priority = 0,
-                                     data = <<>>
-                                    }).
-
--record(authentication_quintuplet, {
-                                    instance = 0
-                                   }).
-
--record(traffic_flow_template, {
-                                instance = 0
-                               }).
-
--record(target_identification, {
-                                instance = 0
-                               }).
-
--record(utran_transparent_container, {
-                                      instance = 0
-                                     }).
-
--record(rab_setup_information, {
-                                instance = 0
-                               }).
-
--record(extension_header_type_list, {
-                                     instance = 0
-                                    }).
-
--record(trigger_id, {
-                     instance = 0
-                    }).
-
--record(omc_identity, {
-                       instance = 0
-                      }).
-
--record(ran_transparent_container, {
-                                    instance = 0
-                                   }).
-
--record(pdp_context_prioritization, {
-                                     instance = 0
-                                    }).
-
--record(additional_rab_setup_information, {
-                                           instance = 0
-                                          }).
-
--record(sgsn_number, {
-                      instance = 0
-                     }).
-
--record(common_flags, {
-                       instance = 0,
-                       flags = #{}
-                      }).
-
--record(apn_restriction, {
-                          instance = 0,
-                          restriction_type_value = 0
-                         }).
-
--record(radio_priority_lcs, {
-                             instance = 0
-                            }).
-
--record(rat_type, {
-                   instance = 0,
-                   rat_type = 0
-                  }).
-
-
--record(ms_time_zone, {
-                       instance = 0,
-                       timezone = 0,
-                       dst = 0
-                      }).
-
--record(imei, {
-               instance = 0,
-               imei
-              }).
-
--record(camel_charging_information_container, {
-                                               instance = 0
-                                              }).
-
--record(mbms_ue_context, {
-                          instance = 0
-                         }).
-
--record(temporary_mobile_group_identity, {
-                                          instance = 0
-                                         }).
-
--record(rim_routing_address, {
-                              instance = 0
-                             }).
-
--record(mbms_protocol_configuration_options, {
-                                              instance = 0
-                                             }).
-
--record(mbms_service_area, {
-                            instance = 0
-                           }).
-
--record(source_rnc_pdcp_context_info, {
-                                       instance = 0
-                                      }).
-
--record(additional_trace_info, {
-                                instance = 0
-                               }).
-
--record(hop_counter, {
-                      instance = 0
-                     }).
-
--record(selected_plmn_id, {
-                           instance = 0
-                          }).
-
--record(mbms_session_identifier, {
-                                  instance = 0
-                                 }).
-
--record(mbms_2g_3g_indicator, {
-                               instance = 0
-                              }).
-
--record(enhanced_nsapi, {
-                         instance = 0
-                        }).
-
--record(mbms_session_duration, {
-                                instance = 0
-                               }).
-
--record(additional_mbms_trace_info, {
-                                     instance = 0
-                                    }).
-
--record(mbms_session_repetition_number, {
-                                         instance = 0
-                                        }).
-
--record(mbms_time_to_data_transfer, {
-                                     instance = 0
-                                    }).
-
--record(bss_container, {
-                        instance = 0
-                       }).
-
--record(cell_identification, {
-                              instance = 0
-                             }).
-
--record(pdu_numbers, {
-                      instance = 0
-                     }).
-
--record(bssgp_cause, {
-                      instance = 0
-                     }).
-
--record(required_mbms_bearer_capabilities, {
-                                            instance = 0
-                                           }).
-
--record(rim_routing_address_discriminator, {
-                                            instance = 0
-                                           }).
-
--record(list_of_set_up_pfcs, {
-                              instance = 0
-                             }).
-
--record(ps_handover_xid_parameters, {
-                                     instance = 0
-                                    }).
-
--record(ms_info_change_reporting_action, {
-                                          instance = 0,
-                                          action = stop_reporting
-                                         }).
-
--record(direct_tunnel_flags, {
-                              instance = 0
-                             }).
-
--record(correlation_id, {
-                         instance = 0
-                        }).
-
--record(bearer_control_mode, {
-                              instance = 0
-                             }).
-
--record(mbms_flow_identifier, {
-                               instance = 0
-                              }).
-
--record(mbms_ip_multicast_distribution, {
-                                         instance = 0
-                                        }).
-
--record(mbms_distribution_acknowledgement, {
-                                            instance = 0
-                                           }).
-
--record(reliable_inter_rat_handover_info, {
-                                           instance = 0
-                                          }).
-
--record(rfsp_index, {
-                     instance = 0
-                    }).
-
--record(fully_qualified_domain_name, {
-                                      instance = 0,
-                                      fqdn
-                                     }).
-
--record(evolved_allocation_retention_priority_i, {
-                                                  instance = 0,
-                                                  pci = 0,
-                                                  pl = 0,
-                                                  pvi = 0
-                                                 }).
-
--record(evolved_allocation_retention_priority_ii, {
-                                                   instance = 0
-                                                  }).
-
--record(extended_common_flags, {
-                                instance = 0,
-                                flags = #{}
-                               }).
-
--record(user_csg_information, {
-                               instance = 0
-                              }).
-
--record(csg_information_reporting_action, {
-                                           instance = 0
-                                          }).
-
--record(csg_id, {
-                 instance = 0
-                }).
-
--record(csg_membership_indication, {
-                                    instance = 0
-                                   }).
-
--record(aggregate_maximum_bit_rate, {
-                                     instance = 0,
-                                     uplink = 0,
-                                     downlink = 0
-                                    }).
-
--record(ue_network_capability, {
-                                instance = 0
-                               }).
-
--record(ue_ambr, {
-                  instance = 0
-                 }).
-
--record(apn_ambr_with_nsapi, {
-                              instance = 0
-                             }).
-
--record(ggsn_back_off_time, {
-                             instance = 0
-                            }).
-
--record(signalling_priority_indication, {
-                                         instance = 0
-                                        }).
-
--record(signalling_priority_indication_with_nsapi, {
-                                                    instance = 0
-                                                   }).
-
--record(higher_bitrates_than_16_mbps_flag, {
-                                            instance = 0
-                                           }).
-
--record(additional_mm_context_for_srvcc, {
-                                          instance = 0
-                                         }).
-
--record(additional_flags_for_srvcc, {
-                                     instance = 0
-                                    }).
-
--record(stn_sr, {
-                 instance = 0
-                }).
-
--record(c_msisdn, {
-                   instance = 0
-                  }).
-
--record(extended_ranap_cause, {
-                               instance = 0
-                              }).
-
--record(enodeb_id, {
-                    instance = 0
-                   }).
-
--record(selection_mode_with_nsapi, {
-                                    instance = 0
-                                   }).
-
--record(uli_timestamp, {
-                        instance = 0
-                       }).
-
--record(local_home_network_id_with_nsapi, {
-                                           instance = 0
-                                          }).
-
--record(cn_operator_selection_entity, {
-                                       instance = 0
-                                      }).
-
--record(sequence_numbers_of_released_packets, {
-                                               instance = 0,
-                                               sequence_numbers
-                                              }).
-
--record(sequence_numbers_of_cancelled_packets, {
-                                                instance = 0,
-                                                sequence_numbers
-                                               }).
-
--record(charging_gateway_address, {
-                                   instance = 0,
-                                   address = <<>>
-                                  }).
-
-
--record(requests_responded, {
-                             instance = 0,
-                             sequence_numbers
-                            }).
-
--record(address_of_recommended_node, {
-                                      instance = 0,
-                                      address = <<>>
-                                     }).
-
--record(private_extension, {
-                            instance = 0,
-                            enterprise_id = 0,
-                            value = <<>>
-                           }).
+-define(GTP_V1_RECORDS,
+        [cause,
+         international_mobile_subscriber_identity,
+         routeing_area_identity,
+         temporary_logical_link_identity,
+         packet_tmsi,
+         reordering_required,
+         authentication_triplet,
+         map_cause,
+         p_tmsi_signature,
+         ms_validated,
+         recovery,
+         selection_mode,
+         tunnel_endpoint_identifier_data_i,
+         tunnel_endpoint_identifier_control_plane,
+         tunnel_endpoint_identifier_data_ii,
+         teardown_ind,
+         nsapi,
+         ranap_cause,
+         rab_context,
+         radio_priority_sms,
+         radio_priority,
+         packet_flow_id,
+         charging_characteristics,
+         trace_reference,
+         trace_type,
+         ms_not_reachable_reason,
+         packet_transfer_command,
+         charging_id,
+         end_user_address,
+         mm_context_gsm,
+         mm_context_umts,
+         mm_context_gsm_and_umts,
+         mm_context_umts_and_used_cipher,
+         pdp_context,
+         access_point_name,
+         protocol_configuration_options,
+         gsn_address,
+         ms_international_pstn_isdn_number,
+         quality_of_service_profile,
+         authentication_quintuplet,
+         traffic_flow_template,
+         target_identification,
+         utran_transparent_container,
+         rab_setup_information,
+         extension_header_type_list,
+         trigger_id,
+         omc_identity,
+         ran_transparent_container,
+         pdp_context_prioritization,
+         additional_rab_setup_information,
+         sgsn_number,
+         common_flags,
+         apn_restriction,
+         radio_priority_lcs,
+         rat_type,
+         user_location_information,
+         ms_time_zone,
+         imei,
+         camel_charging_information_container,
+         mbms_ue_context,
+         temporary_mobile_group_identity,
+         rim_routing_address,
+         mbms_protocol_configuration_options,
+         mbms_service_area,
+         source_rnc_pdcp_context_info,
+         additional_trace_info,
+         hop_counter,
+         selected_plmn_id,
+         mbms_session_identifier,
+         mbms_2g_3g_indicator,
+         enhanced_nsapi,
+         mbms_session_duration,
+         additional_mbms_trace_info,
+         mbms_session_repetition_number,
+         mbms_time_to_data_transfer,
+         bss_container,
+         cell_identification,
+         pdu_numbers,
+         bssgp_cause,
+         required_mbms_bearer_capabilities,
+         rim_routing_address_discriminator,
+         list_of_set_up_pfcs,
+         ps_handover_xid_parameters,
+         ms_info_change_reporting_action,
+         direct_tunnel_flags,
+         correlation_id,
+         bearer_control_mode,
+         mbms_flow_identifier,
+         mbms_ip_multicast_distribution,
+         mbms_distribution_acknowledgement,
+         reliable_inter_rat_handover_info,
+         rfsp_index,
+         fully_qualified_domain_name,
+         evolved_allocation_retention_priority_i,
+         evolved_allocation_retention_priority_ii,
+         extended_common_flags,
+         user_csg_information,
+         csg_information_reporting_action,
+         csg_id,
+         csg_membership_indication,
+         aggregate_maximum_bit_rate,
+         ue_network_capability,
+         ue_ambr,
+         apn_ambr_with_nsapi,
+         ggsn_back_off_time,
+         signalling_priority_indication,
+         signalling_priority_indication_with_nsapi,
+         higher_bitrates_than_16_mbps_flag,
+         additional_mm_context_for_srvcc,
+         additional_flags_for_srvcc,
+         stn_sr,
+         c_msisdn,
+         extended_ranap_cause,
+         enodeb_id,
+         selection_mode_with_nsapi,
+         uli_timestamp,
+         local_home_network_id_with_nsapi,
+         cn_operator_selection_entity,
+         sequence_numbers_of_released_packets,
+         sequence_numbers_of_cancelled_packets,
+         charging_gateway_address,
+         data_record_packet,
+         requests_responded,
+         address_of_recommended_node,
+         private_extension]).
+
+-record(cause,
+        {instance = 0 :: non_neg_integer(),
+         value = request_imsi}).
+
+-record(international_mobile_subscriber_identity,
+        {instance = 0 :: non_neg_integer(), imsi}).
+
+-record(temporary_logical_link_identity,
+        {instance = 0 :: non_neg_integer(),
+         tlli = <<0:4/unit:8>>}).
+
+-record(packet_tmsi,
+        {instance = 0 :: non_neg_integer(),
+         p_tmsi = <<0:4/unit:8>>}).
+
+-record(reordering_required,
+        {instance = 0 :: non_neg_integer(), required = no}).
+
+-record(authentication_triplet,
+        {instance = 0 :: non_neg_integer(),
+         rand = <<0:16/unit:8>>,
+         sres = <<0:4/unit:8>>,
+         kc = <<0:8/unit:8>>}).
+
+-record(map_cause,
+        {instance = 0 :: non_neg_integer(),
+         value = <<0:1/unit:8>>}).
+
+-record(p_tmsi_signature,
+        {instance = 0 :: non_neg_integer(),
+         value = <<0:3/unit:8>>}).
+
+-record(ms_validated,
+        {instance = 0 :: non_neg_integer(), validated = no}).
+
+-record(recovery,
+        {instance = 0 :: non_neg_integer(),
+         restart_counter = 0 :: non_neg_integer()}).
+
+-record(selection_mode,
+        {instance = 0 :: non_neg_integer(),
+         mode = 0 :: non_neg_integer()}).
+
+-record(tunnel_endpoint_identifier_data_i,
+        {instance = 0 :: non_neg_integer(),
+         tei = 0 :: non_neg_integer()}).
+
+-record(tunnel_endpoint_identifier_control_plane,
+        {instance = 0 :: non_neg_integer(),
+         tei = 0 :: non_neg_integer()}).
+
+-record(tunnel_endpoint_identifier_data_ii,
+        {instance = 0 :: non_neg_integer(),
+         nsapi = 0 :: non_neg_integer(),
+         tei = 0 :: non_neg_integer()}).
+
+-record(teardown_ind,
+        {instance = 0 :: non_neg_integer(),
+         value = 0 :: non_neg_integer()}).
+
+-record(nsapi,
+        {instance = 0 :: non_neg_integer(),
+         nsapi = 0 :: non_neg_integer()}).
+
+-record(ranap_cause,
+        {instance = 0 :: non_neg_integer(),
+         value = 0 :: non_neg_integer()}).
+
+-record(rab_context,
+        {instance = 0 :: non_neg_integer(),
+         nsapi = 0 :: non_neg_integer(),
+         dl_gtp_u_sequence_number = 0 :: non_neg_integer(),
+         ul_gtp_u_sequence_number = 0 :: non_neg_integer(),
+         dl_pdcp_sequence_number = 0 :: non_neg_integer(),
+         ul_pdcp_sequence_number = 0 :: non_neg_integer()}).
+
+-record(radio_priority_sms,
+        {instance = 0 :: non_neg_integer(),
+         value = 0 :: non_neg_integer()}).
+
+-record(radio_priority,
+        {instance = 0 :: non_neg_integer(),
+         nsapi = 0 :: non_neg_integer(),
+         value = 0 :: non_neg_integer()}).
+
+-record(packet_flow_id,
+        {instance = 0 :: non_neg_integer(),
+         nsapi = 0 :: non_neg_integer(),
+         value = 0 :: non_neg_integer()}).
+
+-record(charging_characteristics,
+        {instance = 0 :: non_neg_integer(),
+         value = <<0:2/unit:8>>}).
+
+-record(trace_reference,
+        {instance = 0 :: non_neg_integer(),
+         value = 0 :: non_neg_integer()}).
+
+-record(trace_type,
+        {instance = 0 :: non_neg_integer(),
+         value = 0 :: non_neg_integer()}).
+
+-record(ms_not_reachable_reason,
+        {instance = 0 :: non_neg_integer(),
+         value = 0 :: non_neg_integer()}).
+
+-record(packet_transfer_command,
+        {instance = 0 :: non_neg_integer(),
+         command = send_data_record_packet}).
+
+-record(charging_id,
+        {instance = 0 :: non_neg_integer(),
+         id = <<0:4/unit:8>>}).
+
+-record(end_user_address,
+        {instance = 0 :: non_neg_integer(),
+         pdp_type_organization = 0 :: non_neg_integer(),
+         pdp_type_number = 0 :: non_neg_integer(),
+         pdp_address = <<>>}).
+
+-record(mm_context_gsm,
+        {instance = 0 :: non_neg_integer(),
+         cksn = 0 :: non_neg_integer(),
+         no_of_vectors = 0 :: non_neg_integer(),
+         used_cipher = 0 :: non_neg_integer(),
+         kc = <<0:8/unit:8>>,
+         tripple = [],
+         drx_parameter = <<0:2/unit:8>>,
+         ms_network_capability_length = 0 :: non_neg_integer(),
+         ms_network_capability = [],
+         container_length = 0 :: non_neg_integer(),
+         container = []}).
+
+-record(mm_context_umts,
+        {instance = 0 :: non_neg_integer(),
+         ksi = 0 :: non_neg_integer(),
+         no_of_vectors = 0 :: non_neg_integer(),
+         ck = <<0:16/unit:8>>,
+         ik = <<0:16/unit:8>>,
+         quintuplet_length = 0 :: non_neg_integer(),
+         quintuplet = [],
+         drx_parameter = <<0:2/unit:8>>,
+         ms_network_capability_length = 0 :: non_neg_integer(),
+         ms_network_capability = [],
+         container_length = 0 :: non_neg_integer(),
+         container = []}).
+
+-record(mm_context_gsm_and_umts,
+        {instance = 0 :: non_neg_integer(),
+         cksn = 0 :: non_neg_integer(),
+         no_of_vectors = 0 :: non_neg_integer(),
+         used_cipher = 0 :: non_neg_integer(),
+         kc = <<0:8/unit:8>>,
+         quintuplet_length = 0 :: non_neg_integer(),
+         quintuplet = [],
+         drx_parameter = <<0:2/unit:8>>,
+         ms_network_capability_length = 0 :: non_neg_integer(),
+         ms_network_capability = [],
+         container_length = 0 :: non_neg_integer(),
+         container = []}).
+
+-record(mm_context_umts_and_used_cipher,
+        {instance = 0 :: non_neg_integer(),
+         ksi = 0 :: non_neg_integer(),
+         no_of_vectors = 0 :: non_neg_integer(),
+         used_cipher = 0 :: non_neg_integer(),
+         ck = <<0:16/unit:8>>,
+         ik = <<0:16/unit:8>>,
+         quintuplet_length = 0 :: non_neg_integer(),
+         quintuplet = [],
+         drx_parameter = <<0:2/unit:8>>,
+         ms_network_capability_length = 0 :: non_neg_integer(),
+         ms_network_capability = [],
+         container_length = 0 :: non_neg_integer(),
+         container = []}).
+
+-record(pdp_context,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(access_point_name,
+        {instance = 0 :: non_neg_integer(), apn}).
+
+-record(protocol_configuration_options,
+        {instance = 0 :: non_neg_integer(), config}).
+
+-record(gsn_address,
+        {instance = 0 :: non_neg_integer(), address = <<>>}).
+
+-record(ms_international_pstn_isdn_number,
+        {instance = 0 :: non_neg_integer(), msisdn}).
+
+-record(quality_of_service_profile,
+        {instance = 0 :: non_neg_integer(),
+         priority = 0 :: non_neg_integer(),
+         data = <<>>}).
+
+-record(authentication_quintuplet,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(traffic_flow_template,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(target_identification,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(utran_transparent_container,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(rab_setup_information,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(extension_header_type_list,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(trigger_id,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(omc_identity,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(ran_transparent_container,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(pdp_context_prioritization,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(additional_rab_setup_information,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(sgsn_number,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(common_flags,
+        {instance = 0 :: non_neg_integer(), flags = #{}}).
+
+-record(apn_restriction,
+        {instance = 0 :: non_neg_integer(),
+         restriction_type_value = 0 :: non_neg_integer()}).
+
+-record(radio_priority_lcs,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(rat_type,
+        {instance = 0 :: non_neg_integer(),
+         rat_type = 0 :: non_neg_integer()}).
+
+-record(ms_time_zone,
+        {instance = 0 :: non_neg_integer(),
+         timezone = 0 :: non_neg_integer(),
+         dst = 0 :: non_neg_integer()}).
+
+-record(imei,
+        {instance = 0 :: non_neg_integer(), imei}).
+
+-record(camel_charging_information_container,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(mbms_ue_context,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(temporary_mobile_group_identity,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(rim_routing_address,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(mbms_protocol_configuration_options,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(mbms_service_area,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(source_rnc_pdcp_context_info,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(additional_trace_info,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(hop_counter,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(selected_plmn_id,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(mbms_session_identifier,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(mbms_2g_3g_indicator,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(enhanced_nsapi,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(mbms_session_duration,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(additional_mbms_trace_info,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(mbms_session_repetition_number,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(mbms_time_to_data_transfer,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(bss_container,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(cell_identification,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(pdu_numbers,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(bssgp_cause,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(required_mbms_bearer_capabilities,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(rim_routing_address_discriminator,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(list_of_set_up_pfcs,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(ps_handover_xid_parameters,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(ms_info_change_reporting_action,
+        {instance = 0 :: non_neg_integer(),
+         action = stop_reporting}).
+
+-record(direct_tunnel_flags,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(correlation_id,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(bearer_control_mode,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(mbms_flow_identifier,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(mbms_ip_multicast_distribution,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(mbms_distribution_acknowledgement,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(reliable_inter_rat_handover_info,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(rfsp_index,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(fully_qualified_domain_name,
+        {instance = 0 :: non_neg_integer(), fqdn}).
+
+-record(evolved_allocation_retention_priority_i,
+        {instance = 0 :: non_neg_integer(),
+         pci = 0 :: non_neg_integer(),
+         pl = 0 :: non_neg_integer(),
+         pvi = 0 :: non_neg_integer()}).
+
+-record(evolved_allocation_retention_priority_ii,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(extended_common_flags,
+        {instance = 0 :: non_neg_integer(), flags = #{}}).
+
+-record(user_csg_information,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(csg_information_reporting_action,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(csg_id, {instance = 0 :: non_neg_integer()}).
+
+-record(csg_membership_indication,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(aggregate_maximum_bit_rate,
+        {instance = 0 :: non_neg_integer(),
+         uplink = 0 :: non_neg_integer(),
+         downlink = 0 :: non_neg_integer()}).
+
+-record(ue_network_capability,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(ue_ambr, {instance = 0 :: non_neg_integer()}).
+
+-record(apn_ambr_with_nsapi,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(ggsn_back_off_time,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(signalling_priority_indication,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(signalling_priority_indication_with_nsapi,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(higher_bitrates_than_16_mbps_flag,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(additional_mm_context_for_srvcc,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(additional_flags_for_srvcc,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(stn_sr, {instance = 0 :: non_neg_integer()}).
+
+-record(c_msisdn, {instance = 0 :: non_neg_integer()}).
+
+-record(extended_ranap_cause,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(enodeb_id, {instance = 0 :: non_neg_integer()}).
+
+-record(selection_mode_with_nsapi,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(uli_timestamp,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(local_home_network_id_with_nsapi,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(cn_operator_selection_entity,
+        {instance = 0 :: non_neg_integer()}).
+
+-record(sequence_numbers_of_released_packets,
+        {instance = 0 :: non_neg_integer(), sequence_numbers}).
+
+-record(sequence_numbers_of_cancelled_packets,
+        {instance = 0 :: non_neg_integer(), sequence_numbers}).
+
+-record(charging_gateway_address,
+        {instance = 0 :: non_neg_integer(), address = <<>>}).
+
+-record(requests_responded,
+        {instance = 0 :: non_neg_integer(), sequence_numbers}).
+
+-record(address_of_recommended_node,
+        {instance = 0 :: non_neg_integer(), address = <<>>}).
+
+-record(private_extension,
+        {instance = 0 :: non_neg_integer(),
+         enterprise_id = 0 :: non_neg_integer(),
+         value = <<>>}).
 
 %% -include("gtp_packet_v2_gen.hrl").
 
