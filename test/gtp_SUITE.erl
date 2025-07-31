@@ -62,6 +62,7 @@ all() ->
      v2_list,
      partial_decode,
      partial_encode,
+     decode_ie,
      flags_enc_dec,
      msg_enc_dec].
 
@@ -392,6 +393,18 @@ partial_encode(_Config) ->
     ?match(#gtp{ie = IEs} when is_binary(IEs), Msg11),
     Msg12 = gtp_packet:encode(Msg11),
     ?match(_ when is_binary(Msg12), Msg12),
+    ok.
+
+decode_ie(_Config) ->
+    Msg0 = gtp_packet:decode(get_msg(v1, create_pdp_context_response), #{ies => binary}),
+    ?match(#gtp{ie = IEs} when is_binary(IEs), Msg0),
+    IEs0 = gtp_packet:decode_ie(?GTP_V1_IE_CAUSE, Msg0),
+    ?match(#{{cause, 0} := _}, IEs0),
+
+    Msg1 = gtp_packet:decode(get_msg(v2, create_session_response), #{ies => binary}),
+    ?match(#gtp{ie = IEs} when is_binary(IEs), Msg1),
+    IEs1 = gtp_packet:decode_ie(?GTP_V2_IE_V2_CAUSE, Msg1),
+    ?match(#{{v2_cause, 0} := _}, IEs1),
     ok.
 
 flags_enc_dec(_Config) ->

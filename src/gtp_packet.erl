@@ -11,7 +11,7 @@
 -module(gtp_packet).
 
 -export([encode/1, encode_ies/1,
-         decode/1, decode/2, decode_ies/1, decode_ies/2,
+         decode/1, decode/2, decode_ies/1, decode_ies/2, decode_ie/2,
          msg_description/1, msg_description_v2/1,
          pretty_print/1, ies_to_otel_attrs/1]).
 -export([encode_plmn_id/1]).
@@ -67,6 +67,48 @@ decode_ies(#gtp{version = v2, ie = IEs} = Msg, #{ies := map}) ->
     Msg#gtp{ie = decode_v2(IEs, #{})};
 decode_ies(Msg, _) ->
     Msg.
+
+decode_ie(IE, #gtp{version = Version, ie = IEs})
+  when Version =:= v1;
+       Version =:= prime_v0;
+       Version =:= prime_v0s;
+       Version =:= prime_v1;
+       Version =:= prime_v2 ->
+    decode_v1_ie(IEs, IE, -1, 0, #{});
+decode_ie(IE, #gtp{version = v2, ie = IEs}) ->
+    decode_v2_ie(IEs, IE, #{});
+decode_ie(_, _) ->
+    #{}.
+
+%% decode_v1_ie/7
+decode_v1_ie(<<_/binary>>, Id, _Len, Wanted, _PrevId, _PrevInst, IEs)
+  when Id > Wanted ->
+    %% GTPv1 IE are sorted
+    IEs;
+decode_v1_ie(<<Data/binary>>, Id, Len, Wanted, PrevId, PrevInst, IEs0) ->
+    <<BinIE:Len/bytes, Rest/binary>> = Data,
+    IEs = case Id =:= Wanted of
+              true ->
+                  Instance = v1_instance(Id, PrevId, PrevInst),
+                  IE = decode_v1_element(BinIE, Id, Instance),
+                  decode_v1_ie(Rest, Wanted, Id, Instance, put_ie(IE, IEs0));
+              false ->
+                  IEs0
+          end,
+    decode_v1_ie(Rest, Wanted, PrevId, PrevInst, IEs).
+
+decode_v2_ie(<<>>, _Id, IEs) ->
+    IEs;
+decode_v2_ie(<<Type:8, Length:16/integer, _Spare:4, Instance:4, Data:Length/bytes, Next/binary>>, Id, IEs) ->
+    case Type =:= Id of
+        true ->
+            IE = decode_v2_element(Data, Type, Instance),
+            decode_v2_ie(Next, Id, put_ie(IE, IEs));
+        false ->
+            decode_v2_ie(Next, Id, IEs)
+    end;
+decode_v2_ie(_Data, _Id, IEs) ->
+    IEs.
 
 encode(#gtp{version = v1, type = Type, tei = TEI, seq_no = SeqNo,
             n_pdu = NPDU, ext_hdr = ExtHdr, ie = IEs}) ->
@@ -248,9 +290,9 @@ int2bool(_) -> true.
 is_bin(Bin) -> bool2int(is_binary(Bin)).
 
 %% decoder funs for optional fields
-'maybe'(Bin, 0, _Fun, IE) ->
+'maybe'(<<Bin/binary>>, 0, _Fun, IE) ->
     {IE, Bin};
-'maybe'(Bin, 1, Fun, IE) ->
+'maybe'(<<Bin/binary>>, 1, Fun, IE) ->
     Fun(Bin, IE).
 
 bin(Bin, Len, Pos, IE) ->
@@ -451,7 +493,7 @@ decode_protocol_opts(<<_Id:16, Length:8, Data/binary>> = Raw, Protocol, Opts)
 decode_array_of_seq_no(Array) ->
     [X || <<X:16/integer>> <= Array].
 
-decode_data_records(_Rest, 0, Records) ->
+decode_data_records(<<_/binary>>, 0, Records) ->
     lists:reverse(Records);
 decode_data_records(<<Size:16, Data:Size/bytes, Next/binary>>, Cnt, Records)
   when Cnt /= 0->
@@ -568,7 +610,7 @@ decode_v2_fully_qualified_pdn_connection_set_identifier(<<NodeIdType:4,
 decode_v2_private_extension(<<EnterpriseId:16, Value/binary>>, Instance) ->
     decode_v2_private_extension(Value, EnterpriseId, Instance).
 
-decode_v2_private_extension(Value, EnterpriseId, Instance) ->
+decode_v2_private_extension(<<Value/binary>>, EnterpriseId, Instance) ->
     #v2_private_extension{
        instance = Instance,
        enterprise_id = EnterpriseId,
@@ -596,10 +638,10 @@ decode_v2_paging_and_service_information(<<_:4, EBI:4, _:7, FlagPPI:1, Rest0/bin
     {IE2, _Rest} = 'maybe'(Rest1, FlagPPI, int(_, 6, #v2_paging_and_service_information.ppi, _), IE1),
     IE2.
 
-decode_v2_integer_number(Bin, Instance) ->
-    #v2_integer_number{
-       instance = Instance, width = byte_size(Bin),
-       value = binary:decode_unsigned(Bin)}.
+decode_v2_integer_number(<<Bin/binary>>, Instance) ->
+    Width = byte_size(Bin),
+    <<Value:Width/integer-unit:8>> = Bin,
+    #v2_integer_number{instance = Instance, width = Width, value = Value}.
 
 decode_v2_remote_user_id(<<_:6, FlagIMEI:1, FlagMSISDN:1, IMSILen:8,
                            Rest0/binary>>, Instance) ->
@@ -1943,6 +1985,238 @@ decode_v1_element(<<M_enterprise_id:16/integer,
                        enterprise_id = M_enterprise_id, value = M_value};
 decode_v1_element(Value, Tag, Instance) ->
     {Tag, Instance, Value}.
+
+decode_v1_ie(<<>>, _Wanted, _PrevId, _PrevInst, IEs) ->
+    IEs;
+decode_v1_ie(<<1, Data/binary>>, Wanted, PrevId,
+             PrevInst, IEs) ->
+    decode_v1_ie(Data, 1, 1, Wanted, PrevId, PrevInst, IEs);
+decode_v1_ie(<<2, Data/binary>>, Wanted, PrevId,
+             PrevInst, IEs) ->
+    decode_v1_ie(Data, 2, 8, Wanted, PrevId, PrevInst, IEs);
+decode_v1_ie(<<3, Data/binary>>, Wanted, PrevId,
+             PrevInst, IEs) ->
+    decode_v1_ie(Data, 3, 6, Wanted, PrevId, PrevInst, IEs);
+decode_v1_ie(<<4, Data/binary>>, Wanted, PrevId,
+             PrevInst, IEs) ->
+    decode_v1_ie(Data, 4, 4, Wanted, PrevId, PrevInst, IEs);
+decode_v1_ie(<<5, Data/binary>>, Wanted, PrevId,
+             PrevInst, IEs) ->
+    decode_v1_ie(Data, 5, 4, Wanted, PrevId, PrevInst, IEs);
+decode_v1_ie(<<8, Data/binary>>, Wanted, PrevId,
+             PrevInst, IEs) ->
+    decode_v1_ie(Data, 8, 1, Wanted, PrevId, PrevInst, IEs);
+decode_v1_ie(<<9, Data/binary>>, Wanted, PrevId,
+             PrevInst, IEs) ->
+    decode_v1_ie(Data,
+                 9,
+                 28,
+                 Wanted,
+                 PrevId,
+                 PrevInst,
+                 IEs);
+decode_v1_ie(<<11, Data/binary>>, Wanted, PrevId,
+             PrevInst, IEs) ->
+    decode_v1_ie(Data,
+                 11,
+                 1,
+                 Wanted,
+                 PrevId,
+                 PrevInst,
+                 IEs);
+decode_v1_ie(<<12, Data/binary>>, Wanted, PrevId,
+             PrevInst, IEs) ->
+    decode_v1_ie(Data,
+                 12,
+                 3,
+                 Wanted,
+                 PrevId,
+                 PrevInst,
+                 IEs);
+decode_v1_ie(<<13, Data/binary>>, Wanted, PrevId,
+             PrevInst, IEs) ->
+    decode_v1_ie(Data,
+                 13,
+                 1,
+                 Wanted,
+                 PrevId,
+                 PrevInst,
+                 IEs);
+decode_v1_ie(<<14, Data/binary>>, Wanted, PrevId,
+             PrevInst, IEs) ->
+    decode_v1_ie(Data,
+                 14,
+                 1,
+                 Wanted,
+                 PrevId,
+                 PrevInst,
+                 IEs);
+decode_v1_ie(<<15, Data/binary>>, Wanted, PrevId,
+             PrevInst, IEs) ->
+    decode_v1_ie(Data,
+                 15,
+                 1,
+                 Wanted,
+                 PrevId,
+                 PrevInst,
+                 IEs);
+decode_v1_ie(<<16, Data/binary>>, Wanted, PrevId,
+             PrevInst, IEs) ->
+    decode_v1_ie(Data,
+                 16,
+                 4,
+                 Wanted,
+                 PrevId,
+                 PrevInst,
+                 IEs);
+decode_v1_ie(<<17, Data/binary>>, Wanted, PrevId,
+             PrevInst, IEs) ->
+    decode_v1_ie(Data,
+                 17,
+                 4,
+                 Wanted,
+                 PrevId,
+                 PrevInst,
+                 IEs);
+decode_v1_ie(<<18, Data/binary>>, Wanted, PrevId,
+             PrevInst, IEs) ->
+    decode_v1_ie(Data,
+                 18,
+                 5,
+                 Wanted,
+                 PrevId,
+                 PrevInst,
+                 IEs);
+decode_v1_ie(<<19, Data/binary>>, Wanted, PrevId,
+             PrevInst, IEs) ->
+    decode_v1_ie(Data,
+                 19,
+                 1,
+                 Wanted,
+                 PrevId,
+                 PrevInst,
+                 IEs);
+decode_v1_ie(<<20, Data/binary>>, Wanted, PrevId,
+             PrevInst, IEs) ->
+    decode_v1_ie(Data,
+                 20,
+                 1,
+                 Wanted,
+                 PrevId,
+                 PrevInst,
+                 IEs);
+decode_v1_ie(<<21, Data/binary>>, Wanted, PrevId,
+             PrevInst, IEs) ->
+    decode_v1_ie(Data,
+                 21,
+                 1,
+                 Wanted,
+                 PrevId,
+                 PrevInst,
+                 IEs);
+decode_v1_ie(<<22, Data/binary>>, Wanted, PrevId,
+             PrevInst, IEs) ->
+    decode_v1_ie(Data,
+                 22,
+                 9,
+                 Wanted,
+                 PrevId,
+                 PrevInst,
+                 IEs);
+decode_v1_ie(<<23, Data/binary>>, Wanted, PrevId,
+             PrevInst, IEs) ->
+    decode_v1_ie(Data,
+                 23,
+                 1,
+                 Wanted,
+                 PrevId,
+                 PrevInst,
+                 IEs);
+decode_v1_ie(<<24, Data/binary>>, Wanted, PrevId,
+             PrevInst, IEs) ->
+    decode_v1_ie(Data,
+                 24,
+                 1,
+                 Wanted,
+                 PrevId,
+                 PrevInst,
+                 IEs);
+decode_v1_ie(<<25, Data/binary>>, Wanted, PrevId,
+             PrevInst, IEs) ->
+    decode_v1_ie(Data,
+                 25,
+                 2,
+                 Wanted,
+                 PrevId,
+                 PrevInst,
+                 IEs);
+decode_v1_ie(<<26, Data/binary>>, Wanted, PrevId,
+             PrevInst, IEs) ->
+    decode_v1_ie(Data,
+                 26,
+                 2,
+                 Wanted,
+                 PrevId,
+                 PrevInst,
+                 IEs);
+decode_v1_ie(<<27, Data/binary>>, Wanted, PrevId,
+             PrevInst, IEs) ->
+    decode_v1_ie(Data,
+                 27,
+                 2,
+                 Wanted,
+                 PrevId,
+                 PrevInst,
+                 IEs);
+decode_v1_ie(<<28, Data/binary>>, Wanted, PrevId,
+             PrevInst, IEs) ->
+    decode_v1_ie(Data,
+                 28,
+                 2,
+                 Wanted,
+                 PrevId,
+                 PrevInst,
+                 IEs);
+decode_v1_ie(<<29, Data/binary>>, Wanted, PrevId,
+             PrevInst, IEs) ->
+    decode_v1_ie(Data,
+                 29,
+                 1,
+                 Wanted,
+                 PrevId,
+                 PrevInst,
+                 IEs);
+decode_v1_ie(<<126, Data/binary>>, Wanted, PrevId,
+             PrevInst, IEs) ->
+    decode_v1_ie(Data,
+                 126,
+                 1,
+                 Wanted,
+                 PrevId,
+                 PrevInst,
+                 IEs);
+decode_v1_ie(<<127, Data/binary>>, Wanted, PrevId,
+             PrevInst, IEs) ->
+    decode_v1_ie(Data,
+                 127,
+                 4,
+                 Wanted,
+                 PrevId,
+                 PrevInst,
+                 IEs);
+decode_v1_ie(<<Id, Length:16/integer, Data/binary>>,
+             Wanted, PrevId, PrevInst, IEs)
+  when Id > 127 ->
+    decode_v1_ie(Data,
+                 Id,
+                 Length,
+                 Wanted,
+                 PrevId,
+                 PrevInst,
+                 IEs);
+decode_v1_ie(<<Id, Rest/binary>>, _Wanted, _PrevId,
+             _PrevInst, _IEs) ->
+    error(badarg, [Id, Rest]).
 
 decode_v1(<<>>, _PrevId, _PrevInst, IEs) -> IEs;
 decode_v1(<<1, Data:1/bytes, Next/binary>>, PrevId,

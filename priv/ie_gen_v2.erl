@@ -1383,6 +1383,12 @@ message_type_v2(Msgs) ->
     Clauses = FwdFuns ++ RevFuns ++ [ErrorFun],
     ?es:function(?es:atom(message_type_v2), Clauses).
 
+ie_type_macros(IEs) ->
+    [?es:attribute(
+        ?es:atom(define),
+        [?es:text(string:uppercase(io_lib:format("GTP_V2_IE_~s", [Name]))), ?es:integer(Id)])
+     || #ie{id = Id, name = Name} <- IEs].
+
 decode_v2_element(IEs) ->
     DecoderCatchAny =
         ?es:clause(
@@ -1415,12 +1421,15 @@ encode_v2_element(IEs) ->
 main(_) ->
     IEs = ies(),
 
+    IETypeMacros = ie_type_macros(IEs),
     Records = write_record(IEs),
     ExpRecs = ?es:attribute(
                  ?es:atom(define),
                  [?es:text("GTP_V2_RECORDS"),
                   ?es:list([?es:atom(ExpRecName) || #ie{name = ExpRecName} <- IEs])]),
-    HrlForms = ?es:form_list([ExpRecs | Records] ++ [?es:eof_marker()]),
+    HrlForms = ?es:form_list(
+                  IETypeMacros ++
+                      [ExpRecs | Records] ++ [?es:eof_marker()]),
     HrlRecs = erl_prettypr:format(HrlForms),
 
     MsgDescription = msg_description_v2(msgs()),

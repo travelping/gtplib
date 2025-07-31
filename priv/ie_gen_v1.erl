@@ -1207,6 +1207,12 @@ message_type(Msgs) ->
     Clauses = FwdFuns ++ RevFuns ++ [ErrorFun],
     ?es:function(?es:atom(message_type_v1), Clauses).
 
+ie_type_macros(IEs) ->
+    [?es:attribute(
+        ?es:atom(define),
+        [?es:text(string:uppercase(s2a("GTP_V1_IE_~s", element(2, IE)))), ?es:integer(element(1, IE))])
+     || IE <- IEs].
+
 decode_v1_element(IEs) ->
     DecoderClauses = [write_decoder(X) || X <- IEs],
     DecoderCatchAny =
@@ -1220,6 +1226,94 @@ decode_v1_element(IEs) ->
     ?es:function(
        ?es:atom(decode_v1_element),
        DecoderClauses ++ [DecoderCatchAny]).
+
+decode_v1_ie(IEs) ->
+    EmptyClause =
+        ?es:clause(
+           [?es:binary([]), ?es:variable("_Wanted"), ?es:variable("_PrevId"), ?es:variable("_PrevInst"),
+            ?es:variable("IEs")],
+           none,
+           [?es:variable("IEs")]),
+    Clauses =
+        [?es:clause(
+            [?es:binary(
+                [?es:binary_field(?es:integer(Id)),
+                 ?es:binary_field(
+                    ?es:variable("Data"),
+                    [?es:atom("binary")])
+                ]),
+             ?es:variable("Wanted"),
+             ?es:variable("PrevId"),
+             ?es:variable("PrevInst"),
+             ?es:variable("IEs")
+            ],
+            none,
+            [?es:application(
+                ?es:atom("decode_v1_ie"),
+                [?es:variable("Data"),
+                 ?es:integer(Id),
+                 ?es:integer(Length),
+                 ?es:variable("Wanted"),
+                 ?es:variable("PrevId"),
+                 ?es:variable("PrevInst"),
+                 ?es:variable("IEs")
+                ])
+            ])
+         || {Id, _, Length, _} <- IEs, Id < 128],
+
+    FinalClauses =
+        [
+         %% decode_v1(<<Id, Length:16/integer, Data/binary>>, Wanted, PrevId, PrevInst, IEs) when Id > 127 ->
+         ?es:clause(
+            [?es:binary(
+                [?es:binary_field(?es:variable("Id")),
+                 ?es:binary_field(
+                    ?es:variable("Length"),
+                    ?es:integer(16),
+                    [?es:atom("integer")]),
+                 ?es:binary_field(
+                    ?es:variable("Data"),
+                    [?es:atom("binary")])
+                ]),
+             ?es:variable("Wanted"),
+             ?es:variable("PrevId"),
+             ?es:variable("PrevInst"),
+             ?es:variable("IEs")
+            ],
+            [?es:infix_expr(?es:variable("Id"), ?es:operator(">"), ?es:integer(127))],
+            [?es:application(
+                ?es:atom("decode_v1_ie"),
+                [?es:variable("Data"),
+                 ?es:variable("Id"),
+                 ?es:variable("Length"),
+                 ?es:variable("Wanted"),
+                 ?es:variable("PrevId"),
+                 ?es:variable("PrevInst"),
+                 ?es:variable("IEs")
+                ])
+            ]),
+         %% decode_v1(<<Id, Data/binary>>, Wanted, PrevId, PrevInst, IEs) ->
+         ?es:clause(
+            [?es:binary(
+                [?es:binary_field(?es:variable("Id")),
+                 ?es:binary_field(
+                    ?es:variable("Rest"),
+                    [?es:atom("binary")])
+                ]),
+             ?es:variable("_Wanted"),
+             ?es:variable("_PrevId"),
+             ?es:variable("_PrevInst"),
+             ?es:variable("_IEs")
+            ],
+            none,
+            [?es:application(
+                ?es:atom(error),
+                [?es:atom(badarg), ?es:list([?es:variable("Id"), ?es:variable("Rest")])])
+            ])
+        ],
+    ?es:function(
+       ?es:atom(decode_v1_ie),
+       [EmptyClause] ++ Clauses ++ FinalClauses).
 
 decode_v1(IEs) ->
     MainDecodeSwitchEmptyClause =
@@ -1371,29 +1465,29 @@ encode_v1_element(IEs) ->
 main(_) ->
     IEs = ies(),
 
+    IETypeMacros = ie_type_macros(IEs),
     Records = write_record(IEs),
     ExpRecs = ?es:attribute(
                  ?es:atom(define),
                  [?es:text("GTP_V1_RECORDS"),
                   ?es:list([es_atom(s2a(element(2, ExpRec))) || ExpRec <- IEs])]),
-    HrlForms =
-        ?es:form_list(
-           [ExpRecs] ++
-               Records ++
-               [?es:eof_marker()]),
+    HrlForms = ?es:form_list(
+                  IETypeMacros ++
+                      [ExpRecs | Records] ++ [?es:eof_marker()]),
     HrlRecs = erl_prettypr:format(HrlForms),
 
     MsgDescription = msg_description(msgs()),
     MessageTypes = message_type(msgs()),
     Enums = write_enums(IEs),
     Decoder = decode_v1_element(IEs),
+    DecodeIE = decode_v1_ie(IEs),
     MainDecodeSwitch = decode_v1(IEs),
     Encoder = encode_v1_element(IEs),
 
     ErlForms =
         ?es:form_list(
            [MsgDescription, MessageTypes] ++ Enums ++
-               [Decoder, MainDecodeSwitch, Encoder, ?es:eof_marker()]),
+               [Decoder, DecodeIE, MainDecodeSwitch, Encoder, ?es:eof_marker()]),
     ErlDecls = erl_prettypr:format(ErlForms),
 
     {ok, HrlF0} = file:read_file("include/gtp_packet.hrl"),
