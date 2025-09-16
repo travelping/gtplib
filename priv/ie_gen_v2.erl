@@ -4,6 +4,7 @@
 
 -mode(compile).
 
+-define(es, erl_syntax).
 -define(V1_TAG, <<"%% -include(\"gtp_packet_v1_gen.hrl\").">>).
 -define(V2_TAG, <<"%% -include(\"gtp_packet_v2_gen.hrl\").">>).
 
@@ -606,7 +607,6 @@ msgs() ->
 -record(ie, {id, name, type, min_field_count, fields}).
 -record(field, {name, len, optional, type, spec}).
 
--define('Instance', #field{name = 'instance', type = integer}).
 -define('WildCard', #field{type = '_', len = 0}).
 -define('DecoderFunName', "decode_v2_element").
 -define('EncoderFunName', "encode_v2_element").
@@ -643,147 +643,488 @@ ies() ->
               SpecF(Spec, #ie{id = Id, name = s2a(Name), min_field_count = MinLen})
       end, raw_ies()).
 
-%% gen_record_def({Value, _}) when is_integer(Value); is_atom(Value) ->
-
-%% gen_record_def(#field{len = undefined}) ->
-%%     [];
-gen_record_def(#field{type = '_'}) ->
+gen_record_def([]) ->
     [];
-gen_record_def(#field{spec = mccmnc}) ->
-    ["plmn_id = {<<\"001\">>, <<\"001\">>}"];
-gen_record_def(#field{name = Name, optional = true}) ->
-    [to_string(Name)];
-gen_record_def(#field{name = Name, type = flags}) ->
-    [io_lib:format("~s = #{}", [Name])];
-gen_record_def(#field{name = Name, type = enum, spec = [{_,H}|_]}) ->
-    [io_lib:format("~s = ~s", [Name, s2a(H)])];
-gen_record_def(#field{name = Name, type = enum, spec = [H|_]}) ->
-    [io_lib:format("~s = ~s", [Name, s2a(H)])];
-gen_record_def(#field{name = Name, type = boolean}) ->
-    [io_lib:format("~s = false", [Name])];
-gen_record_def(#field{name = Name, type = integer}) ->
-    [io_lib:format("~s = 0", [Name])];
-gen_record_def(#field{name = Name, len = Size, type = bits}) ->
-    [io_lib:format("~s = ~w", [Name, <<0:Size>>])];
-gen_record_def(#field{name = Name, len = Size, type = bytes}) ->
-    [io_lib:format("~s = ~w", [Name, <<0:(Size * 8)>>])];
-gen_record_def(#field{name = Name, type = binary}) ->
-    [io_lib:format("~s = <<>>", [Name])];
-gen_record_def(#field{name = Name, type = length_binary}) ->
-    [io_lib:format("~s = <<>>", [Name])];
-gen_record_def(#field{name = Name, type = array}) ->
-    [io_lib:format("~s = []", [Name])];
-gen_record_def(#field{name = Name}) ->
-    [to_string(Name)].
+%% gen_record_def([#field{len = undefined} | More]) ->
+%%     gen_record_def(More);
+gen_record_def([#field{type = '_'} | More]) ->
+    gen_record_def(More);
+gen_record_def([#field{spec = mccmnc}| More ]) ->
+    %% ["plmn_id = {<<\"001\">>, <<\"001\">>}"];
+    Form = ?es:record_field(
+              ?es:atom("plmn_id"),
+              ?es:tuple([?es:binary([?es:string("001")]),
+                         ?es:binary([?es:string("001")])])
+             ),
+    [Form | gen_record_def(More)];
+gen_record_def([#field{name = Name, optional = true}| More ]) ->
+    %% [to_string(Name)];
+    Form = ?es:record_field(?es:atom(Name)),
+    [Form | gen_record_def(More)];
+gen_record_def([#field{name = Name, type = flags}| More ]) ->
+    %% [io_lib:format("~s = #{}", [Name])];
+    Form = ?es:record_field(?es:atom(Name), ?es:map_expr(none, [])),
+    [Form | gen_record_def(More)];
+gen_record_def([#field{name = Name, type = enum, spec = [{_,H}|_]}| More ]) ->
+    %% [io_lib:format("~s = ~s", [Name, s2a(H)])];
+    Form = ?es:record_field(?es:atom(Name), es_atom(s2a(H))),
+    [Form | gen_record_def(More)];
+gen_record_def([#field{name = Name, type = enum, spec = [H|_]}| More ]) ->
+    %% [io_lib:format("~s = ~s", [Name, s2a(H)])];
+    Form = ?es:record_field(?es:atom(Name), es_atom(s2a(H))),
+    [Form | gen_record_def(More)];
+gen_record_def([#field{name = Name, type = boolean}| More ]) ->
+    %% [io_lib:format("~s = false", [Name])];
+    Form =
+        ?es:typed_record_field(
+           ?es:record_field(?es:atom(Name), ?es:atom(false)),
+           ?es:type_application(?es:atom(boolean), [])),
+    [Form | gen_record_def(More)];
+gen_record_def([#field{name = Name, type = integer}| More ]) ->
+    %% [io_lib:format("~s = 0", [Name])];
+    Form =
+        ?es:typed_record_field(
+           ?es:record_field(?es:atom(Name), ?es:integer(0)),
+           ?es:type_application(?es:atom(non_neg_integer), [])),
+    [Form | gen_record_def(More)];
+gen_record_def([#field{name = Name, len = Size, type = bits}| More ]) ->
+    %% [io_lib:format("~s = ~w", [Name, <<0:Size>>])];
+    Form =
+        ?es:record_field(?es:atom(Name),
+                         ?es:binary(
+                            [?es:binary_field(?es:integer(0), ?es:integer(Size), [])])),
+    [Form | gen_record_def(More)];
+gen_record_def([#field{name = Name, len = Size, type = bytes}| More ]) ->
+    %% [io_lib:format("~s = ~w", [Name, <<0:(Size * 8)>>])];
+    Form =
+        ?es:record_field(
+           ?es:atom(Name),
+           ?es:binary(
+              [?es:binary_field(
+                  ?es:integer(0),
+                  ?es:integer(Size),
+                  [?es:size_qualifier(?es:atom(unit), ?es:integer(8))])
+              ])
+          ),
+    [Form | gen_record_def(More)];
+gen_record_def([#field{name = Name, type = binary}| More ]) ->
+    %% [io_lib:format("~s = <<>>", [Name])];
+    Form = ?es:record_field(?es:atom(Name), ?es:binary([])),
+    [Form | gen_record_def(More)];
+gen_record_def([#field{name = Name, type = length_binary}| More ]) ->
+    %% [io_lib:format("~s = <<>>", [Name])];
+    Form = ?es:record_field(?es:atom(Name), ?es:binary([])),
+    [Form | gen_record_def(More)];
+gen_record_def([#field{name = Name, type = array}| More ]) ->
+    %% [io_lib:format("~s = []", [Name])];
+    Form = ?es:record_field(?es:atom(Name), ?es:list([])),
+    [Form | gen_record_def(More)];
+gen_record_def([#field{name = Name}| More ]) ->
+    %% [to_string(Name)].
+    Form = ?es:record_field(?es:atom(Name)),
+    [Form | gen_record_def(More)].
 
-gen_decoder_header_match(#field{type = '_', len = 0}) ->
-    ["_/binary"];
-gen_decoder_header_match(#field{type = '_', len = Size}) ->
-    [io_lib:format("_:~w", [Size])];
-%% gen_decoder_header_match(#field{Value, Size}) when is_integer(Value); is_atom(Value) ->
-%%     [io_lib:format("~w:~w", [Value, Size])];
-gen_decoder_header_match(#field{name = Name, spec = mccmnc}) ->
-    [io_lib:format("M_~s:3/bytes", [Name])];
-gen_decoder_header_match(#field{name = Name, type = flags}) ->
-    [io_lib:format("M_~s/binary", [Name])];
-gen_decoder_header_match(#field{name = Name, len = Size, type = enum}) ->
-    [io_lib:format("M_~s:~w/integer", [Name, Size])];
-gen_decoder_header_match(#field{name = Name, type = array, spec = Multi})
+decoder_header_match_split(#field{type = array}) ->
+    false;
+decoder_header_match_split(_) ->
+    true.
+
+gen_decoder_header_match([]) ->
+    [];
+gen_decoder_header_match([#field{type = '_', len = 0} | More]) ->
+    %% ["_/binary"];
+    Form =
+        ?es:binary_field(
+           ?es:underscore(),
+           [?es:atom("binary")]),
+    [Form | gen_decoder_header_match(More)];
+gen_decoder_header_match([#field{type = '_', len = Size} | More]) ->
+    %% [io_lib:format("_:~w", [Size])];
+    Form =
+        ?es:binary_field(
+           ?es:underscore(),
+           ?es:integer(Size),
+           []),
+    [Form | gen_decoder_header_match(More)];
+%% gen_decoder_header_match([#field{Value, Size} | More]) when is_integer(Value) ->
+%%     %% [io_lib:format("~w:~w", [Value, Size])];
+%%     Form =
+%%         ?es:binary_field(
+%%            ?es:integer(Value),
+%%            ?es:integer(Size),
+%%            []),
+%%     [Form | gen_decoder_header_match(More)];
+%% gen_decoder_header_match([#field{Value, Size} | More]) is_atom(Value) ->
+%%     %% [io_lib:format("~w:~w", [Value, Size])];
+%%     Form =
+%%         ?es:binary_field(
+%%            ?es:atom(Value),
+%%            ?es:integer(Size),
+%%            []),
+%%     [Form | gen_decoder_header_match(More)];
+gen_decoder_header_match([#field{name = Name, spec = mccmnc} | More]) ->
+    %% [io_lib:format("M_~s:3/bytes", [Name])];
+    Form =
+        ?es:binary_field(
+           ?es:variable(io_lib:format("M_~s", [Name])),
+           ?es:integer(3),
+           [?es:atom("bytes")]),
+    [Form | gen_decoder_header_match(More)];
+gen_decoder_header_match([#field{name = Name, type = flags} | More]) ->
+    %% [io_lib:format("M_~s/binary", [Name])];
+    Form =
+        ?es:binary_field(
+           ?es:variable(io_lib:format("M_~s", [Name])),
+           [?es:atom("binary")]),
+    [Form | gen_decoder_header_match(More)];
+gen_decoder_header_match([#field{name = Name, len = Size, type = enum} | More]) ->
+    %% [io_lib:format("M_~s:~w/integer", [Name, Size])];
+    Form =
+        ?es:binary_field(
+           ?es:variable(io_lib:format("M_~s", [Name])),
+           ?es:integer(Size),
+           [?es:atom("integer")]),
+    [Form | gen_decoder_header_match(More)];
+gen_decoder_header_match([#field{name = Name, type = array, spec = Multi} | _])
   when is_list(Multi) ->
-    {stop, [io_lib:format("M_~s_Rest/binary", [Name])]};
-gen_decoder_header_match(#field{name = Name, len = Len, type = array}) ->
-    {stop, [io_lib:format("M_~s_len:~w/integer, M_~s_Rest/binary", [Name, Len, Name])]};
-gen_decoder_header_match(#field{name = Name, len = Len, type = length_binary}) ->
-    [io_lib:format("M_~s_len:~w/integer, M_~s:M_~s_len/bytes", [Name, Len, Name, Name])];
-gen_decoder_header_match(#field{name = Name, len = 0, type = helper}) ->
-    [io_lib:format("M_~s/binary", [Name])];
-gen_decoder_header_match(#field{name = Name, len = Size, type = helper}) ->
-    [io_lib:format("M_~s:~w/bits", [Name, Size])];
-gen_decoder_header_match(#field{name = Name, len = Size, type = boolean}) ->
-    [io_lib:format("M_~s:~w/integer", [Name, Size])];
-gen_decoder_header_match(#field{name = Name, len = 0, type = Type}) ->
-    [io_lib:format("M_~s/~w", [Name, Type])];
-gen_decoder_header_match(#field{name = Name, len = Size, type = Type}) ->
-    [io_lib:format("M_~s:~w/~s", [Name, Size, Type])].
+    %% {stop, [io_lib:format("M_~s_Rest/binary", [Name])]};
+    Form =
+        ?es:binary_field(
+           ?es:variable(io_lib:format("M_~s_Rest", [Name])),
+           [?es:atom("binary")]),
+    [Form];
+gen_decoder_header_match([#field{name = Name, len = Len, type = array} | _]) ->
+    %% {stop, [io_lib:format("M_~s_len:~w/integer, M_~s_Rest/binary", [Name, Len, Name])]};
+    Form1 =
+        ?es:binary_field(
+           ?es:variable(io_lib:format("M_~s_len", [Name])),
+           ?es:integer(Len),
+           [?es:atom("integer")]),
+    Form2 =
+        ?es:binary_field(
+           ?es:variable(io_lib:format("M_~s_Rest", [Name])),
+           [?es:atom("binary")]),
+    [Form1, Form2];
+gen_decoder_header_match([#field{name = Name, len = Len, type = length_binary} | More]) ->
+    %% [io_lib:format("M_~s_len:~w/integer, M_~s:M_~s_len/bytes", [Name, Len, Name, Name])];
+    Form1 =
+        ?es:binary_field(
+           ?es:variable(io_lib:format("M_~s_len", [Name])),
+           ?es:integer(Len),
+           [?es:atom("integer")]),
+    Form2 =
+        ?es:binary_field(
+           ?es:variable(io_lib:format("M_~s", [Name])),
+           ?es:variable(io_lib:format("M_~s_len", [Name])),
+           [?es:atom("bytes")]),
+    [Form1, Form2 | gen_decoder_header_match(More)];
+gen_decoder_header_match([#field{name = Name, len = 0, type = helper} | More]) ->
+    %% [io_lib:format("M_~s/binary", [Name])];
+    Form =
+        ?es:binary_field(
+           ?es:variable(io_lib:format("M_~s", [Name])),
+           [?es:atom("binary")]),
+    [Form | gen_decoder_header_match(More)];
+gen_decoder_header_match([#field{name = Name, len = Size, type = helper} | More]) ->
+    %% [io_lib:format("M_~s:~w/bits", [Name, Size])];
+    Form =
+        ?es:binary_field(
+           ?es:variable(io_lib:format("M_~s", [Name])),
+           ?es:integer(Size),
+           [?es:atom("bits")]),
+    [Form | gen_decoder_header_match(More)];
+gen_decoder_header_match([#field{name = Name, len = Size, type = boolean} | More]) ->
+    %% [io_lib:format("M_~s:~w/integer", [Name, Size])];
+    Form =
+        ?es:binary_field(
+           ?es:variable(io_lib:format("M_~s", [Name])),
+           ?es:integer(Size),
+           [?es:atom("integer")]),
+    [Form | gen_decoder_header_match(More)];
+gen_decoder_header_match([#field{name = Name, len = 0, type = Type} | More]) ->
+    %% [io_lib:format("M_~s/~w", [Name, Type])];
+    Form =
+        ?es:binary_field(
+           ?es:variable(io_lib:format("M_~s", [Name])),
+           [?es:atom(Type)]),
+    [Form | gen_decoder_header_match(More)];
+gen_decoder_header_match([#field{name = Name, len = Size, type = Type} | More]) ->
+    %% [io_lib:format("M_~s:~w/~s", [Name, Size, Type])].
+    Form =
+        ?es:binary_field(
+           ?es:variable(io_lib:format("M_~s", [Name])),
+           ?es:integer(Size),
+           [?es:atom(Type)]),
+    [Form | gen_decoder_header_match(More)].
 
-%% gen_decoder_record_assign(#field{Value, _}) when is_integer(Value); is_atom(Value) ->
-%%     [];
-gen_decoder_record_assign(#field{type = '_'}) ->
+gen_decoder_record_assign([]) ->
     [];
-gen_decoder_record_assign(#field{name = Name, spec = mccmnc}) ->
-    [io_lib:format("plmn_id = {decode_mcc(M_~s), decode_mnc(M_~s)}", [Name, Name])];
-gen_decoder_record_assign(#field{name = Name, type = flags, spec = Flags}) ->
-    [io_lib:format("~s = decode_flags(M_~s, ~p)",
-                   [Name, Name, Flags])];
-
-gen_decoder_record_assign(#field{name = Name, type = enum}) ->
-    [io_lib:format("~s = enum_v2_~s(M_~s)", [Name, Name, Name])];
-gen_decoder_record_assign(#field{name = Name, len = Size, type = array, spec = Multi})
+%% gen_decoder_record_assign([#field{Value, _} | More]) when is_integer(Value); is_atom(Value) ->
+%%     %% [];
+%%     gen_decoder_record_assign(More);
+gen_decoder_record_assign([#field{type = '_'} | More]) ->
+    %% [];
+    gen_decoder_record_assign(More);
+gen_decoder_record_assign([#field{name = Name, spec = mccmnc}| More]) ->
+    %% [io_lib:format("plmn_id = {decode_mcc(M_~s), decode_mnc(M_~s)}", [Name, Name])];
+    Form = ?es:record_field(
+              ?es:atom("plmn_id"),
+              ?es:tuple(
+                 [
+                  ?es:application(
+                     ?es:atom("decode_mcc"),
+                     [?es:variable(io_lib:format("M_~s", [Name]))]),
+                  ?es:application(
+                     ?es:atom("decode_mnc"),
+                     [?es:variable(io_lib:format("M_~s", [Name]))])
+                 ])
+             ),
+    [Form | gen_decoder_record_assign(More)];
+gen_decoder_record_assign([#field{name = Name, type = flags, spec = Flags}| More]) ->
+    %% [io_lib:format("~s = decode_flags(M_~s, ~p)",
+    %%                [Name, Name, Flags])];
+    Form = ?es:record_field(
+              ?es:atom(Name),
+              ?es:application(
+                 ?es:atom(decode_flags),
+                 [?es:variable(io_lib:format("M_~s", [Name])),
+                  ?es:list([?es:atom(X) || X <- Flags])])
+             ),
+    [Form | gen_decoder_record_assign(More)];
+gen_decoder_record_assign([#field{name = Name, type = enum} | More]) ->
+    %% [io_lib:format("~s = enum_v2_~s(M_~s)", [Name, Name, Name])];
+    Form = ?es:record_field(
+              ?es:atom(Name),
+              ?es:application(
+                 ?es:atom(io_lib:format("enum_v2_~s", [Name])),
+                 [?es:variable(io_lib:format("M_~s", [Name]))])
+             ),
+    [Form | gen_decoder_record_assign(More)];
+gen_decoder_record_assign([#field{name = Name, len = Size, type = array, spec = Multi} | More])
   when is_list(Multi) ->
-    [io_lib:format("~s = [X || <<X:~w/bytes>> <= M_~s]", [Name, Size, Name])];
-gen_decoder_record_assign(#field{name = Name, type = array, spec = {Size, Type}}) ->
-    [io_lib:format("~s = [X || <<X:~w/~s>> <= M_~s]", [Name, Size, Type, Name])];
-gen_decoder_record_assign(#field{name = Name, type = helper, spec = TypeName}) ->
-    [io_lib:format("~s = decode_~s(M_~s)", [Name, TypeName, Name])];
-gen_decoder_record_assign(#field{name = Name, type = boolean}) ->
-    [io_lib:format("~s = int2bool(M_~s)", [Name, Name])];
-gen_decoder_record_assign(#field{name = Name}) ->
-    [io_lib:format("~s = M_~s", [Name, Name])].
+    %% [io_lib:format("~s = [X || <<X:~w/bytes>> <= M_~s]", [Name, Size, Name])];
+    Form = ?es:record_field(
+              ?es:atom(Name),
+              ?es:list_comp(
+                 ?es:variable("X"),
+                 [?es:binary_generator(
+                     ?es:binary(
+                        [?es:binary_field(
+                            ?es:variable("X"),
+                            ?es:integer(Size),
+                            [?es:atom("bytes")])]),
+                     ?es:variable(io_lib:format("M_~s", [Name])))
+                 ]
+                )
+             ),
+    [Form | gen_decoder_record_assign(More)];
+gen_decoder_record_assign([#field{name = Name, type = array, spec = {Size, Type}} | More]) ->
+    %% [io_lib:format("~s = [X || <<X:~w/~s>> <= M_~s]", [Name, Size, Type, Name])];
+    Form = ?es:record_field(
+              ?es:atom(Name),
+              ?es:list_comp(
+                 ?es:variable("X"),
+                 [?es:binary_generator(
+                     ?es:binary(
+                        [?es:binary_field(
+                            ?es:variable("X"),
+                            ?es:integer(Size),
+                            [?es:atom(Type)])]),
+                     ?es:variable(io_lib:format("M_~s", [Name])))
+                 ]
+                )
+             ),
+    [Form | gen_decoder_record_assign(More)];
+gen_decoder_record_assign([#field{name = Name, type = helper, spec = TypeName} | More]) ->
+    %% [io_lib:format("~s = decode_~s(M_~s)", [Name, TypeName, Name])];
+    Form = ?es:record_field(
+              ?es:atom(Name),
+              ?es:application(
+                 es_atom(io_lib:format("decode_~s", [TypeName])),
+                 [?es:variable(io_lib:format("M_~s", [Name]))])
+             ),
+    [Form | gen_decoder_record_assign(More)];
+gen_decoder_record_assign([#field{name = Name, type = boolean} | More]) ->
+    %% [io_lib:format("~s = int2bool(M_~s)", [Name, Name])];
+    Form = ?es:record_field(
+              ?es:atom(Name),
+              ?es:application(
+                 ?es:atom("int2bool"),
+                 [?es:variable(io_lib:format("M_~s", [Name]))])
+             ),
+    [Form | gen_decoder_record_assign(More)];
+gen_decoder_record_assign([#field{name = Name} | More]) ->
+    %% [io_lib:format("~s = M_~s", [Name, Name])].
+    Form = ?es:record_field(?es:atom(Name), ?es:variable(io_lib:format("M_~s", [Name]))),
+    [Form | gen_decoder_record_assign(More)].
 
-%% gen_encoder_record_assign({Value, _}) when is_integer(Value); is_atom(Value) ->
-%%     [];
-gen_encoder_record_assign(#field{type = '_'}) ->
+gen_encoder_record_assign([]) ->
     [];
-gen_encoder_record_assign(#field{spec = mccmnc}) ->
-    ["plmn_id = {M_mcc, M_mnc}"];
-gen_encoder_record_assign(#field{name = Name, type = undefined}) ->
-    [io_lib:format("~s = undefined", [Name])];
-gen_encoder_record_assign(#field{name = Name}) ->
-    [io_lib:format("~s = M_~s", [Name, Name])].
+gen_encoder_record_assign([#field{type = '_'} | More]) ->
+    gen_encoder_record_assign(More);
+gen_encoder_record_assign([#field{spec = mccmnc} | More]) ->
+    %% ["plmn_id = {M_mcc, M_mnc}"];
+    Form =
+        ?es:record_field(
+           ?es:atom(plmn_id),
+           ?es:tuple([?es:variable("M_mcc"), ?es:variable("M_mnc")])),
+    [Form | gen_encoder_record_assign(More)];
+gen_encoder_record_assign([#field{name = Name, type = undefined} | More]) ->
+    %% [io_lib:format("~s = undefined", [Name])];
+    Form = ?es:record_field(?es:atom(Name), ?es:atom("undefined")),
+    [Form | gen_encoder_record_assign(More)];
+gen_encoder_record_assign([#field{name = Name} | More]) ->
+    %% [io_lib:format("~s = M_~s", [Name, Name])].
+    Form = ?es:record_field(?es:atom(Name), ?es:variable(io_lib:format("M_~s", [Name]))),
+    [Form | gen_encoder_record_assign(More)].
 
-gen_encoder_bin(#field{type = '_', len = 0}) ->
+gen_encoder_field_assign([]) ->
     [];
-gen_encoder_bin(#field{type = '_', len = Size}) ->
-    [io_lib:format("0:~w", [Size])];
+gen_encoder_field_assign([#field{type = '_', len = 0} | More]) ->
+    %% [];
+    gen_encoder_field_assign(More);
+gen_encoder_field_assign([#field{type = '_', len = Size} | More]) ->
+    %% [io_lib:format("0:~w", [Size])];
+    Form = ?es:binary_field(?es:integer(0), ?es:integer(Size), []),
+    [Form | gen_encoder_field_assign(More)];
+%% gen_encoder_field_assign([#field{Value, Size} | More]) when is_integer(Value) ->
+%%     %% [io_lib:format("~w:~w", [Value, Size])];
+%%     Form = ?es:binary_field(?es:integer(Value), ?es:integer(Size), []),
+%%     [Form | gen_encoder_field_assign(More)];
+%% gen_encoder_field_assign([#field{Value, Size} | More]) when is_atom(Value) ->
+%%     %% [io_lib:format("~w:~w", [Value, Size])];
+%%     Form = ?es:binary_field(?es:atom(Value), ?es:integer(Size), []),
+%%     [Form | gen_encoder_field_assign(More)];
+gen_encoder_field_assign([#field{type = undefined} | More]) ->
+    %% [];
+    gen_encoder_field_assign(More);
+gen_encoder_field_assign([#field{spec = mccmnc} | More]) ->
+    %% ["(encode_mccmnc(M_mcc, M_mnc))/binary"];
+    Form =
+        ?es:binary_field(
+           ?es:application(
+              ?es:atom(encode_mccmnc),
+              [?es:variable("M_mcc"), ?es:variable("M_mnc")]),
+           [?es:atom("binary")]),
+    [Form | gen_encoder_field_assign(More)];
+gen_encoder_field_assign([#field{name = Name, len = MinSize, type = flags, spec = Flags0} | More]) ->
+    %% [io_lib:format("(encode_min_int(~p, encode_flags(M_~s, ~p), little))/binary",
+    %%                [MinSize, Name, reorder_flags(Flags)])];
+    Flags = [?es:atom(X) || X <- reorder_flags(Flags0)],
+    Form =
+        ?es:binary_field(
+           ?es:application(
+              ?es:atom(encode_min_int),
+              [?es:integer(MinSize),
+               ?es:application(
+                  ?es:atom("encode_flags"),
+                  [?es:variable(io_lib:format("M_~s", [Name])), ?es:list(Flags)]),
+               ?es:atom("little")]),
+           [?es:atom("binary")]),
+    [Form | gen_encoder_field_assign(More)];
 
-%% gen_encoder_bin(#field{Value, Size}) when is_integer(Value); is_atom(Value) ->
-%%     [io_lib:format("~w:~w", [Value, Size])];
-gen_encoder_bin(#field{type = undefined}) ->
-    [];
-gen_encoder_bin(#field{spec = mccmnc}) ->
-    ["(encode_mccmnc(M_mcc, M_mnc))/binary"];
-gen_encoder_bin(#field{name = Name, len = MinSize, type = flags, spec = Flags}) ->
-    [io_lib:format("(encode_min_int(~p, encode_flags(M_~s, ~p), little))/binary",
-                   [MinSize, Name, reorder_flags(Flags)])];
-gen_encoder_bin(#field{name = Name, len = Size, type = enum}) ->
-    [io_lib:format("(enum_v2_~s(M_~s)):~w/integer", [Name, Name, Size])];
-gen_encoder_bin(#field{name = Name, len = Len, type = array, spec = {Size, Type}}) ->
-    [io_lib:format("(length(M_~s)):~w/integer, (<< <<X:~w/~w>> || X <- M_~s>>)/binary",
-                   [Name, Len, Size, Type, Name])];
-gen_encoder_bin(#field{name = Name, len = Len, type = array}) ->
-    [io_lib:format("(length(M_~s)):~w/integer, (<< <<X/binary>> || X <- M_~s>>)/binary", [Name, Len, Name])];
-gen_encoder_bin(#field{name = Name, len = 0, type = helper, spec = TypeName}) ->
-    [io_lib:format("(encode_~s(M_~s))/binary", [TypeName, Name])];
-gen_encoder_bin(#field{name = Name, len = Size, type = helper, spec = TypeName}) ->
-    [io_lib:format("(encode_~s(M_~s)):~w/bits", [TypeName, Name, Size])];
-gen_encoder_bin(#field{name = Name, len = Len, type = length_binary}) ->
-    [io_lib:format("(byte_size(M_~s)):~w/integer, M_~s/binary", [Name, Len, Name])];
-gen_encoder_bin(#field{name = Name, len = 0, type = Type}) ->
-    [io_lib:format("M_~s/~w", [Name, Type])];
-gen_encoder_bin(#field{name = Name, len = Size, type = boolean}) ->
-    [io_lib:format("(bool2int(M_~s)):~w/integer", [Name, Size])];
-gen_encoder_bin(#field{name = Name, len = Size, type = Type}) ->
-    [io_lib:format("M_~s:~w/~s", [Name, Size, Type])].
-%% gen_encoder_bin(#field{name = Name, len = Size}) ->
-%%     [io_lib:format("M_~s:~w", [Name, Size])].
+gen_encoder_field_assign([#field{name = Name, len = Size, type = enum} | More]) ->
+    %% [io_lib:format("(enum_v2_~s(M_~s)):~w/integer", [Name, Name, Size])];
+    Form =
+        ?es:binary_field(
+           ?es:application(?es:atom(io_lib:format("enum_v2_~s", [Name])),
+                           [?es:variable(io_lib:format("M_~s", [Name]))]),
+           ?es:integer(Size),
+           [?es:atom("integer")]),
+    [Form | gen_encoder_field_assign(More)];
+gen_encoder_field_assign([#field{name = Name, len = Len, type = array, spec = {Size, Type}} | More]) ->
+    %% [io_lib:format("(length(M_~s)):~w/integer, (<< <<X:~w/~w>> || X <- M_~s>>)/binary",
+    %%                [Name, Len, Size, Type, Name])];
+    Form1 =
+        ?es:binary_field(
+           ?es:application(?es:atom("length"), [?es:variable(io_lib:format("M_~s", [Name]))]),
+           ?es:integer(Len),
+           [?es:atom("integer")]),
+    Form2 =
+        ?es:binary_field(
+           %% (<< <<X:~w/~w>> || X <- M_tripple>>)/binary
+           ?es:binary_comp(
+              %% <<X/~w/~w>>
+              ?es:binary(
+                 [?es:binary_field(?es:variable("X"),
+                                   ?es:integer(Size),
+                                   [?es:atom(Type)])]),
+              %% X <- M_tripple
+              [?es:generator(?es:variable("X"), ?es:variable(io_lib:format("M_~s", [Name])))]),
+           [?es:atom("binary")]),
+    [Form1, Form2 | gen_encoder_field_assign(More)];
+gen_encoder_field_assign([#field{name = Name, len = Len, type = array} | More]) ->
+    %% [io_lib:format("(length(M_~s)):~w/integer, (<< <<X/binary>> || X <- M_~s>>)/binary", [Name, Len, Name])];
+    Form1 =
+        ?es:binary_field(
+           ?es:application(?es:atom("length"), [?es:variable(io_lig:format("M_~s", [Name]))]),
+           ?es:integer(Len),
+           [?es:atom("integer")]),
+    Form2 =
+        ?es:binary_field(
+           %% (<< <<X/binary>> || X <- M_tripple>>)/binary
+           ?es:binary_comp(
+              %% <<X/binary>>
+              ?es:binary([?es:binary_field(?es:variable("X"), [?es:atom(binary)])]),
+              %% X <- M_tripple
+              [?es:generator(?es:variable("X"), ?es:variable(io_lib:format("M_~s", [Name])))]),
+           [?es:atom("binary")]),
+    [Form1, Form2 | gen_encoder_field_assign(More)];
+gen_encoder_field_assign([#field{name = Name, len = 0, type = helper, spec = TypeName} | More]) ->
+    %% [io_lib:format("(encode_~s(M_~s))/binary", [TypeName, Name])];
+    Form =
+        ?es:binary_field(
+           ?es:application(?es:atom(io_lib:format("encode_~s", [TypeName])),
+                           [?es:variable(s2a("M_~s", Name))]),
+           [?es:atom("binary")]),
+    [Form | gen_encoder_field_assign(More)];
+gen_encoder_field_assign([#field{name = Name, len = Size, type = helper, spec = TypeName} | More]) ->
+    %% [io_lib:format("(encode_~s(M_~s)):~w/bits", [TypeName, Name, Size])];
+    Form =
+        ?es:binary_field(
+           ?es:application(?es:atom(io_lib:format("encode_~s", [TypeName])),
+                           [?es:variable(io_lib:format("M_~s", [Name]))]),
+           ?es:integer(Size),
+           [?es:atom("bits")]),
+    [Form | gen_encoder_field_assign(More)];
+gen_encoder_field_assign([#field{name = Name, len = Len, type = length_binary} | More]) ->
+    %% [io_lib:format("(byte_size(M_~s)):~w/integer, M_~s/binary", [Name, Len, Name])];
+    Form1 =
+        ?es:binary_field(
+           ?es:application(?es:atom("byte_size"), [?es:variable(io_lib:format("M_~s", [Name]))]),
+           ?es:integer(Len),
+           [?es:atom("integer")]),
+    Form2 =
+        ?es:binary_field(
+           ?es:variable(io_lib:format("M_~s", [Name])),
+           [?es:atom("binary")]),
+    [Form1, Form2 | gen_encoder_field_assign(More)];
+gen_encoder_field_assign([#field{name = Name, len = 0, type = Type} | More]) ->
+    %% [io_lib:format("M_~s/~w", [Name, Type])];
+    Form =
+        ?es:binary_field(
+           ?es:variable(io_lib:format("M_~s", [Name])),
+           [?es:atom(Type)]),
+    [Form | gen_encoder_field_assign(More)];
+gen_encoder_field_assign([#field{name = Name, len = Size, type = boolean} | More]) ->
+    %% [io_lib:format("(bool2int(M_~s)):~w/integer", [Name, Size])];
+    Form =
+        ?es:binary_field(
+           ?es:application(?es:atom("bool2int"),
+                           [?es:variable(io_lib:format("M_~s", [Name]))]),
+           ?es:integer(Size),
+           [?es:atom("integer")]),
+    [Form | gen_encoder_field_assign(More)];
 
-indent(Atom, Extra) when is_atom(Atom) ->
-    indent(atom_to_list(Atom), Extra);
-indent(List, Extra) ->
-    Indent = length(lists:flatten(List)) + Extra,
-    Spaces = Indent rem 8,
-    Tabs = Indent div 8,
-    [lists:duplicate(Tabs, "\t"), lists:duplicate(Spaces, " ")].
+gen_encoder_field_assign([#field{name = Name, len = Size, type = Type} | More]) ->
+    %% [io_lib:format("M_~s:~w/~s", [Name, Size, Type])].
+    %% [io_lib:format("M_~s:~w", [s2a(Name), Size])].
+    Form =
+        ?es:binary_field(
+           ?es:variable(io_lib:format("M_~s", [Name])),
+           ?es:integer(Size),
+           [?es:atom(Type)]),
+    [Form | gen_encoder_field_assign(More)].
 
 s2a(Name) when is_atom(Name) ->
     Name;
@@ -798,210 +1139,314 @@ s2a(Name) ->
                   string:to_lower(Name)),
     list_to_atom(S).
 
-to_string(S) when is_list(S)   -> S;
-to_string(A) when is_atom(A)   -> atom_to_list(A);
-to_string(B) when is_binary(B) -> binary_to_list(B).
+s2a(Format, Name) ->
+    unicode:characters_to_list(io_lib:format(Format, [s2a(Name)])).
 
-append([], Acc) ->
-    Acc;
-append([H|T], Acc) ->
-    append(T, [H|Acc]).
+gen_enum(Value, Cnt, Next, {FwdFuns, RevFuns}) ->
+    Fwd = ?es:clause([es_atom(s2a(Value))], none, [?es:integer(Cnt)]),
+    Rev = ?es:clause([?es:integer(Cnt)], none, [es_atom(s2a(Value))]),
+    gen_enum(Next, Cnt + 1, {[Fwd|FwdFuns], [Rev|RevFuns]}).
 
-collect(_Fun, [], Acc) ->
-    lists:reverse(Acc);
-collect(Fun, [F|Fields], Acc) ->
-    case Fun(F) of
-        [] ->
-            collect(Fun, Fields, Acc);
-        {stop, L} ->
-            lists:reverse(append(L, Acc));
-        L ->
-            collect(Fun, Fields, append(L, Acc))
-    end.
-
-collect(Fun, Fields) ->
-    collect(Fun, Fields, []).
-
-gen_enum(Name, Value, Cnt, Next, {FwdFuns, RevFuns}) ->
-    Fwd = io_lib:format("enum_v2_~s(~p) -> ~w", [Name, s2a(Value), Cnt]),
-    Rev = io_lib:format("enum_v2_~s(~w) -> ~p", [Name, Cnt, s2a(Value)]),
-    gen_enum(Name, Next, Cnt + 1, {[Fwd|FwdFuns], [Rev|RevFuns]}).
-
-gen_enum(_, [], _, {FwdFuns, RevFuns}) ->
+gen_enum([], _, {FwdFuns, RevFuns}) ->
     {lists:reverse(FwdFuns), lists:reverse(RevFuns)};
-gen_enum(Name, [{Cnt, Value}|Rest], _, Acc) ->
-    gen_enum(Name, Value, Cnt, Rest, Acc);
-gen_enum(Name, [Value|Rest], Cnt, Acc) ->
-    gen_enum(Name, Value, Cnt, Rest, Acc).
-
-gen_message_type(Value, Name, Next, {FwdFuns, RevFuns}) ->
-    Fwd = io_lib:format("message_type_v2(~s) -> ~w", [s2a(Name), Value]),
-    Rev = io_lib:format("message_type_v2(~w) -> ~s", [Value, s2a(Name)]),
-    gen_message_type(Next, {[Fwd|FwdFuns], [Rev|RevFuns]}).
-
-gen_message_type([], {FwdFuns, RevFuns}) ->
-    {lists:reverse(FwdFuns), lists:reverse(RevFuns)};
-gen_message_type([{Value, Name}|Rest], Acc) ->
-    gen_message_type(Value, Name, Rest, Acc).
+gen_enum([{Cnt, Value}|Rest], _, Acc) ->
+    gen_enum(Value, Cnt, Rest, Acc);
+gen_enum([Value|Rest], Cnt, Acc) ->
+    gen_enum(Value, Cnt, Rest, Acc).
 
 reorder_flags([]) -> [];
 reorder_flags(Flags) ->
     {Head, Tail} = lists:split(8, Flags),
     lists:reverse(Head) ++ reorder_flags(Tail).
 
-build_late_assign([]) ->
+build_decoder_body([]) ->
     [];
-build_late_assign([H = #field{type = array} | T]) ->
-    build_late_assign(H, T);
-build_late_assign([_ | T]) ->
-    build_late_assign(T).
+build_decoder_body([H = #field{type = array} | Fields]) ->
+    build_decoder_body(H, Fields).
 
-build_late_assign(#field{name = Name, len = Len, type = array, spec = Multi}, T)
-  when is_list(Multi) ->
-    Init = io_lib:format("M_~s_size = M_~s * ~w", [Name, s2a(Multi), Len]),
-    build_late_assign(Name, Init, T);
-build_late_assign(#field{name = Name, type = array, spec = {Size, Type}}, T)
+build_decoder_body(#field{name = Name, len = Len, type = array, spec = Multi}, Fields)
+  when is_integer(Len), is_list(Multi) ->
+    %% Init = io_lib:format("M_~s_size = M_~s * ~w", [Name, s2a(Multi), Len]),
+    Form = ?es:match_expr(
+              ?es:variable(io_lib:format("M_~s_size", [Name])),
+              ?es:infix_expr(
+                 ?es:variable(s2a("M_~s", Multi)),
+                 ?es:operator("*"),
+                 ?es:integer(Len))),
+    [Form | build_decoder_body(Name, Fields)];
+build_decoder_body(#field{name = Name, type = array, spec = {Size, Type}}, Fields)
   when Type =:= integer; Type =:= bits ->
-    Init = io_lib:format("M_~s_size = M_~s_len * ~w", [Name, Name, Size]),
-    build_late_assign(Name, Init, T);
-build_late_assign(#field{name = Name, type = array, spec = {Size, _}}, T) ->
-    Init = io_lib:format("M_~s_size = M_~s_len * ~w * 8", [Name, Name, Size]),
-    build_late_assign(Name, Init, T).
+    %% Init = io_lib:format("M_~s_size = M_~s_len * ~w", [Name, Name, Size]),
+    Form = ?es:match_expr(
+              ?es:variable(io_lib:format("M_~s_size", [Name])),
+              ?es:infix_expr(
+                 ?es:variable(io_lib:format("M_~s_len", [Name])),
+                 ?es:operator("*"),
+                 ?es:integer(Size))),
+    [Form | build_decoder_body(Name, Fields)];
+build_decoder_body(#field{name = Name, type = array, spec = {Size, _}}, Fields) ->
+    %% Init = io_lib:format("M_~s_size = M_~s_len * ~w * 8", [Name, Name, Size]),
+    Form = ?es:match_expr(
+              ?es:variable(io_lib:format("M_~s_size", [Name])),
+              ?es:infix_expr(
+                 ?es:variable(io_lib:format("M_~s_len", [Name])),
+                 ?es:operator("*"),
+                 ?es:integer(Size * 8))
+             ),
+    [Form | build_decoder_body(Name, Fields)];
 
-build_late_assign(Name, Init, Fields) ->
-    Match = io_lib:format("M_~s:M_~s_size/bits", [Name, Name]),
-    {Body, Next} = collect_late_assign(Fields, [Match]),
-    M = io_lib:format("    <<~s>> = M_~s_Rest,", [string:join(Body, ",\n      "), Name]),
-    ["    ", Init, ",\n", M, "\n"] ++ build_late_assign(Next).
-
-collect_late_assign([], Acc) ->
-    {lists:reverse(Acc), []};
-collect_late_assign(Fields = [H | T], Acc) ->
-    case gen_decoder_header_match(H) of
-        {stop, Match} ->
-            {lists:reverse([Match|Acc]), Fields};
-        Match ->
-            collect_late_assign(T, [Match|Acc])
-    end.
-
+build_decoder_body(Name, Fields) ->
+    Next = lists:dropwhile(fun decoder_header_match_split/1, Fields),
+    Match = [
+             %% io_lib:format("M_~s:M_~s_size/bits", [Name, Name])
+             ?es:binary_field(
+                ?es:variable(io_lib:format("M_~s", [Name])),
+                ?es:variable(io_lib:format("M_~s_size", [Name])),
+                [?es:atom("bits")])
+            | gen_decoder_header_match(Fields)],
+    %% io_lib:format("    <<~s>> = M_~s_Rest,", [string:join(Body, ",\n      "), Name]),
+    Form = ?es:match_expr(?es:binary(Match), ?es:variable(io_lib:format("M_~s_Rest", [Name]))),
+    [Form | build_decoder_body(Next)].
 
 collect_enum(#field{name = Name, type = enum, spec = Enum}, Acc) ->
-    {FwdFuns, RevFuns} = gen_enum(Name, Enum, 0, {[], []}),
-    Wildcard = io_lib:format("enum_v2_~s(X) when is_integer(X) -> X", [Name]),
-    S = string:join(FwdFuns ++ RevFuns ++ [Wildcard], ";\n") ++ ".\n",
-    lists:keystore(Name, 1, Acc, {Name, S});
+    {FwdFuns, RevFuns} = gen_enum(Enum, 0, {[], []}),
+
+    Wildcard = ?es:clause([?es:variable("X")],
+                          [?es:application(?es:atom(is_integer), [?es:variable("X")])],
+                          [?es:variable("X")]),
+    Fun =
+        ?es:function(
+           es_atom(io_lib:format("enum_v2_~s", [Name])),
+           FwdFuns ++ RevFuns ++ [Wildcard]),
+    lists:keystore(Name, 1, Acc, {Name, Fun});
 collect_enum(_, Acc) ->
     Acc.
 
 collect_enums(#ie{type = undefined, fields = Fields}, AccIn) ->
-    lists:foldr(fun(X, Acc) -> collect_enum(X, Acc) end, AccIn, Fields);
+    lists:foldr(fun collect_enum/2, AccIn, Fields);
 collect_enums(_, AccIn) ->
     AccIn.
 
 write_enums(IEs) ->
-    E = lists:foldr(fun(X, Acc) -> collect_enums(X, Acc) end, [], IEs),
-    {_, Str} = lists:unzip(E),
-    string:join(Str, "\n").
+    {_, Enums} = lists:unzip(lists:foldr(fun collect_enums/2, [], IEs)),
+    Enums.
 
-write_record(#ie{name = Name, type = undefined, fields = Fields}) ->
-    Indent = "\t  ",
-    RecordDef = string:join(collect(fun gen_record_def/1, [?'Instance' | Fields], []), [",\n", Indent]),
-    io_lib:format("-record(~s, {~n~s~s~n}).~n", [Name, Indent, RecordDef]);
-write_record(_) ->
-    [].
+write_record([]) ->
+    [];
+write_record([#ie{name = Name, type = undefined, fields = Fields} | Next]) ->
+    FieldDefs = gen_record_def([#field{name = "instance", type = integer} | Fields]),
+    Form = ?es:attribute(?es:atom(record), [es_atom(s2a(Name)), ?es:tuple(FieldDefs)]),
+    [Form | write_record(Next)];
+write_record([_|Next]) ->
+    write_record(Next).
 
-write_decoder(#ie{min_field_count = Min, fields = Fields} = IE, Fns)
+write_decoder(#ie{min_field_count = Min, fields = Fields} = IE, Forms)
   when is_integer(Min), length(Fields) > Min ->
     SubIE = IE#ie{min_field_count = undefined},
     lists:foldl(
-      fun (Len, FnsSub) ->
+      fun (Len, SubForms) ->
               {H,T} = lists:split(Len, Fields),
               case T of
-                  [] -> FnsSub;
+                  [] -> SubForms;
                   _ ->
-                      write_decoder(SubIE#ie{fields = H ++ [?WildCard]}, FnsSub)
+                      write_decoder(SubIE#ie{fields = H ++ [?WildCard]}, SubForms)
               end
-      end, Fns, lists:seq(Min, length(Fields)));
+      end, Forms, lists:seq(Min, length(Fields)));
+write_decoder(#ie{id = Id, type = undefined, name = Name, fields = Fields}, Forms) ->
+    Match = gen_decoder_header_match(Fields),
+    RecordAssigns = gen_decoder_record_assign(Fields),
+    BodyFields = lists:dropwhile(fun decoder_header_match_split/1, Fields),
+    Body = build_decoder_body(BodyFields),
+    Form =
+        ?es:clause(
+           [?es:binary(Match), ?es:integer(Id), ?es:variable("Instance")],
+           none,
+           Body ++ [?es:record_expr(
+                       ?es:atom(Name),
+                       [?es:record_field(?es:atom("instance"), ?es:variable("Instance"))
+                       | RecordAssigns])
+                   ]),
+    [Form | Forms];
+write_decoder(#ie{id = Id, type = Helper}, Forms) ->
+    %% io_lib:format("~s(<<Data/binary>>, ~w, Instance) ->~n    decode_~s(Data, Instance)",
+    %%               [?DecoderFunName, Id, Helper]),
+    Form =
+        ?es:clause(
+           [?es:binary(
+               [?es:binary_field(
+                   ?es:variable("Data"),
+                   [?es:atom("binary")])]),
+            ?es:integer(Id), ?es:variable("Instance")],
+           none,
+           [?es:application(
+               es_atom(io_lib:format("decode_~s", [Helper])),
+               [?es:variable("Data"), ?es:variable("Instance")])
+           ]),
+    [Form | Forms].
 
-write_decoder(#ie{id = Id, type = undefined, name = Name, fields = Fields}, Fns) ->
-    MatchIdent = indent(?DecoderFunName, 3),
-    Match = string:join(collect(fun gen_decoder_header_match/1, Fields), [",\n", MatchIdent]),
-    Body = build_late_assign(Fields),
-    RecIdent = indent(Name, 6),
-    RecAssign = string:join(["instance = Instance" |
-                             collect(fun gen_decoder_record_assign/1, Fields)], [",\n", RecIdent]),
-    F = io_lib:format("~s(<<~s>>, ~w, Instance) ->~n~s    #~s{~s}",
-                      [?DecoderFunName, Match, Id, Body, Name, RecAssign]),
-    [F | Fns];
+write_rec_encoder(Id, Name, RecordAssigns, FieldAssigns) ->
+    ?es:clause(
+       [?es:record_expr(
+           es_atom(s2a(Name)),
+           [?es:record_field(
+               ?es:atom("instance"), ?es:variable("Instance")) | RecordAssigns])
+       ],
+       none,
+       [?es:application(
+           ?es:atom("encode_v2_element"),
+           [?es:integer(Id), ?es:variable("Instance"), ?es:binary(FieldAssigns)])
+       ]).
 
-write_decoder(#ie{id = Id, type = Helper}, Fns) ->
-    F = io_lib:format("~s(<<Data/binary>>, ~w, Instance) ->~n    decode_~s(Data, Instance)",
-                      [?DecoderFunName, Id, Helper]),
-    [F | Fns].
-
-write_encoder(#ie{min_field_count = Min, fields = Fields} = IE, Fns)
+write_encoder(#ie{min_field_count = Min, fields = Fields} = IE, Forms)
   when is_integer(Min), length(Fields) > Min ->
     SubIE = IE#ie{min_field_count = undefined},
     lists:foldl(
-      fun (Len, FnsSub) ->
+      fun (Len, SubForms) ->
               {H,T} = lists:split(Len, Fields),
               case T of
                   [] ->
-                      write_encoder(SubIE#ie{fields = H}, FnsSub);
-                  [#field{type = '_'}|_] -> FnsSub;
+                      write_encoder(SubIE#ie{fields = H}, SubForms);
+                  [#field{type = '_'}|_] -> SubForms;
                   [M|_] ->
-                      write_encoder(SubIE#ie{fields = H ++ [M#field{type = undefined}]}, FnsSub)
+                      write_encoder(SubIE#ie{fields = H ++ [M#field{type = undefined}]}, SubForms)
               end
-      end, Fns, lists:seq(length(Fields), Min, -1));
+      end, Forms, lists:seq(length(Fields), Min, -1));
 
-write_encoder(#ie{id = Id, name = Name, type = undefined, fields = Fields}, Fns) ->
-    RecIdent = indent("encode_v2_element(#", 2),
-    RecAssign = string:join(["instance = Instance" |
-                             collect(fun gen_encoder_record_assign/1, Fields)], [",\n", RecIdent]),
-    FunHead = io_lib:format("encode_v2_element(#~s{~n~s~s}) ->~n", [Name, RecIdent, RecAssign]),
-    DecHead = io_lib:format("    ~s(~w, Instance, ", [?EncoderFunName, Id]),
-    BinIndent = indent(DecHead, 2),
-    BinAssign = string:join(collect(fun gen_encoder_bin/1, Fields), [",\n", BinIndent]),
-    F = io_lib:format("~s~s<<~s>>)", [FunHead, DecHead, BinAssign]),
-    [F | Fns];
-write_encoder(#ie{id = Id, name = Name, type = Helper}, Fns) ->
-    F = io_lib:format("encode_v2_element(#~s{instance = Instance} = IE) ->~n    ~s(~w, Instance, encode_~s(IE))",
-                      [Name, ?EncoderFunName, Id, Helper]),
-    [F | Fns].
+write_encoder(#ie{id = Id, name = Name, type = undefined, fields = Fields}, Forms) ->
+    RecordAssigns = gen_encoder_record_assign(Fields),
+    FieldAssigns = gen_encoder_field_assign(Fields),
+    Form = write_rec_encoder(Id, Name, RecordAssigns, FieldAssigns),
+    [Form | Forms];
+write_encoder(#ie{id = Id, name = Name, type = Helper}, Forms) ->
+    %% io_lib:format("encode_v2_element(#~s{instance = Instance} = IE) ->~n    ~s(~w, Instance, encode_~s(IE))",
+    %%               [Name, ?EncoderFunName, Id, Helper]),
+    Form =
+        ?es:clause(
+           [?es:match_expr(
+               ?es:record_expr(
+                  ?es:atom(Name),
+                  [?es:match_expr(?es:atom("instance"), ?es:variable("Instance"))]),
+               ?es:variable("IE"))
+           ],
+           none,
+           [?es:application(
+               ?es:atom("encode_v2_element"),
+               [?es:integer(Id), ?es:variable("Instance"),
+                ?es:application(
+                   ?es:atom(io_lib:format("encode_~s", [Helper])),
+                   [?es:variable("IE")])
+               ])
+           ]),
+    [Form | Forms].
+
+
+%% development helper and code snippets, keep them
+%%
+%% to_form(IoList) ->
+%%     String = unicode:characters_to_list(IoList),
+%%     {ok, Tokens, _} = erl_scan:string(String),
+%%     {ok, Forms} = erl_parse:parse_form(Tokens),
+%%     Forms.
+%%
+%% io:format("GeneratedForm:\n~p\n", [Form]),
+%% io:format("Form:\n~p\n", [erl_syntax:revert(Form)]),
+%% io:format("Text:\n~s\n", [erl_prettypr:format(Form)]),
+
+es_atom(List) when is_list(List) ->
+    es_atom(iolist_to_binary(List));
+es_atom(Bin) when is_binary(Bin) ->
+    ?es:atom(binary_to_list(Bin));
+es_atom(Atom) when is_atom(Atom) ->
+    ?es:atom(Atom).
+
+msg_description_v2(Msgs) ->
+    MsgDescriptionClauses =
+        [?es:clause([es_atom(s2a(X))], none, [?es:binary([?es:string(X)])]) || {_, X} <- Msgs],
+    MsgDescriptionCatchAllClause =
+        ?es:clause(
+           [?es:variable("X")], none,
+           [?es:application(?es:atom(io_lib), ?es:atom(format),
+                            [?es:string("~p"), ?es:list([?es:variable("X")])])]),
+
+    ?es:function(?es:atom(msg_description_v2),
+                 MsgDescriptionClauses ++ [MsgDescriptionCatchAllClause]).
+
+message_type_v2(Msgs) ->
+    FwdFuns = [?es:clause([es_atom(s2a(Name))], none, [?es:integer(Value)]) ||
+                  {Value, Name} <- Msgs],
+    RevFuns = [?es:clause([?es:integer(Value)], none, [es_atom(s2a(Name))]) ||
+                  {Value, Name} <- Msgs],
+    ErrorFun = ?es:clause(
+                  [?es:variable("Type")], none,
+                  [?es:application(?es:atom(error),
+                                   [?es:atom(badarg), ?es:list([?es:variable("Type")])])]),
+    Clauses = FwdFuns ++ RevFuns ++ [ErrorFun],
+    ?es:function(?es:atom(message_type_v2), Clauses).
+
+ie_type_macros(IEs) ->
+    [?es:attribute(
+        ?es:atom(define),
+        [?es:text(string:uppercase(io_lib:format("GTP_V2_IE_~s", [Name]))), ?es:integer(Id)])
+     || #ie{id = Id, name = Name} <- IEs].
+
+decode_v2_element(IEs) ->
+    DecoderCatchAny =
+        ?es:clause(
+           [%% decode_v2_element(Value, Tag, Instance)
+            ?es:variable("Value"), ?es:variable("Tag"), ?es:variable("Instance")],
+           none,
+           %% {Tag, Instance, Value}
+           [?es:tuple([?es:variable("Tag"), ?es:variable("Instance"), ?es:variable("Value")])]
+          ),
+    DecoderClauses = lists:foldr(fun write_decoder/2, [DecoderCatchAny], IEs),
+    ?es:function(?es:atom(decode_v2_element), DecoderClauses).
+
+encode_v2_element(IEs) ->
+    EncoderCatchAny =
+        ?es:clause(
+           [%% encode_v2_element({Tag, Instance, Value})
+            ?es:tuple(
+               [?es:variable("Tag"), ?es:variable("Instance"), ?es:variable("Value")])],
+           %% when is_integer(Tag), is_integer(Instance), is_binary(Value)
+           [?es:application(?es:atom("is_integer"), [?es:variable("Tag")]),
+            ?es:application(?es:atom("is_integer"), [?es:variable("Instance")]),
+            ?es:application(?es:atom("is_binary"), [?es:variable("Value")])],
+           %% encode_v2_element(Tag, Instance, Value)
+           [?es:application(?es:atom("encode_v2_element"),
+                            [?es:variable("Tag"), ?es:variable("Instance"), ?es:variable("Value")])]
+          ),
+    EncoderClauses = lists:foldr(fun write_encoder/2, [EncoderCatchAny], IEs),
+    ?es:function(?es:atom("encode_v2_element"), EncoderClauses).
 
 main(_) ->
     IEs = ies(),
 
-    MsgDescription = string:join([io_lib:format("msg_description_v2(~s) -> <<\"~s\">>", [s2a(X), X]) || {_, X} <- msgs()]
-                                 ++ ["msg_description_v2(X) -> io_lib:format(\"~p\", [X])"], ";\n") ++ ".\n",
+    IETypeMacros = ie_type_macros(IEs),
+    Records = write_record(IEs),
+    ExpRecs = ?es:attribute(
+                 ?es:atom(define),
+                 [?es:text("GTP_V2_RECORDS"),
+                  ?es:list([?es:atom(ExpRecName) || #ie{name = ExpRecName} <- IEs])]),
+    HrlForms = ?es:form_list(
+                  IETypeMacros ++
+                      [ExpRecs | Records] ++ [?es:eof_marker()]),
+    HrlRecs = erl_prettypr:format(HrlForms),
 
-    {FwdFuns, RevFuns} = gen_message_type(msgs(), {[], []}),
-    ErrorFun = ["message_type_v2(Type) -> error(badarg, [Type])"],
-    MTypes = string:join(FwdFuns ++ RevFuns ++ ErrorFun, ";\n") ++ ".\n",
-
-    Records = string:join([write_record(X) || X <- IEs], "\n"),
-    ExpRecs = io_lib:format("-define(GTP_V2_RECORDS, ~p).~n",
-                            [[ExpRecName || #ie{name = ExpRecName} <- IEs]]),
-    HrlRecs = io_lib:format("~n~n~s~n~s", [ExpRecs, Records]),
+    MsgDescription = msg_description_v2(msgs()),
+    MessageTypes = message_type_v2(msgs()),
     Enums = write_enums(IEs),
+    Decoder = decode_v2_element(IEs),
+    Encoder = encode_v2_element(IEs),
 
-    CatchAnyDecoder = ?DecoderFunName ++ "(Value, Tag, Instance) ->\n    {Tag, Instance, Value}",
-
-    DecoderFns = lists:foldr(fun write_decoder/2, [CatchAnyDecoder], IEs),
-    Funs = string:join(DecoderFns, ";\n\n"),
-
-    CatchAnyEncoder = ?EncoderFunName ++ "({Tag, Instance, Value}) when is_integer(Tag), is_integer(Instance), is_binary(Value) ->\n    encode_v2_element(Tag, Instance, Value)",
-    EncoderFns = lists:foldr(fun write_encoder/2, [CatchAnyEncoder], IEs),
-    EncFuns = string:join(EncoderFns, ";\n\n"),
-
-    ErlDecls = io_lib:format("~n~n~s~n~s~n~s~n~s.~n~n~s.~n",
-                             [MsgDescription, MTypes, Enums, Funs,
-                              EncFuns]),
+    ErlForms =
+        ?es:form_list(
+           [MsgDescription, MessageTypes] ++ Enums ++ [Decoder, Encoder, ?es:eof_marker()]),
+    ErlDecls = erl_prettypr:format(ErlForms),
 
     {ok, HrlF0} = file:read_file("include/gtp_packet.hrl"),
     [HrlHead, HrlV1, _] = binary:split(HrlF0, [?V1_TAG, ?V2_TAG], [global]),
-    file:write_file("include/gtp_packet.hrl", [HrlHead, ?V1_TAG, HrlV1, ?V2_TAG, HrlRecs]),
+    file:write_file("include/gtp_packet.hrl", [HrlHead, ?V1_TAG, HrlV1, ?V2_TAG, "\n\n", HrlRecs]),
 
     {ok, ErlF0} = file:read_file("src/gtp_packet.erl"),
     [ErlHead, ErlV1, _] = binary:split(ErlF0, [?V1_TAG, ?V2_TAG], [global]),
-    file:write_file("src/gtp_packet.erl", [ErlHead, ?V1_TAG, ErlV1, ?V2_TAG, ErlDecls]).
+    file:write_file("src/gtp_packet.erl", [ErlHead, ?V1_TAG, ErlV1, ?V2_TAG, "\n\n", ErlDecls]).
